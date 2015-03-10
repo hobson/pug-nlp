@@ -1,0 +1,20 @@
+pip==1.5.6
+pypandoc==0.8.2
+wsgiref==0.1.2
+future==0.14.3
+six==1.9.0
+
+# ipython needs ZeroMQ
+pyzmq==14.5.0
+
+Unidecode==0.04.16
+cffi==0.8.6
+chardet==2.3.0
+
+pyOpenSSL==0.14
+pytz==2014.10
+python-dateutil==2.4.0
+
+numpy==1.9.2
+pandas==0.15.2
+#ConcurrentPandas==0.1.1
