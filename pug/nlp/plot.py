@@ -3,7 +3,7 @@ from pug.nlp import forest
 from pug.db.explore import count_unique
 
 from matplotlib import pyplot as plt
-import numpy as np
+import pandas.np as np
 import bisect
 
 ############################################################################
