@@ -4,7 +4,8 @@ __namespace_package__ = 'pug'
 # the subpackage that this installer is providing that you'd import like __import__(__namespace_package__ + '.' + '__subpackage__')
 __subpackage__ = 'nlp'
 # the name as it will appear in the pypi cheeseshop repositor, not the name you'd use to import it
-package_name = '{}-{}'.format(__namespace_package__, __subpackage__)
+project_name = '{}-{}'.format(__namespace_package__, __subpackage__)
+package_name = '{}.{}'.format(__namespace_package__, __subpackage__)
 
 from setuptools import find_packages
 from distutils.core import setup
@@ -21,7 +22,7 @@ execfile(os.path.join(__namespace_package__, __subpackage__, 'package_info.py'),
 
 version = env.get('__version__', '0.0.1')
 long_description = env.get('__doc__', '0.0.1')
-package_docstring = env.get('__doc__', '`{}` python package'.format(package_name))
+package_docstring = env.get('__doc__', '`{}` python package'.format(project_name))
 description = package_docstring.split(',')[0]
 long_description = package_docstring
 __url__  = env.get('__url__', 'http://github.com/hobson/')
@@ -32,7 +33,7 @@ try:
 except (IOError, ImportError, OSError):
     pass
 
-print('Installing package named {}. . .'.format(package_name))
+print('Installing package named {} from the {} project. . .'.format(package_name, project_name))
 
 try:
     from pip.req import parse_requirements
@@ -49,9 +50,12 @@ EXCLUDE_FROM_PACKAGES = []
 
 setup(
     name=__namespace_package__,
-    packages=find_packages(exclude=EXCLUDE_FROM_PACKAGES),   #[package_name],  
+    packages=find_packages(exclude=EXCLUDE_FROM_PACKAGES),
     namespace_packages=[__namespace_package__],
-    include_package_data = True,  # install non-.py files listed in MANIFEST.in (.js, .html, .txt, .md, etc)
+
+    # install non-.py files listed in MANIFEST.in (.js, .html, .txt, .md, etc)
+    include_package_data = True,
+
     install_requires = install_requires,
     dependency_links = dependency_links,
     # scripts=['pug/bin/test_ann.py'],

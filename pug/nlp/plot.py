@@ -1,5 +1,5 @@
 from PIL import Image, ImageDraw
-from pug.nlp import db_decision_tree as dt
+from pug.nlp import forest
 from pug.db.explore import count_unique
 
 from matplotlib import pyplot as plt
@@ -12,8 +12,8 @@ import bisect
 
 
 def draw_tree(tree, path='tree.jpg'):
-    w = dt.get_width(tree) * 100
-    h = dt.get_depth(tree) * 100 + 120
+    w = forest.get_width(tree) * 100
+    h = forest.get_depth(tree) * 100 + 120
 
     img = Image.new('RGB',(w, h),(255,255,255))
     draw = ImageDraw.Draw(img)
@@ -25,8 +25,8 @@ def draw_tree(tree, path='tree.jpg'):
 def draw_node(draw, tree, x, y):
     if tree.results == None:
         # Get the width of each branch
-        w1 = dt.get_width(tree.fb) * 100
-        w2 = dt.get_width(tree.tb) * 100
+        w1 = forest.get_width(tree.fb) * 100
+        w2 = forest.get_width(tree.tb) * 100
 
         # Determine the total space required by this node
         left = x - (w1 + w2) / 2
@@ -79,7 +79,7 @@ def prune(tree, mingain):
             fb += [[v]] * c
         
         # Test the reduction in entropy
-        delta = dt.entropy(tb + fb) - (dt.entropy(tb) + dt.entropy(fb) / 2)
+        delta = forest.entropy(tb + fb) - (forest.entropy(tb) + forest.entropy(fb) / 2)
 
         if delta < mingain:
             # Merge the branches

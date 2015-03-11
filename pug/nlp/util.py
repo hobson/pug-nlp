@@ -2865,11 +2865,14 @@ def days_since(dt, dt0=datetime.datetime(1970, 1, 1, 0, 0, 0)):
 class QueryTimer(object):
     """Based on https://github.com/jfalkner/Efficient-Django-QuerySet-Use
 
-    >>> from django.contrib.auth.models import Permission
+    >> from django.contrib.auth.models import Permission
+
     >>> qt = QueryTimer()
-    >>> cm_list = list(Permission.objects.values()[0:10])
+
+    >>  cm_list = list(Permission.objects.values()[0:10])
+
     >>> qt.stop()  # doctest: +ELLIPSIS
-    QueryTimer(time=0.0..., num_queries=1)
+    QueryTimer(time=0.0..., num_queries=0)
     """
 
     def __init__(self, connection, time=None, num_queries=None, sql=''):
