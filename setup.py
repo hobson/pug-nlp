@@ -1,6 +1,9 @@
 # setup.py for PUG (PDX Python User Group) package
+# the parent name (perhaps a namespace package) you'd import
 __namespace_package__ = 'pug'
+# the subpackage that this installer is providing that you'd import like __import__(__namespace_package__ + '.' + '__subpackage__')
 __subpackage__ = 'nlp'
+# the name as it will appear in the pypi cheeseshop repositor, not the name you'd use to import it
 package_name = '{}-{}'.format(__namespace_package__, __subpackage__)
 
 from setuptools import find_packages
@@ -14,7 +17,7 @@ import os
 # # setup(cmdclass={'test': test},...
 
 global_env, env = {}, {}
-execfile(os.path.join(__namespace_package__, package_name, 'package_info.py'), global_env, env)
+execfile(os.path.join(__namespace_package__, __subpackage__, 'package_info.py'), global_env, env)
 
 version = env.get('__version__', '0.0.1')
 long_description = env.get('__doc__', '0.0.1')
@@ -45,8 +48,9 @@ print('Dependency links: {}'.format(dependency_links))
 EXCLUDE_FROM_PACKAGES = []
 
 setup(
-    name = package_name,
+    name=__namespace_package__,
     packages=find_packages(exclude=EXCLUDE_FROM_PACKAGES),   #[package_name],  
+    namespace_packages=[__namespace_package__],
     include_package_data = True,  # install non-.py files listed in MANIFEST.in (.js, .html, .txt, .md, etc)
     install_requires = install_requires,
     dependency_links = dependency_links,
