@@ -46,7 +46,6 @@ from progressbar import ProgressBar
 from pytz import timezone
 from fuzzywuzzy import process as fuzzy
 from slugify import slugify
-import sqlparse
 
 import charlist
 import regex_patterns as RE
@@ -63,7 +62,6 @@ SCALAR_TYPES = (float, long, int, Decimal, bool, complex, basestring, str, unico
 DICTABLE_TYPES = (collections.Mapping, tuple, list)  # convertable to a dictionary (inherits collections.Mapping or is a list of key/value pairs)
 VECTOR_TYPES = (list, tuple)
 PUNC = unicode(string.punctuation)
-
 
 
 # 4 types of "histograms" and their canonical name/label
@@ -2861,47 +2859,4 @@ timestamp_str = make_timestamp = make_timetag = timetag_str
 def days_since(dt, dt0=datetime.datetime(1970, 1, 1, 0, 0, 0)):
     return ordinal_float(dt) - ordinal_float(dt0)
 
-
-class QueryTimer(object):
-    """Based on https://github.com/jfalkner/Efficient-Django-QuerySet-Use
-
-    >> from django.contrib.auth.models import Permission
-
-    >>> qt = QueryTimer()
-
-    >>  cm_list = list(Permission.objects.values()[0:10])
-
-    >>> qt.stop()  # doctest: +ELLIPSIS
-    QueryTimer(time=0.0..., num_queries=0)
-    """
-
-    def __init__(self, connection, time=None, num_queries=None, sql=''):
-        self.connection = connection
-        self.time, self.num_queries = time, num_queries
-        self.start_time, self.start_queries = None, None
-        self.sql = sql
-        self.start()
-
-    def start(self):
-        self.queries = []
-        self.start_time = datetime.datetime.now()
-        self.start_queries = len(self.connection.queries)
-
-    def stop(self):
-        self.time = (datetime.datetime.now() - self.start_time).total_seconds()
-        self.queries = self.connection.queries[self.start_queries:]
-        self.num_queries = len(self.queries)
-        print self
-
-    def format_sql(self):
-        if self.time is None or self.queries is None:
-            self.stop()
-        if self.queries or not self.sql:
-            self.sql = []
-            for query in self.queries:
-                self.sql += [sqlparse.format(query['sql'], reindent=True, keyword_case='upper')]
-        return self.sql
-
-    def __repr__(self):
-        return '%s(time=%s, num_queries=%s)' % (self.__class__.__name__, self.time, self.num_queries)
 

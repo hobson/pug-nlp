@@ -18,6 +18,7 @@ python-dateutil==2.4.0
 numpy==1.9.2
 pandas==0.15.2
 
+#$ sudo yum install libjpeg-devel openjpeg-devel
 Pillow==2.7
 matplotlib==1.4.3
-#ConcurrentPandas==0.1.1
+fuzzywuzzy==0.5.0
