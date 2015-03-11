@@ -15,6 +15,8 @@ import datetime
 
 from pug.db.explore import count_unique
 
+from .plot import draw_tree
+import pickle
 
 def divide(qs, field, target=0, default=0, ignore_fields=None, include_fields=None):
     if ignore_fields is None:
@@ -130,6 +132,7 @@ class DecisionNode:
 def build_tree(qs, field, scoref=entropy, ignore_fields=None, include_fields=None):
     """Build a classification decision tree
 
+    >>> from pug.data.tobes_example import tobes_data
     >>> print_tree(build_tree(tobes_data))  # doctest: +NORMALIZE_WHITESPACE
     0:google? 
       T-> 3:21? 

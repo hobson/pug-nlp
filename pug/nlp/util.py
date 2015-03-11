@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-'''Utilities to support natural language processing:
+'''Utilities for Natural Language Processing (NLP):
 
-* Vocabulary dimension reduction
+* Vocabulary and dimension reduction
 * Word statistics calculation
 * Add a timezone to a datetime
 * Slice a django queryset
@@ -14,6 +14,10 @@
 * Pierson correlation coefficient calculation
 * Parse a string into sentences or tokens
 * Table (list of list) manipulation
+* make_time, make_date, quantize_datetime -- ignore portions of a datetime struct
+* ordinal_float, datetime_from_ordinal_float -- conversion between datetimes and float days
+* days_since    -- subract two date or datetime objects and return difference in days (float)
+* QueryTimer    -- SQL connection query timer and profiler
 
 '''
 
@@ -31,55 +35,35 @@ import csv
 import warnings
 from collections import OrderedDict
 from traceback import print_exc
-import ascii
-import decimal
-import random
 from decimal import Decimal
 import math
-import pandas as pd
-from dateutil.parser import parse as parse_date
 
+
+import pandas as pd
+np = pd.np
+from dateutil.parser import parse as parse_date
 from progressbar import ProgressBar
 from pytz import timezone
-#import numpy as np
-# import scipy as sci
 from fuzzywuzzy import process as fuzzy
-# import nltk
 from slugify import slugify
-# from sklearn.feature_extraction.text import TfidfVectorizer
+import sqlparse
 
-import character_subset as chars
+import charlist
 import regex_patterns as RE
 
 import logging
 logger = logging.getLogger('pug.nlp.util')
 
 
-#from django.core.exceptions import ImproperlyConfigured
-# try:
-#     import django.db
-# except ImproperlyConfigured:
-#     import traceback
-#     print traceback.format_exc()
-#     print 'WARNING: The module named %r from file %r' % (__name__, __file__)
-#     print '         can only be used within a Django project!'
-#     print '         Though the module was imported, some of its functions may raise exceptions.'
-
-
-
-ROUNDABLE_NUMERIC_TYPES = (float, long, int, decimal.Decimal, bool)
-FLOATABLE_NUMERIC_TYPES = (float, long, int, decimal.Decimal, bool)
+ROUNDABLE_NUMERIC_TYPES = (float, long, int, Decimal, bool)
+FLOATABLE_NUMERIC_TYPES = (float, long, int, Decimal, bool)
 BASIC_NUMERIC_TYPES = (float, long, int) 
-SCALAR_TYPES = (float, long, int, decimal.Decimal, bool, complex, basestring, str, unicode)  # datetime.datetime, datetime.date
+SCALAR_TYPES = (float, long, int, Decimal, bool, complex, basestring, str, unicode)  # datetime.datetime, datetime.date
 # numpy types are derived from these so no need to include numpy.float64, numpy.int64 etc
 DICTABLE_TYPES = (collections.Mapping, tuple, list)  # convertable to a dictionary (inherits collections.Mapping or is a list of key/value pairs)
 VECTOR_TYPES = (list, tuple)
 PUNC = unicode(string.punctuation)
 
-
-def fedora_password_salt(length=8, alphabet=string.letters + string.digits + './'):
-    """Generate a random salt string for use in `crypt.crypt(password, salt)`"""
-    return ''.join(random.choice(alphabet) for position in range(length))
 
 
 # 4 types of "histograms" and their canonical name/label
@@ -1496,7 +1480,7 @@ def first_digits(s, default=0):
     >>> first_digits('+123.456')
     123
     """
-    s = re.split(r'[^0-9]+', str(s).strip().lstrip('+-' + chars.whitespace))
+    s = re.split(r'[^0-9]+', str(s).strip().lstrip('+-' + charlist.whitespace))
     if len(s) and len(s[0]):
         return int(s[0])
     return default
@@ -1633,8 +1617,8 @@ def normalize_scientific_notation(s, ignore_commas=True, verbosity=1):
     >>> normalize_scientific_notation('$42.42')
     '42.42'
     """
-    s = s.lstrip(chars.not_digits_nor_sign)
-    s = s.rstrip(chars.not_digits)
+    s = s.lstrip(charlist.not_digits_nor_sign)
+    s = s.rstrip(charlist.not_digits)
     #print s
     # TODO: substitute ** for ^ and just eval the expression rather than insisting on a base-10 representation
     num_strings = RE.scientific_notation_exponent.split(s, maxsplit=2)
@@ -1790,7 +1774,7 @@ def normalize_serial_number(sn,
         normalize_serial_number.na = na
 
     if invalid_chars is None:
-        invalid_chars = (c for c in ascii.all_ if c not in valid_chars)
+        invalid_chars = (c for c in charlist.ascii if c not in valid_chars)
     invalid_chars = ''.join(invalid_chars)
     sn = str(sn).strip(invalid_chars)
     if strip_whitespace:
@@ -2422,7 +2406,7 @@ def generate_kmers(seq, k=4):
     if isinstance(seq, basestring):
         for i in range(len(seq) - k + 1):
            yield seq[i:i+k]
-    elif isinstance(seq, (int, float, decimal.Decimal)):
+    elif isinstance(seq, (int, float, Decimal)):
         for s in generate_kmers(str(seq)):
             yield s
     else:
@@ -2714,7 +2698,7 @@ def make_datetime(dt, date_parser=parse_date):
     >>> make_date(datetime.datetime(1999, 12, 31, 23, 59, 59))
     datetime.date(1999, 12, 31)
     """
-    if isinstance(dt, (datetime.datetime, pd.Timestamp, pd.np.datetime64)):
+    if isinstance(dt, (datetime.datetime, pd.Timestamp, np.datetime64)):
         return dt
     if isinstance(dt, float):
         return datetime_from_ordinal_float(dt)
@@ -2876,3 +2860,45 @@ timestamp_str = make_timestamp = make_timetag = timetag_str
 
 def days_since(dt, dt0=datetime.datetime(1970, 1, 1, 0, 0, 0)):
     return ordinal_float(dt) - ordinal_float(dt0)
+
+
+class QueryTimer(object):
+    """Based on https://github.com/jfalkner/Efficient-Django-QuerySet-Use
+
+    >>> from django.contrib.auth.models import Permission
+    >>> qt = QueryTimer()
+    >>> cm_list = list(Permission.objects.values()[0:10])
+    >>> qt.stop()  # doctest: +ELLIPSIS
+    QueryTimer(time=0.0..., num_queries=1)
+    """
+
+    def __init__(self, connection, time=None, num_queries=None, sql=''):
+        self.connection = connection
+        self.time, self.num_queries = time, num_queries
+        self.start_time, self.start_queries = None, None
+        self.sql = sql
+        self.start()
+
+    def start(self):
+        self.queries = []
+        self.start_time = datetime.datetime.now()
+        self.start_queries = len(self.connection.queries)
+
+    def stop(self):
+        self.time = (datetime.datetime.now() - self.start_time).total_seconds()
+        self.queries = self.connection.queries[self.start_queries:]
+        self.num_queries = len(self.queries)
+        print self
+
+    def format_sql(self):
+        if self.time is None or self.queries is None:
+            self.stop()
+        if self.queries or not self.sql:
+            self.sql = []
+            for query in self.queries:
+                self.sql += [sqlparse.format(query['sql'], reindent=True, keyword_case='upper')]
+        return self.sql
+
+    def __repr__(self):
+        return '%s(time=%s, num_queries=%s)' % (self.__class__.__name__, self.time, self.num_queries)
+

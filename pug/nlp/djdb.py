@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """Django database manipulations (using the ORM) that require the settings module to be imported"""
 
@@ -6,7 +5,6 @@ import datetime
 import collections
 import re
 from types import ModuleType
-import sqlparse
 import os
 import csv
 import json
@@ -25,7 +23,6 @@ try:
 except ImportError:
     # django>=1.8a1
     from django.db.models.fields import related
-from django.db import connection
 from django.db import models as djmodels
 
 import progressbar as pb  # import ProgressBar, Percentage, RotatingMarker, Bar, ETA
@@ -38,73 +35,34 @@ import logging
 logger = logging.getLogger('bigdata.info')
 
 
-# required to monkey-patch django.utils.encoding.force_text
-from django.utils.encoding import is_protected_type, DjangoUnicodeDecodeError, six
-DEFAULT_DB = 'default'
-DEFAULT_APP = 'django.contrib.auth'  # djmodels.get_apps()[-1]
-DEFAULT_MODEL = 'Permission'  # DEFAULT_MODEL.get_models()[0]
-from django.core.exceptions import ImproperlyConfigured
-settings = None
-try:
-    # FIXME Only 1 function that requires settings: all other functions should be moved to nlp.db module?
-    from django.conf import settings
-    settings.configure()
-except ImproperlyConfigured:
-    print_exc()
-    print 'WARNING: The module named %r from file %r' % (__name__, __file__)
-    print '         can only be used within a Django project!'
-    print '         Though the module was imported, some of its functions may raise exceptions.'
-except RuntimeError:
-    pass
-    # print_exc()
-    # print 'WARNING: Unable to configure settings.'
-    # print '         Django settings may have already been configured elsewhere.'
-    # print '         Circular import perhaps?'
+# # required to monkey-patch django.utils.encoding.force_text
+# from django.utils.encoding import is_protected_type, DjangoUnicodeDecodeError, six
+# DEFAULT_DB = 'default'
+# DEFAULT_APP = 'django.contrib.auth'  # djmodels.get_apps()[-1]
+# DEFAULT_MODEL = 'Permission'  # DEFAULT_MODEL.get_models()[0]
+# from django.core.exceptions import ImproperlyConfigured
+# settings = None
+# try:
+#     # FIXME Only 1 function that requires settings: all other functions should be moved to nlp.db module?
+#     from django.conf import settings
+#     settings.configure()
+# except ImproperlyConfigured:
+#     print_exc()
+#     print 'WARNING: The module named %r from file %r' % (__name__, __file__)
+#     print '         can only be used within a Django project!'
+#     print '         Though the module was imported, some of its functions may raise exceptions.'
+# except RuntimeError:
+#     pass
+#     # print_exc()
+#     # print 'WARNING: Unable to configure settings.'
+#     # print '         Django settings may have already been configured elsewhere.'
+#     # print '         Circular import perhaps?'
 
 from pug.nlp import util  # import listify, generate_slices, transposed_lists #, sod_transposed, dos_from_table
 from pug.nlp.words import synonyms
 from pug.nlp.db import sort_prefix, consolidated_counts, sorted_dict_of_lists, clean_utf8, replace_nonascii, lagged_seq, NULL_VALUES, NAN_VALUES, BLANK_VALUES
 from pug.miner.models import ChangeLog
 
-
-class QueryTimer(object):
-    """Based on https://github.com/jfalkner/Efficient-Django-QuerySet-Use
-
-    >>> from django.contrib.auth.models import Permission
-    >>> qt = QueryTimer()
-    >>> cm_list = list(Permission.objects.values()[0:10])
-    >>> qt.stop()  # doctest: +ELLIPSIS
-    QueryTimer(time=0.0..., num_queries=1)
-    """
-
-    def __init__(self, time=None, num_queries=None, sql=''):
-        self.time, self.num_queries = time, num_queries
-        self.start_time, self.start_queries = None, None
-        self.sql = sql
-        self.start()
-
-    def start(self):
-        self.queries = []
-        self.start_time = datetime.datetime.now()
-        self.start_queries = len(connection.queries)
-
-    def stop(self):
-        self.time = (datetime.datetime.now() - self.start_time).total_seconds()
-        self.queries = connection.queries[self.start_queries:]
-        self.num_queries = len(self.queries)
-        print self
-
-    def format_sql(self):
-        if self.time is None or self.queries is None:
-            self.stop()
-        if self.queries or not self.sql:
-            self.sql = []
-            for query in self.queries:
-                self.sql += [sqlparse.format(query['sql'], reindent=True, keyword_case='upper')]
-        return self.sql
-
-    def __repr__(self):
-        return '%s(time=%s, num_queries=%s)' % (self.__class__.__name__, self.time, self.num_queries)
 
 
 def normalize_values_queryset(values_queryset, model=None, app=None, verbosity=1):

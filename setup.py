@@ -1,6 +1,6 @@
 # setup.py for PUG (PDX Python User Group) package
 __namespace_package__ = 'pug'
-__subpackage__ = 'ann'
+__subpackage__ = 'nlp'
 package_name = '{}-{}'.format(__namespace_package__, __subpackage__)
 
 from setuptools import find_packages
