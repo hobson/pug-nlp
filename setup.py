@@ -22,7 +22,7 @@ execfile(os.path.join(__namespace_package__, __subpackage__, 'package_info.py'),
 
 version = env.get('__version__', '0.0.1')
 package_docstring = env.get('__doc__', '`{}` python package'.format(project_name))
-description = package_docstring.split(',')[0]
+description = package_docstring.split('\n')[0]
 long_description = package_docstring
 __url__  = env.get('__url__', 'http://github.com/hobson/')
 __authors__  = env.get('__authors__', ('Hobson <hobson@totalgood.com>',))
