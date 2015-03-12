@@ -21,7 +21,6 @@ global_env, env = {}, {}
 execfile(os.path.join(__namespace_package__, __subpackage__, 'package_info.py'), global_env, env)
 
 version = env.get('__version__', '0.0.1')
-long_description = env.get('__doc__', '0.0.1')
 package_docstring = env.get('__doc__', '`{}` python package'.format(project_name))
 description = package_docstring.split(',')[0]
 long_description = package_docstring
@@ -29,9 +28,11 @@ __url__  = env.get('__url__', 'http://github.com/hobson/')
 __authors__  = env.get('__authors__', ('Hobson <hobson@totalgood.com>',))
 try:
     import pypandoc
-    long_description = pypandoc.convert('README.md', 'rst')
-except (IOError, ImportError, OSError):
-    pass
+    long_description = pypandoc.convert('README.md', 'rst', 'md')
+except (IOError, ImportError, OSError, RuntimeError):
+    from traceback import print_exc
+    print_exc()
+    print('Unable to use pypandoc to reformat the README.md file into RST format')
 
 print('Installing package named {} from the {} project. . .'.format(package_name, project_name))
 
@@ -55,7 +56,6 @@ setup(
 
     # install non-.py files listed in MANIFEST.in (.js, .html, .txt, .md, etc)
     include_package_data = True,
-
     install_requires = install_requires,
     dependency_links = dependency_links,
     # scripts=['pug/bin/test_ann.py'],
