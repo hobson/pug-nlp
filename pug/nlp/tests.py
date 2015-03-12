@@ -2,9 +2,10 @@
 Uses the unittest module to test this app with `manage.py test`.
 """
 
-from django.test import TestCase
+# from django.test import TestCase
+from unittest import TestCase, main
 import doctest
-
+import pug
 
 # class PuffinTest(TestCase):
 #     from puffin_lsa import PuffinLSA
@@ -28,9 +29,7 @@ import doctest
 
 #         self.assertEqual(lsa.S, )
 
-from doctest import testmod
-import nlp
-import nlp.util
+
 
 
 # from collections import OrderedDict as OD
@@ -65,10 +64,17 @@ import nlp.util
 
 class NLPDocTest(TestCase):
 
-    def test_module_doctests(self, module=nlp.util):
+    def test_util(self, module=pug.nlp.util):
         failure_count, test_count = doctest.testmod(module, raise_on_error=False, verbose=True)
         msg = "Ran {0} tests in {3} and {1} passed ({2} failed)".format(test_count, test_count-failure_count, failure_count, module.__file__)
         print msg
         if failure_count:
             # print "Ignoring {0} doctest failures...".format(__file__)
             self.fail(msg)
+        # return failure_count, test_count
+
+    def test_http(self):
+        return self.test_util(pug.nlp.http)
+
+if __name__ == '__main__':
+    main()

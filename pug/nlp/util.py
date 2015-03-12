@@ -17,7 +17,6 @@
 * make_time, make_date, quantize_datetime -- ignore portions of a datetime struct
 * ordinal_float, datetime_from_ordinal_float -- conversion between datetimes and float days
 * days_since    -- subract two date or datetime objects and return difference in days (float)
-* QueryTimer    -- SQL connection query timer and profiler
 
 '''
 
@@ -37,18 +36,21 @@ from collections import OrderedDict
 from traceback import print_exc
 from decimal import Decimal
 import math
+from types import NoneType
 
 
 import pandas as pd
 np = pd.np
 from dateutil.parser import parse as parse_date
-from progressbar import ProgressBar
+import progressbar
 from pytz import timezone
 from fuzzywuzzy import process as fuzzy
 from slugify import slugify
 
 import charlist
 import regex_patterns as RE
+
+import xlrd
 
 import logging
 logger = logging.getLogger('pug.nlp.util')
@@ -384,8 +386,8 @@ def quantify_field_dict(field_dict, precision=None, date_precision=None, cleaner
 
 
     FIXME: this test probably needs to define a time zone for the datetime object
-    >>> quantify_field_dict({'_state': object(), 'x': 12345678911131517L, 'y': "\t  Wash Me! \n", 'z': datetime.datetime(1970, 10, 23, 23, 59, 59, 123456)}) == {'x': 12345678911131517L, 'y': u'Wash Me!', 'z': 25574399.123456}
-    True
+    >>> sorted(quantify_field_dict({'_state': object(), 'x': 12345678911131517L, 'y': "\t  Wash Me! \n", 'z': datetime.datetime(1970, 10, 23, 23, 59, 59, 123456)}).iteritems())  # doctest: +NORMALIZE_WHITESPACE, +ELLIPSIS
+    [('x', 12345678911131517L), ('y', u'Wash Me!'), ('z', 25603199.123456)]
     """
     if cleaner:
         d = clean_field_dict(field_dict, cleaner=cleaner)
@@ -976,6 +978,35 @@ def hist_from_values_list(values_list, fillers=(None,), normalize=False, cumulat
     return aligned_histograms
 
 
+def flatten_csv(path='.', ext='csv', date_parser=parse_date, verbosity=0, output_ext=None):
+    """Load all CSV files in the given path, write .flat.csv files, return `DataFrame`s
+
+    Arguments:
+      path (str): file or folder to retrieve CSV files and `pandas.DataFrame`s from
+      ext (str): file name extension (to filter files by)
+      date_parser (function): if the MultiIndex can be interpretted as a datetime, this parser will be used
+
+    Returns:
+      dict of DataFrame: { file_path: flattened_data_frame }
+    """
+    date_parser = date_parser or (lambda x: x)
+    dotted_ext, dotted_output_ext = None, None
+    if ext != None and output_ext != None:
+        dotted_ext = ('' if ext.startswith('.') else '.') + ext
+        dotted_output_ext = ('' if output_ext.startswith('.') else '.') + output_ext
+    table = {}
+    for file_properties in find_files(path, ext=ext or '', verbosity=verbosity):
+        file_path = file_properties['path']
+        if output_ext and (dotted_output_ext + '.') in file_path:
+            continue
+        df = pd.DataFrame.from_csv(file_path, parse_dates=False)
+        df = flatten_dataframe(df)
+        if dotted_ext != None and dotted_output_ext != None:
+            df.to_csv(file_path[:-len(dotted_ext)] + dotted_output_ext + dotted_ext)
+        table[file_path] = df
+    return table
+
+
 def get_similar(obj, labels, default=None, min_similarity=0.5):
     """Similar to fuzzy_get, but allows non-string keys and a list of possible keys
 
@@ -1306,7 +1337,7 @@ def read_csv(path, ext='.csv', verbose=False, format=None, delete_empty_keys=Fal
         pbar = None
         file_len = os.fstat(fpin.fileno()).st_size
         if verbose:
-            pbar = ProgressBar(maxval=file_len)
+            pbar = progressbar.ProgressBar(maxval=file_len)
             pbar.start()
         while csvr and rownum < rowlimit and not eof:
             if pbar:
@@ -2746,7 +2777,7 @@ def make_time(dt, date_parser=parse_date):
             dt = date_parser(dt)
         except:
             print_exc()
-            print 'Unable to parse datetime string: {0}'.format(dt)
+            print 'Unable to parse {}'.format(repr(dt))
     try:
         dt = dt.timetuple()[3:6]
     except:
@@ -2859,4 +2890,260 @@ timestamp_str = make_timestamp = make_timetag = timetag_str
 def days_since(dt, dt0=datetime.datetime(1970, 1, 1, 0, 0, 0)):
     return ordinal_float(dt) - ordinal_float(dt0)
 
+def flatten_dataframe(df, date_parser=parse_date, verbosity=0):
+    """Creates 1-D timeseries (pandas.Series) coercing column labels into datetime.time objects
 
+    Assumes that the columns are strings representing times of day (or datetime.time objects)
+    Assumes that the index should be a datetime object. If it isn't already, the first column
+    with "date" (case insenstive) in its label will be used as the FataFrame index.
+    """
+
+    # extract rows with nonull, nonnan index values
+    df = df[pd.notnull(df.index)]
+
+    # Make sure columns and row labels are all times and dates respectively
+    # Ignores/clears any timezone information 
+    if all(isinstance(i, int) for i in df.index):
+        for label in df.columns:
+            if 'date' in str(label).lower():
+                df.index = [make_date(d) for d in df[label]]
+                del df[label]
+                break
+    if not all(isinstance(i, pd.Timestamp) for i in df.index):
+        date_index = []
+        for i in df.index:
+            try:
+                date_index += [make_date(str(i))]
+            except:
+                date_index += [i]
+        df.index = date_index
+    df.columns = [make_time(str(c)) if (c and str(c) and str(c)[0] in '0123456789') else str(c) for c in df.columns]
+    if verbosity > 2:
+        print 'Columns: {0}'.format(df.columns)
+
+    # flatten it
+    df = df.transpose().unstack()
+
+    df = df.drop(df.index[[(isinstance(d[1], (basestring, NoneType))) for d in df.index]])
+
+    # df.index is now a compound key (tuple) of the column labels (df.columns) and the row labels (df.index) 
+    # so lets combine them to be datetime values (pandas.Timestamp)
+    dt = None
+    t0 = df.index[0][1]
+    t1 = df.index[1][1]
+    try:
+        dt_stepsize = datetime.timedelta(hours=t1.hour - t0.hour, minutes=t1.minute - t0.minute, seconds=t1.second - t0.second)
+    except:
+        dt_stepsize = datetime.timedelta(hours=0, minutes=15)
+    parse_date_exception = False
+    index = []
+    for i, d in enumerate(df.index.values):
+        dt = i
+        if verbosity > 2:
+            print d
+        # # TODO: assert(not parser_date_exception)
+        # if isinstance(d[0], basestring):
+        #     d[0] = d[0]
+        try:
+            datetimeargs = list(d[0].timetuple()[:3]) + [d[1].hour, d[1].minute, d[1].second, d[1].microsecond]
+            dt = datetime.datetime(*datetimeargs)
+            if verbosity > 2:
+                print '{0} -> {1}'.format(d, dt)
+        except TypeError:
+            if verbosity > 1:
+                print_exc()
+                # print 'file with error: {0}\ndate-time tuple that caused the problem: {1}'.format(file_properties, d)
+            if isinstance(dt, datetime.datetime):
+                if dt:
+                    dt += dt_stepsize
+                else:
+                    dt = i
+                    parse_date_exception = True
+                    # dt = str(d[0]) + ' ' + str(d[1])
+                    # parse_date_exception = True
+            else:
+                dt = i
+                parse_date_exception = True
+        except:
+            if verbosity:
+                print_exc()
+                # print 'file with error: {0}\ndate-time tuple that caused the problem: {1}'.format(file_properties, d)
+            dt = i
+        index += [dt]
+
+    if index and not parse_date_exception:
+        df.index = index
+    else:
+        df.index = list(pd.Timestamp(d) for d in index)
+    return df
+
+
+def dataframe_from_excel(path, sheetname=0, header=0, skiprows=None):  # , parse_dates=False):
+    """Thin wrapper for pandas.io.excel.read_excel() that accepts a file path and sheet index/name
+
+    Arguments:
+      path (str): file or folder to retrieve CSV files and `pandas.DataFrame`s from
+      ext (str): file name extension (to filter files by)
+      date_parser (function): if the MultiIndex can be interpretted as a datetime, this parser will be used
+
+    Returns:
+      dict of DataFrame: { file_path: flattened_data_frame }
+    """
+    sheetname = sheetname or 0
+    if isinstance(sheetname, (basestring, float)):
+        try:
+            sheetname = int(sheetname)
+        except (TypeError, ValueError, OverflowError):
+            sheetname = str(sheetname)
+    wb = xlrd.open_workbook(path)
+    # if isinstance(sheetname, int):
+    #     sheet = wb.sheet_by_index(sheetname)
+    # else:
+    #     sheet = wb.sheet_by_name(sheetname)
+    # assert(not parse_dates, "`parse_dates` argument and function not yet implemented!")
+    # table = [sheet.row_values(i) for i in range(sheet.nrows)]
+    return pd.io.excel.read_excel(wb, sheetname=sheetname, header=header, skiprows=skiprows, engine='xlrd')
+
+
+def flatten_excel(path='.', ext='xlsx', sheetname=0, skiprows=None, header=0, date_parser=parse_date, verbosity=0, output_ext=None):
+    """Load all Excel files in the given path, write .flat.csv files, return `DataFrame` dict
+
+    Arguments:
+      path (str): file or folder to retrieve CSV files and `pandas.DataFrame`s from
+      ext (str): file name extension (to filter files by)
+      date_parser (function): if the MultiIndex can be interpretted as a datetime, this parser will be used
+
+    Returns:
+      dict of DataFrame: { file_path: flattened_data_frame }
+    """
+
+    date_parser = date_parser or (lambda x: x)
+    dotted_ext, dotted_output_ext = None, None
+    if ext != None and output_ext != None:
+        dotted_ext = ('' if ext.startswith('.') else '.') + ext
+        dotted_output_ext = ('' if output_ext.startswith('.') else '.') + output_ext
+    table = {}
+    for file_properties in find_files(path, ext=ext or '', verbosity=verbosity):
+        file_path = file_properties['path']
+        if output_ext and (dotted_output_ext + '.') in file_path:
+            continue
+        df = dataframe_from_excel(file_path, sheetname=sheetname, header=header, skiprows=skiprows)
+        df = flatten_dataframe(df, verbosity=verbosity)
+        if dotted_ext != None and dotted_output_ext != None:
+            df.to_csv(file_path[:-len(dotted_ext)] + dotted_output_ext + dotted_ext)
+    return table
+
+
+def walk_level(path, level=1):
+    """Like os.walk, but takes `level` kwarg that indicates how deep the recursion will go.
+
+    Notes:
+      TODO: refactor `level`->`depth`
+
+    References:
+      http://stackoverflow.com/a/234329/623735
+
+    Args:
+     path (str):  Root path to begin file tree traversal (walk)
+      level (int, optional): Depth of file tree to halt recursion at. 
+        None = full recursion to as deep as it goes
+        0 = nonrecursive, just provide a list of files at the root level of the tree
+        1 = one level of depth deeper in the tree
+
+    Examples:
+      >>> root = os.path.dirname(__file__)
+      >>> all((os.path.join(base,d).count('/')==(root.count('/')+1)) for (base, dirs, files) in walk_level(root, level=0) for d in dirs)
+      True
+    """
+    if isinstance(level, NoneType):
+        level = float('inf')
+    path = path.rstrip(os.path.sep)
+    if os.path.isdir(path):
+        root_level = path.count(os.path.sep)
+        for root, dirs, files in os.walk(path):
+            yield root, dirs, files
+            if root.count(os.path.sep) >= root_level + level:
+                del dirs[:]
+    elif os.path.isfile(path):
+        yield os.path.dirname(path), [], [os.path.basename(path)]
+    else:
+        raise RuntimeError("Can't find a valid folder or file for path {0}".format(repr(path)))
+
+
+def find_files(path, ext='', level=None, verbosity=0):
+    """Recursively find all files in the indicated directory with the indicated file name extension
+
+    Args:
+      path (str):
+      ext (str):   File name extension. Only file paths that ".endswith()" this string will be returned
+      level (int, optional): Depth of file tree to halt recursion at. 
+        None = full recursion to as deep as it goes
+        0 = nonrecursive, just provide a list of files at the root level of the tree
+        1 = one level of depth deeper in the tree
+
+    Returns: 
+      list of dicts: dict keys are { 'path', 'name', 'bytes', 'created', 'modified', 'accessed', 'permissions' }
+        path (str): Full, absolute paths to file beneath the indicated directory and ending with `ext`
+        name (str): File name only (everythin after the last slash in the path)
+        size (int): File size in bytes
+        created (datetime): File creation timestamp from file system
+        modified (datetime): File modification timestamp from file system
+        accessed (datetime): File access timestamp from file system
+        permissions (int): File permissions bytes as a chown-style integer with a maximum of 4 digits 
+          e.g.: 777 or 1755
+
+    Examples:
+      >>> sorted(d['name'] for d in find_files(os.path.dirname(__file__), ext='.py', level=0))[0]
+      '__init__.py'
+    """
+    path = path or './'
+    files_in_queue = []
+    if verbosity:
+        print 'Preprocessing files to estimate pb.ETA'
+    # if verbosity:
+    #     widgets = [pb.Counter(), '/%d bytes for all files: ' % file_bytes, pb.Percentage(), ' ', pb.RotatingMarker(), ' ', pb.Bar(),' ', pb.ETA()]
+    #     i, pbar = 0, pb.ProgressBar(widgets=widgets, maxval=file_bytes)
+    #     print pbar
+    #     pbar.start()
+    for dir_path, dir_names, filenames in walk_level(path, level=level):
+        for fn in filenames:
+            if ext and not fn.lower().endswith(ext):
+                continue
+            files_in_queue += [{'name': fn, 'path': os.path.join(dir_path, fn)}]
+            files_in_queue[-1]['size'] = os.path.getsize(files_in_queue[-1]['path'])
+            files_in_queue[-1]['accessed'] = datetime.datetime.fromtimestamp(os.path.getatime(files_in_queue[-1]['path']))
+            files_in_queue[-1]['modified'] = datetime.datetime.fromtimestamp(os.path.getmtime(files_in_queue[-1]['path']))
+            files_in_queue[-1]['created'] = datetime.datetime.fromtimestamp(os.path.getctime(files_in_queue[-1]['path']))
+            # file_bytes += files_in_queue[-1]['size']
+    if verbosity > 1:
+        print files_in_queue
+    return files_in_queue
+
+
+def flatten_csv(path='.', ext='csv', date_parser=parse_date, verbosity=0, output_ext=None):
+    """Load all CSV files in the given path, write .flat.csv files, return `DataFrame`s
+
+    Arguments:
+      path (str): file or folder to retrieve CSV files and `pandas.DataFrame`s from
+      ext (str): file name extension (to filter files by)
+      date_parser (function): if the MultiIndex can be interpretted as a datetime, this parser will be used
+
+    Returns:
+      dict of DataFrame: { file_path: flattened_data_frame }
+    """
+    date_parser = date_parser or (lambda x: x)
+    dotted_ext, dotted_output_ext = None, None
+    if ext != None and output_ext != None:
+        dotted_ext = ('' if ext.startswith('.') else '.') + ext
+        dotted_output_ext = ('' if output_ext.startswith('.') else '.') + output_ext
+    table = {}
+    for file_properties in find_files(path, ext=ext or '', verbosity=verbosity):
+        file_path = file_properties['path']
+        if output_ext and (dotted_output_ext + '.') in file_path:
+            continue
+        df = pd.DataFrame.from_csv(file_path, parse_dates=False)
+        df = flatten_dataframe(df)
+        if dotted_ext != None and dotted_output_ext != None:
+            df.to_csv(file_path[:-len(dotted_ext)] + dotted_output_ext + dotted_ext)
+        table[file_path] = df
+    return table
