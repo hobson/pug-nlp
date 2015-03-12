@@ -55,7 +55,6 @@ setup(
 
     # install non-.py files listed in MANIFEST.in (.js, .html, .txt, .md, etc)
     include_package_data = True,
-
     install_requires = install_requires,
     dependency_links = dependency_links,
     # scripts=['pug/bin/test_ann.py'],
