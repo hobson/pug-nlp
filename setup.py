@@ -74,12 +74,12 @@ setup(
     url = __url__,
 
     # Force setup.py to use the latest github master source files rather than the cheeseshop tarball: 
-    download_url = "{0}/tarball/master".format(__url__),
-    keywords = ["agent", "bot", "ai", "crawl", "data", "science", "data science", "math", "machine-learning", "statistics", "database"],
+    download_url = "{}/tarball/master".format(__url__),
+    keywords = ["nlp", "natural language processing", "text", "text processing", "bot", "ai", "agent", "data", "science", "data science", "math", "machine-learning", "statistics", "database"],
     classifiers = [
         "Programming Language :: Python",
         "Programming Language :: Python :: 2.7",
-        "Development Status :: 3 - Alpha",
+        "Development Status :: 2 - Pre-Alpha",
         "Environment :: Other Environment",
         # "Environment :: Console",
         "Intended Audience :: Developers",
@@ -88,5 +88,6 @@ setup(
         "Topic :: Software Development :: Libraries :: Python Modules",
         "Topic :: Scientific/Engineering :: Artificial Intelligence",
         "Topic :: Scientific/Engineering :: Mathematics",
+        "Topic :: Internet :: WWW/HTTP :: Indexing/Search",
         ],
 )
