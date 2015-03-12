@@ -13,7 +13,7 @@ __authors__ = (
     )
 
 import os
-__package_path__ = os.path.abspath(os.path.dirname(__file__))
+__package_path__ = os.path.abspath('.')
 
 
 def try_read(filename, path=__package_path__):
