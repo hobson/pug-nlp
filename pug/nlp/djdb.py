@@ -2292,8 +2292,7 @@ def import_queryset_batches(qs, dest_qs,  batch_len=500, clear=None, dry_run=Tru
     >> dest = DestModel.objects.filter(**filter_dict)
     >> src = SrcModel.objects.filter(**filter_dict)
     >> src.count(), dest.count()
-    >> from pug.nlp import djdb
-    >> djdb.import_queryset_batches(src, dest, batch_len=1000, clear=dest, dry_run=False, verbosity=2)
+    >> import_queryset_batches(src, dest, batch_len=1000, clear=dest, dry_run=False, verbosity=2)
     """
     qs = get_queryset(qs)
     dest_qs = get_queryset(dest_qs)

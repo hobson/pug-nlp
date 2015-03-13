@@ -493,7 +493,7 @@ def generate_slices(sliceable_set, batch_len=1, length=None, start_batch=0):
     """Iterate through a sequence (or generator) in batches of length `batch_len`
 
     See Also:
-      pug.nlp.djdb.generate_queryset_batches
+      pug.dj.db.generate_queryset_batches
 
     References:
       http://stackoverflow.com/a/761125/623735
