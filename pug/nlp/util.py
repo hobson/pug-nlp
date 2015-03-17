@@ -1037,7 +1037,7 @@ def get_similar(obj, labels, default=None, min_similarity=0.5):
                 return result
 
 
-def update_dict(d, u, depth=-1, take_new=True, default_mapping_type=dict, prefer_update_type=False, copy=False):
+def update_dict(d, u=None, depth=-1, take_new=True, default_mapping_type=dict, prefer_update_type=False, copy=False):
     """
     Recursively merge (union or update) dict-like objects (collections.Mapping) to the specified depth.
 
@@ -1056,10 +1056,13 @@ def update_dict(d, u, depth=-1, take_new=True, default_mapping_type=dict, prefer
     True
     >>> update_dict({'k1': {'k2': {'k3': 3}}, 'k4': 4}, {'k1': {'k2': 2}}, depth=1, take_new=False)
     {'k1': {'k2': 2}, 'k4': 4}
+    >>> update_dict({'k1': {'k2': {'k3': 3}}, 'k4': 4}, None)
+    {'k1': {'k2': {'k3': 3}}
     >>> # FIXME: this result is unexpected the same as for `take_new=False`
     >>> update_dict({'k1': {'k2': {'k3': 3}}, 'k4': 4}, {'k1': {'k2': 2}}, depth=1, take_new=True)
     {'k1': {'k2': 2}, 'k4': 4}
     """
+    u = u or {}
     orig_mapping_type = type(d)
     if prefer_update_type and isinstance(u, collections.Mapping):
         dictish = type(u)
@@ -3120,30 +3123,3 @@ def find_files(path, ext='', level=None, verbosity=0):
     return files_in_queue
 
 
-def flatten_csv(path='.', ext='csv', date_parser=parse_date, verbosity=0, output_ext=None):
-    """Load all CSV files in the given path, write .flat.csv files, return `DataFrame`s
-
-    Arguments:
-      path (str): file or folder to retrieve CSV files and `pandas.DataFrame`s from
-      ext (str): file name extension (to filter files by)
-      date_parser (function): if the MultiIndex can be interpretted as a datetime, this parser will be used
-
-    Returns:
-      dict of DataFrame: { file_path: flattened_data_frame }
-    """
-    date_parser = date_parser or (lambda x: x)
-    dotted_ext, dotted_output_ext = None, None
-    if ext != None and output_ext != None:
-        dotted_ext = ('' if ext.startswith('.') else '.') + ext
-        dotted_output_ext = ('' if output_ext.startswith('.') else '.') + output_ext
-    table = {}
-    for file_properties in find_files(path, ext=ext or '', verbosity=verbosity):
-        file_path = file_properties['path']
-        if output_ext and (dotted_output_ext + '.') in file_path:
-            continue
-        df = pd.DataFrame.from_csv(file_path, parse_dates=False)
-        df = flatten_dataframe(df)
-        if dotted_ext != None and dotted_output_ext != None:
-            df.to_csv(file_path[:-len(dotted_ext)] + dotted_output_ext + dotted_ext)
-        table[file_path] = df
-    return table
