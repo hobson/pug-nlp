@@ -6,6 +6,13 @@ This is a namespace package (sub-package) of the pug package a collection of uti
 
 ---
 
+Build status: 
+
+![alt text](https://travis-ci.org/hobson/pug-nlp.svg?branch=master "Travis Build & Test Status")
+
+
+---
+
 ## Introduction
 
 Natural Language Processing (NLP) algorithms by and for the PDX Python User Group (PUG).
