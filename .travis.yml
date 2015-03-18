@@ -4,8 +4,7 @@ python:
 # TODO: What about yum (rpm) or apt (deb) binaries and C code like BLAS and lapack?
 # command to install dependencies
 install:
-    - "pip install ."
-    - "pip install -r requirements.txt"
+    - "pip install -e ."
 # shell command run tests
 script: "python pug/nlp/tests.py"
 # build notifications

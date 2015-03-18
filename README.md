@@ -1,15 +1,8 @@
-# pug-nlp
+# pug-nlp ![alt text](https://travis-ci.org/hobson/pug-nlp.svg?branch=master "Travis Build & Test Status")
 
 ## Natural Language Processing (NLP) algorithms
 
 This is a namespace package (sub-package) of the pug package a collection of utilities by and for the PDX Python User Group.
-
----
-
-Build status: 
-
-![alt text](https://travis-ci.org/hobson/pug-nlp.svg?branch=master "Travis Build & Test Status")
-
 
 ---
 
