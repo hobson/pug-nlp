@@ -1,0 +1,8 @@
+language: python
+python:
+  - "2.7"
+# TODO: What about yum (rpm) or apt (deb) binaries and C code like BLAS and lapack?
+# command to install dependencies
+install: "pip install -r requirements.txt"
+# shell command run tests
+script: "python pug/nlp/tests.py"

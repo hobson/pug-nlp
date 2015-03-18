@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 """
 Uses the unittest module to test this app with `manage.py test`.
 """

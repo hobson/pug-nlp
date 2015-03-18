@@ -1057,7 +1057,7 @@ def update_dict(d, u=None, depth=-1, take_new=True, default_mapping_type=dict, p
     >>> update_dict({'k1': {'k2': {'k3': 3}}, 'k4': 4}, {'k1': {'k2': 2}}, depth=1, take_new=False)
     {'k1': {'k2': 2}, 'k4': 4}
     >>> update_dict({'k1': {'k2': {'k3': 3}}, 'k4': 4}, None)
-    {'k1': {'k2': {'k3': 3}}
+    {'k1': {'k2': {'k3': 3}}, 'k4': 4}
     >>> # FIXME: this result is unexpected the same as for `take_new=False`
     >>> update_dict({'k1': {'k2': {'k3': 3}}, 'k4': 4}, {'k1': {'k2': 2}}, depth=1, take_new=True)
     {'k1': {'k2': 2}, 'k4': 4}
