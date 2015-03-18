@@ -4,9 +4,8 @@ python:
 # TODO: What about yum (rpm) or apt (deb) binaries and C code like BLAS and lapack?
 # command to install dependencies
 install:
-    - "ls -al"
     - "pip install --upgrade -r requirements.txt"
-    - "pip freeze | grep pug"
+    - "pip list -vvv"
     - "pip install --upgrade -e ."
     - "pip list -vvv"
 # shell command run tests
