@@ -385,9 +385,9 @@ def quantify_field_dict(field_dict, precision=None, date_precision=None, cleaner
       cleaner: A string cleaner to apply to all string before
 
 
-    FIXME: this test probably needs to define a time zone for the datetime object
+    FIXME: define a time zone for the datetime object
     >>> sorted(quantify_field_dict({'_state': object(), 'x': 12345678911131517L, 'y': "\t  Wash Me! \n", 'z': datetime.datetime(1970, 10, 23, 23, 59, 59, 123456)}).iteritems())  # doctest: +NORMALIZE_WHITESPACE, +ELLIPSIS
-    [('x', 12345678911131517L), ('y', u'Wash Me!'), ('z', 25603199.123456)]
+    [('x', 12345678911131517L), ('y', u'Wash Me!'), ('z', 25...99.123456)]
     """
     if cleaner:
         d = clean_field_dict(field_dict, cleaner=cleaner)
