@@ -704,7 +704,7 @@ def clean_utf8(byte_seq, carefully=False, encodings_to_try=('utf_8', 'iso8859_1'
                 # json.dumps(byte_seq)
                 break
             except UnicodeDecodeError as e:
-                    if verbosity:
+                    if verbosity > 0:
                         print 'UnicodeDecodeError: %s' % str(e)
                     m = re.match(r".*can't[ ]decode[ ]byte[ ]0x[0-9a-fA-F]{2}[ ]in[ ]position[ ](\d+)[ :.].*", str(e))
                     if m and m.group(1):
@@ -713,10 +713,10 @@ def clean_utf8(byte_seq, carefully=False, encodings_to_try=('utf_8', 'iso8859_1'
                     else:
                         raise e
             except UnicodeEncodeError:
-                if verbosity:
+                if verbosity > 0:
                     'cleaned carefully and got UnicodeEncodeError, left with: %r' % unicode(byte_seq)
                 return unicode(byte_seq)
-        if verbosity:
+        if verbosity > 0:
             'cleaned carefully and came up with: %r' % unicode(byte_seq)
         return byte_seq
     else:
@@ -724,10 +724,10 @@ def clean_utf8(byte_seq, carefully=False, encodings_to_try=('utf_8', 'iso8859_1'
         try:
             diagnosis = chardet.detect(byte_seq)
         except:
-            if verbosity:
+            if verbosity > 0:
                 from traceback import print_exc
                 print_exc()
-        if verbosity:
+        if verbosity > 0:
             print diagnosis
         if diagnosis['confidence'] > 0.25:
             try:

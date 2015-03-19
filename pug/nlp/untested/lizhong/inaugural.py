@@ -52,7 +52,7 @@ def get_adjacency_matrix(filenames=DEFAULT_FILE_LIST, entropy_threshold=0.90, fo
     Total = []    # all texts put together 
     Speech_Length = []
     
-    if verbosity:
+    if verbosity > 0:
         print 'Reading %s files' % len(filenames)
     i = 0
     for fn in filenames:
@@ -70,7 +70,7 @@ def get_adjacency_matrix(filenames=DEFAULT_FILE_LIST, entropy_threshold=0.90, fo
         Speech_Length += [len(tokens)]
         Text.append(tokens)        
         Total=Total+tokens
-    if verbosity:
+    if verbosity > 0:
         print '%s files were indexed (%s were ignored)' % (i, len(filenames)-i)
             
     Empirical_Total=nltk.FreqDist(Total)    
@@ -106,7 +106,7 @@ def get_adjacency_matrix(filenames=DEFAULT_FILE_LIST, entropy_threshold=0.90, fo
 
     Key_words = [Vocabulary[i] for i in range(Size) if Word_Relevance[i]] 
 
-    if verbosity:
+    if verbosity > 0:
         print 'Computed a relevance score for %s words and reduced it to %s words above %s%% relevance.' % (Size, len(Key_words), entropy_threshold * 100.)
 
     Reduced_Vectors=[]    
@@ -128,11 +128,11 @@ def svd_scores(vectors, labels=None, verbosity=1):
 
     scores = []
 
-    if verbosity:
+    if verbosity > 0:
         print 'SCORES', ':', 'LABELS'    
     for i, vector in enumerate(vectors):
         scores += [np.inner(V[0], vector) / sum(vector)]
-        if verbosity:
+        if verbosity > 0:
             print scores[-1], ':', labels[-1]
     return scores
 

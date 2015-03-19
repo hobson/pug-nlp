@@ -439,7 +439,7 @@ def generate_batches(sequence, batch_len=1, allow_partial=True, ignore_errors=Tr
                     raise StopIteration
             except Exception:
                 # 'Error: new-line character seen in unquoted field - do you need to open the file in universal-newline mode?'       
-                if verbosity:
+                if verbosity > 0:
                     print_exc()
                 if not ignore_errors:
                     raise
@@ -2353,7 +2353,7 @@ def save_sheet(table, filename, ext='tsv', verbosity=0):
     s = str_from_table(table, sep=sep)
     if verbosity > 2:
         print s
-    if verbosity:
+    if verbosity > 0:
         print 'Saving ' + filename + '.' + ext
     with open(filename + '.' + ext, 'w') as fpout:
         fpout.write(s)
@@ -2968,7 +2968,7 @@ def flatten_dataframe(df, date_parser=parse_date, verbosity=0):
                 dt = i
                 parse_date_exception = True
         except:
-            if verbosity:
+            if verbosity > 0:
                 print_exc()
                 # print 'file with error: {0}\ndate-time tuple that caused the problem: {1}'.format(file_properties, d)
             dt = i
@@ -3101,9 +3101,9 @@ def find_files(path, ext='', level=None, verbosity=0):
     """
     path = path or './'
     files_in_queue = []
-    if verbosity:
+    if verbosity > 0:
         print 'Preprocessing files to estimate pb.ETA'
-    # if verbosity:
+    # if verbosity > 0:
     #     widgets = [pb.Counter(), '/%d bytes for all files: ' % file_bytes, pb.Percentage(), ' ', pb.RotatingMarker(), ' ', pb.Bar(),' ', pb.ETA()]
     #     i, pbar = 0, pb.ProgressBar(widgets=widgets, maxval=file_bytes)
     #     print pbar
