@@ -3,4 +3,4 @@ declare_namespace(__name__)
 
 import examples
 
-__all__ = ['examples']
+__all__ = globals().get('__all__', []) + ['examples']

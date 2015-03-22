@@ -1993,9 +1993,17 @@ def make_tz_aware(dt, tz='UTC', is_dst=None):
     [datetime.datetime(1970, 10, 31, 0, 0, tzinfo=<DstTzInfo 'US/Central' CST-1 day, 18:00:00 STD>),
      datetime.datetime(1970, 12, 25, 0, 0, tzinfo=<DstTzInfo 'US/Central' CST-1 day, 18:00:00 STD>),
      datetime.datetime(1971,  7,  4, 0, 0, tzinfo=<DstTzInfo 'US/Central' CDT-1 day, 19:00:00 DST>)]
-
+    >>> make_tz_aware([None, float('nan'), float('inf'), 1980, 1979.25*365.25, '1970-10-31', '1970-12-25', '1971-07-04'], 'CDT')  # doctest: +NORMALIZE_WHITESPACE
+    [None, nan, inf, 
+     datetime.datetime(6, 6, 3, 0, 0, tzinfo=<DstTzInfo 'US/Central' LMT-1 day, 18:09:00 STD>), 
+     datetime.datetime(1980, 4, 16, 1, 30, tzinfo=<DstTzInfo 'US/Central' CST-1 day, 18:00:00 STD>), 
+     datetime.datetime(1970, 10, 31, 0, 0, tzinfo=<DstTzInfo 'US/Central' CST-1 day, 18:00:00 STD>),
+     datetime.datetime(1970, 12, 25, 0, 0, tzinfo=<DstTzInfo 'US/Central' CST-1 day, 18:00:00 STD>), 
+     datetime.datetime(1971, 7, 4, 0, 0, tzinfo=<DstTzInfo 'US/Central' CDT-1 day, 19:00:00 DST>)]
     """
     dt = make_datetime(dt)
+    if not isinstance(dt, (list, datetime.datetime, datetime.date, datetime.time, pd.Timestamp)):
+        return dt
     # TODO: deal with sequence of timezones
     try:
         tz = dt.tzinfo or tz
@@ -2015,6 +2023,8 @@ def make_tz_aware(dt, tz='UTC', is_dst=None):
     try:
         return tz.localize(dt, is_dst=is_dst)
     except:
+        # from traceback import print_exc
+        # print_exc()
         pass
     return [make_tz_aware(dt0, tz=tz, is_dst=is_dst) for dt0 in dt]
 
@@ -2819,9 +2829,10 @@ def make_datetime(dt, date_parser=parse_date):
     >>> make_datetime(['1970-10-31', '1970-12-25'])  # doctest: +NORMALIZE_WHITESPACE
     [datetime.datetime(1970, 10, 31, 0, 0), datetime.datetime(1970, 12, 25, 0, 0)]
     """
-    if isinstance(dt, (datetime.datetime, pd.Timestamp, np.datetime64)):
+    if (isinstance(dt, (datetime.datetime, datetime.date, datetime.time, pd.Timestamp, np.datetime64))
+            or dt in (float('nan'), float('inf'), float('-inf'), None, '')):
         return dt
-    if isinstance(dt, float):
+    if isinstance(dt, (float, int)):
         return datetime_from_ordinal_float(dt)
     if isinstance(dt, datetime.date):
         return datetime.datetime(dt.year, dt.month, dt.day)
@@ -2834,12 +2845,17 @@ def make_datetime(dt, date_parser=parse_date):
     try:
         return datetime.datetime(*dt.timetuple()[:7])
     except:
-        dt = list(dt)
-        if 0 < len(dt) < 7:
-            try:
-                return datetime.datetime(*dt[:7])
-            except:
-                pass
+        try:
+            dt = list(dt)
+            if 0 < len(dt) < 7:
+                try:
+                    return datetime.datetime(*dt[:7])
+                except:
+                    pass
+        except:  # TypeError
+            # dt is not iterable
+            return dt
+
     return [make_datetime(val, date_parser=date_parser) for val in dt]
 
 
@@ -2950,6 +2966,8 @@ def datetime_from_ordinal_float(days):
     True
     """
     if isinstance(days, (float, int)):
+        if np.isnan(days) or days in set((float('nan'), float('inf'), float('-inf'))):
+            return days
         dt = datetime.datetime.fromordinal(int(days))
         seconds = (days - int(days)) * 3600. * 24.
         microseconds = (seconds - int(seconds)) * 1000000
