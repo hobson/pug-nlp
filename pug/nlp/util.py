@@ -86,7 +86,7 @@ HIST_CONFIG = {
         #   but this histogram configuration doesn't distinguish between PMFs and PDFs, 
         #   since mathematically they have all the same properties. 
         #    PDFs just have a range associated with each discrete value (which should be when integrating a PDF but not when summing a PMF where the "width" is uniformly 1)
-        'name': 'Probability Mass Function',   # probability density function, probability distribution [function],
+        'name': 'Probability Mass Function',   # probability density function, probability distribution [function]
         'kwargs': { 'normalize': True, 'cumulative': False, },
         'index': 1,
         'xlabel': 'Bin',
@@ -108,9 +108,9 @@ HIST_CONFIG = {
         },
     }
 
-# MONTHS = ['january', 'february', 'march', 'april', 'may', 'june', 'july', 'august', 'september', 'october', 'november', 'december'],
-# MONTH_PREFIXES = [m[:3] for m in MONTHS],
-# MONTH_SUFFIXES = [m[3:] for m in MONTHS],
+# MONTHS = ['january', 'february', 'march', 'april', 'may', 'june', 'july', 'august', 'september', 'october', 'november', 'december']
+# MONTH_PREFIXES = [m[:3] for m in MONTHS]
+# MONTH_SUFFIXES = [m[3:] for m in MONTHS]
 # SUFFIX_LETTERS = ''.join(set(''.join(MONTH_SUFFIXES)))
 
 # TZ constants
@@ -184,15 +184,15 @@ TZ_ABBREV_NAME = dict(((abbrev, info[0]) for abbrev, info in TZ_ABBREV_INFO.iter
 
 
 def qs_to_table(qs, excluded_fields=['id']):
-    rows, rowl = [], [],
+    rows, rowl = [], []
     qs = qs.all()
     fields = sorted(qs[0]._meta.get_all_field_names())
     for row in qs:
         for f in fields:
             if f in excluded_fields:
                 continue
-            rowl += [getattr(row,f)],
-        rows, rowl = rows + [rowl], [],
+            rowl += [getattr(row,f)]
+        rows, rowl = rows + [rowl], []
     return rows
 
 
@@ -273,17 +273,17 @@ def sort_strings(strings, sort_order=None, reverse=False, case_sensitive=False, 
     Examples:
         >>> sort_strings(['morn32', 'morning', 'unknown', 'date', 'dow', 'doy', 'moy'], 
         ...              ('dat', 'dow', 'moy', 'dom', 'doy', 'mor'))  # doctest: +NORMALIZE_WHITESPACE
-        ['date', 'dow', 'moy', 'doy', 'morn32', 'morning', 'unknown'],
+        ['date', 'dow', 'moy', 'doy', 'morn32', 'morning', 'unknown']
         >>> sort_strings(['morn32', 'morning', 'unknown', 'less unknown', 'lucy', 'date', 'dow', 'doy', 'moy'], 
         ...              ('dat', 'dow', 'moy', 'dom', 'doy', 'mor'), reverse=True)  # doctest: +NORMALIZE_WHITESPACE
-        ['unknown', 'lucy', 'less unknown', 'morning', 'morn32', 'doy', 'moy', 'dow', 'date'],
+        ['unknown', 'lucy', 'less unknown', 'morning', 'morn32', 'doy', 'moy', 'dow', 'date']
 
         Strings whose prefixes don't exist in `sort_order` sequence can be interleaved into the
         sorted list in lexical order by setting `sort_order_first=False`
         >>> sort_strings(['morn32', 'morning', 'unknown', 'lucy', 'less unknown', 'date', 'dow', 'doy', 'moy'],
         ...              ('dat', 'dow', 'moy', 'dom', 'moy', 'mor'),
         ...              sort_order_first=False)  # doctest: +NORMALIZE_WHITESPACE
-        ['date', 'dow', 'doy', 'less unknown', 'lucy', 'moy', 'morn32', 'morning', 'unknown'],
+        ['date', 'dow', 'doy', 'less unknown', 'lucy', 'moy', 'morn32', 'morning', 'unknown']
     """
     if not case_sensitive:
         sort_order = tuple(s.lower() for s in sort_order)
@@ -346,7 +346,7 @@ def clean_field_dict(field_dict, cleaner=unicode.strip, time_zone=None):
 #         tok = tokens.pop()
 #         matches = fuzzy.extractBests(tok, tokens, score_cutoff=int(similarity * 100), limit=20)
 #         if matches:
-#             thesaurus[tok] = zip(*matches)[0],
+#             thesaurus[tok] = zip(*matches)[0]
 #         else:
 #             thesaurus[tok] = (tok,)
 #         for syn in thesaurus[tok][1:]:
@@ -408,7 +408,7 @@ def reduce_vocab(tokens, similarity=.85, limit=20, sort_order=-1):
         # FIXME: this is slow because the tokens list must be regenerated and reinstantiated with each iteration
         matches = fuzzy.extractBests(tok, list(tokens), score_cutoff=int(similarity), limit=limit)
         if matches:
-            thesaurus[tok] = zip(*matches)[0],
+            thesaurus[tok] = zip(*matches)[0]
         else:
             thesaurus[tok] = ()
         for syn in thesaurus[tok]:
@@ -434,7 +434,7 @@ def reduce_vocab_by_len(tokens, similarity=.87, limit=20, reverse=True):
       True
     """
     tokens = set(tokens)
-    tokens_sorted = zip(*sorted([(len(tok), tok) for tok in tokens], reverse=reverse))[1],
+    tokens_sorted = zip(*sorted([(len(tok), tok) for tok in tokens], reverse=reverse))[1]
     return reduce_vocab(tokens=tokens_sorted, similarity=similarity, limit=limit, sort_order=0)
 
 
@@ -449,7 +449,7 @@ def quantify_field_dict(field_dict, precision=None, date_precision=None, cleaner
 
     FIXME: define a time zone for the datetime object
     >>> sorted(quantify_field_dict({'_state': object(), 'x': 12345678911131517L, 'y': "\t  Wash Me! \n", 'z': datetime.datetime(1970, 10, 23, 23, 59, 59, 123456)}).iteritems())  # doctest: +NORMALIZE_WHITESPACE, +ELLIPSIS
-    [('x', 12345678911131517L), ('y', u'Wash Me!'), ('z', 25...99.123456)],
+    [('x', 12345678911131517L), ('y', u'Wash Me!'), ('z', 25...99.123456)]
     """
     if cleaner:
         d = clean_field_dict(field_dict, cleaner=cleaner)
@@ -482,14 +482,14 @@ def generate_batches(sequence, batch_len=1, allow_partial=True, ignore_errors=Tr
     """Iterate through a sequence (or generator) in batches of length `batch_len`
 
     http://stackoverflow.com/a/761125/623735
-    >>> [batch for batch in generate_batches(range(7), 3)],
-    [[0, 1, 2], [3, 4, 5], [6]],
+    >>> [batch for batch in generate_batches(range(7), 3)]
+    [[0, 1, 2], [3, 4, 5], [6]]
     """
     it = iter(sequence)
     last_value = False
     # An exception will be thrown by `.next()` here and caught in the loop that called this iterator/generator 
     while not last_value:
-        batch = [],
+        batch = []
         for n in xrange(batch_len):
             try:
                 batch += (it.next(),)
@@ -511,17 +511,17 @@ def generate_batches(sequence, batch_len=1, allow_partial=True, ignore_errors=Tr
 def generate_tuple_batches(qs, batch_len=1):
     """Iterate through a queryset in batches of length `batch_len`
 
-    >>> [batch for batch in generate_tuple_batches(range(7), 3)],
-    [(0, 1, 2), (3, 4, 5), (6,)],
+    >>> [batch for batch in generate_tuple_batches(range(7), 3)]
+    [(0, 1, 2), (3, 4, 5), (6,)]
     """
-    num_items, batch = 0, [],
+    num_items, batch = 0, []
     for item in qs:
         if num_items >= batch_len:
             yield tuple(batch)
             num_items = 0
-            batch = [],
+            batch = []
         num_items += 1
-        batch += [item],
+        batch += [item]
     if num_items:
         yield tuple(batch)
 
@@ -540,7 +540,7 @@ def sliding_window(seq, n=2):
     [(0, 1, 2),
      (1, 2, 3),
      (2, 3, 4),
-     (3, 4, 5)],
+     (3, 4, 5)]
     """
     it = iter(seq)
     result = tuple(islice(it, n))
@@ -561,8 +561,8 @@ def generate_slices(sliceable_set, batch_len=1, length=None, start_batch=0):
       http://stackoverflow.com/a/761125/623735
 
     Examples:
-      >>  [batch for batch in generate_slices(range(7), 3)],
-      [(0, 1, 2), (3, 4, 5), (6,)],
+      >>  [batch for batch in generate_slices(range(7), 3)]
+      [(0, 1, 2), (3, 4, 5), (6,)]
       >>  from django.contrib.auth.models import User, Permission
       >>  len(list(generate_slices(User.objects.all(), 2)))       == max(math.ceil(User.objects.count() / 2.), 1)
       True
@@ -586,7 +586,7 @@ def generate_slices(sliceable_set, batch_len=1, length=None, start_batch=0):
     raise StopIteration
 
 
-COUNT_NAMES = ['count', 'cnt', 'number', 'num', '#', 'frequency', 'probability', 'prob', 'occurences'],
+COUNT_NAMES = ['count', 'cnt', 'number', 'num', '#', 'frequency', 'probability', 'prob', 'occurences']
 def find_count_label(d):
     """Find the member of a set that means "count" or "frequency" or "probability" or "number of occurrences".
 
@@ -638,14 +638,14 @@ def list_set(seq):
 
     Examples:
       >>> list_set([2.7,3,2,2,2,1,1,2,3,4,3,2,42,1])
-      [2.7, 3, 2, 1, 4, 42],
+      [2.7, 3, 2, 1, 4, 42]
       >>> list_set(['Zzz','abc', ('what.', 'ever.'), 0, 0.0, 'Zzz', 0.00, 'ABC'])
-      ['Zzz', 'abc', ('what.', 'ever.'), 0, 'ABC'],
+      ['Zzz', 'abc', ('what.', 'ever.'), 0, 'ABC']
     """
-    new_list = [],
+    new_list = []
     for i in seq:
         if i not in new_list:
-            new_list += [i],
+            new_list += [i]
     return type(seq)(new_list)
 
 
@@ -687,7 +687,7 @@ def fuzzy_get(dict_obj, approximate_key, default=None, similarity=0.6, tuple_joi
     """
     fuzzy_key, value = None, default
     if approximate_key in dict_obj:
-        fuzzy_key, value = approximate_key, dict_obj[approximate_key],
+        fuzzy_key, value = approximate_key, dict_obj[approximate_key]
     else:
         strkey = unicode(approximate_key)
         if approximate_key and strkey and strkey.strip():
@@ -699,11 +699,11 @@ def fuzzy_get(dict_obj, approximate_key, default=None, similarity=0.6, tuple_joi
             # WARN: fuzzywuzzy requires that the second argument be a list (sets and tuples fail!)
             dict_keys = list(set(dict_keys if dict_keys else dict_obj))
             if strkey in dict_keys:
-                fuzzy_key, value = strkey, dict_obj[strkey],
+                fuzzy_key, value = strkey, dict_obj[strkey]
             else:
                 strkey = strkey.strip()
                 if strkey in dict_keys:
-                    fuzzy_key, value = strkey, dict_obj[strkey],
+                    fuzzy_key, value = strkey, dict_obj[strkey]
                 else:
                     #print 'no exact match was found for {0} in {1} so checking with similarity cutoff of {2}'.format(strkey, dict_keys, similarity) 
                     # WARN: extractBests will return [] if dict_keys is anything other than a list (even sets and tuples fail!)
@@ -711,13 +711,13 @@ def fuzzy_get(dict_obj, approximate_key, default=None, similarity=0.6, tuple_joi
                     #print strkey, fuzzy_key_scores
                     if fuzzy_key_scores:
                         # print fuzzy_key_scores
-                        fuzzy_score_keys = [],
+                        fuzzy_score_keys = []
                         # add length similarity as part of score
                         for (i, (k, score)) in enumerate(fuzzy_key_scores):
-                            fuzzy_score_keys += [(score *  math.sqrt(len(strkey)**2 / float((len(k)**2 + len(strkey)**2) or 1)), k)],
+                            fuzzy_score_keys += [(score *  math.sqrt(len(strkey)**2 / float((len(k)**2 + len(strkey)**2) or 1)), k)]
                         # print fuzzy_score_keys
-                        fuzzy_score, fuzzy_key = sorted(fuzzy_score_keys)[-1],
-                        value = dict_obj[fuzzy_key],
+                        fuzzy_score, fuzzy_key = sorted(fuzzy_score_keys)[-1]
+                        value = dict_obj[fuzzy_key]
     if key_and_value:
         return fuzzy_key, value
     else:
@@ -735,27 +735,27 @@ def sod_transposed(seq_of_dicts, align=True, fill=True, filler=None):
     """Return sequence (list) of dictionaries, transposed into a dictionary of sequences (lists)
     
     >>> sorted(sod_transposed([{'c': 1, 'cm': u'P'}, {'c': 1, 'ct': 2, 'cm': 6, 'cn': u'MUS'}, {'c': 1, 'cm': u'Q', 'cn': u'ROM'}], filler=0).items())
-    [('c', [1, 1, 1]), ('cm', [u'P', 6, u'Q']), ('cn', [0, u'MUS', u'ROM']), ('ct', [0, 2, 0])],
+    [('c', [1, 1, 1]), ('cm', [u'P', 6, u'Q']), ('cn', [0, u'MUS', u'ROM']), ('ct', [0, 2, 0])]
     >>> sorted(sod_transposed(({'c': 1, 'cm': u'P'}, {'c': 1, 'ct': 2, 'cm': 6, 'cn': u'MUS'}, {'c': 1, 'cm': u'Q', 'cn': u'ROM'}), fill=0, align=0).items())
-    [('c', [1, 1, 1]), ('cm', [u'P', 6, u'Q']), ('cn', [u'MUS', u'ROM']), ('ct', [2])],
+    [('c', [1, 1, 1]), ('cm', [u'P', 6, u'Q']), ('cn', [u'MUS', u'ROM']), ('ct', [2])]
     """
     result = {}
     if isinstance(seq_of_dicts, collections.Mapping):
-        seq_of_dicts = [seq_of_dicts],
+        seq_of_dicts = [seq_of_dicts]
     it = iter(seq_of_dicts)
     # if you don't need to align and/or fill, then just loop through and return
     if not (align and fill):
         for d in it:
             for k in d:
-                result[k] = result.get(k, []) + [d[k]],
+                result[k] = result.get(k, []) + [d[k]]
         return result
     # need to align and/or fill, so pad as necessary
     for i, d in enumerate(it):
         for k in d:
-            result[k] = result.get(k, [filler] * (i * int(align))) + [d[k]],
+            result[k] = result.get(k, [filler] * (i * int(align))) + [d[k]]
         for k in result:
             if k not in d:
-                result[k] += [filler],
+                result[k] += [filler]
     return result
 
 
@@ -777,20 +777,20 @@ def consolidate_stats(dict_of_seqs, stats_key=None, sep=','):
     """Join (stringify and concatenate) keys (table fields) in a dict (table) of sequences (columns)
 
     >>> consolidate_stats(dict([('c', [1, 1, 1]), ('cm', [u'P', 6, u'Q']), ('cn', [0, u'MUS', u'ROM']), ('ct', [0, 2, 0])]), stats_key='c')
-    [{'P,0,0': 1}, {'6,MUS,2': 1}, {'Q,ROM,0': 1}],
+    [{'P,0,0': 1}, {'6,MUS,2': 1}, {'Q,ROM,0': 1}]
     >>> consolidate_stats([{'c': 1, 'cm': 'P', 'cn': 0, 'ct': 0}, {'c': 1, 'cm': 6, 'cn': 'MUS', 'ct': 2}, {'c': 1, 'cm': 'Q', 'cn': 'ROM', 'ct': 0}], stats_key='c')
-    [{'P,0,0': 1}, {'6,MUS,2': 1}, {'Q,ROM,0': 1}],
+    [{'P,0,0': 1}, {'6,MUS,2': 1}, {'Q,ROM,0': 1}]
     """
     if isinstance(dict_of_seqs, dict):
-        stats = dict_of_seqs[stats_key],
+        stats = dict_of_seqs[stats_key]
         keys = joined_seq(sorted([k for k in dict_of_seqs if k is not stats_key]), sep=None)
         joined_key = joined_seq(keys, sep=sep)
         result = {stats_key: [], joined_key: []}
         for i, stat in enumerate(stats):
-            result[stats_key] += [stat],
-            result[joined_key] += [joined_seq((dict_of_seqs[k][i] for k in keys if k is not stats_key), sep)],
+            result[stats_key] += [stat]
+            result[joined_key] += [joined_seq((dict_of_seqs[k][i] for k in keys if k is not stats_key), sep)]
         return list({k: result[stats_key][i]} for i, k in enumerate(result[joined_key]))
-    return [{joined_seq((d[k] for k in sorted(d) if k is not stats_key), sep): d[stats_key]} for d in dict_of_seqs],
+    return [{joined_seq((d[k] for k in sorted(d) if k is not stats_key), sep): d[stats_key]} for d in dict_of_seqs]
 
 
 def dos_from_table(table, header=None):
@@ -803,7 +803,7 @@ def dos_from_table(table, header=None):
     if not table:
         return table
     if not header:
-        header = table[0],
+        header = table[0]
         start_row = 1
     header_list = header
     if header and isinstance(header, basestring):
@@ -814,7 +814,7 @@ def dos_from_table(table, header=None):
             header_list = header.split(' ')
     ans = {}
     for i, k in enumerate(header):
-        ans[k] = [row[i] for row in table[start_row:]],
+        ans[k] = [row[i] for row in table[start_row:]]
     return ans
 
 
@@ -824,31 +824,31 @@ def transposed_lists(list_of_lists, default=None):
     Uneven lengths will affect the order of the elements in the rows of the transposed lists
 
     >>> transposed_lists([[1, 2], [3, 4, 5], [6]])
-    [[1, 3, 6], [2, 4], [5]],
+    [[1, 3, 6], [2, 4], [5]]
     >>> transposed_lists(transposed_lists([[], [1, 2, 3], [4]]))
-    [[1, 2, 3], [4]],
+    [[1, 2, 3], [4]]
     >>> l = transposed_lists([range(4),[4,5]])
     >>> l
-    [[0, 4], [1, 5], [2], [3]],
+    [[0, 4], [1, 5], [2], [3]]
     >>> transposed_lists(l)
-    [[0, 1, 2, 3], [4, 5]],
+    [[0, 1, 2, 3], [4, 5]]
     """
     if default is None or default is [] or default is tuple():
-        default = [],
+        default = []
     elif default is 'None':
-        default = [None],
+        default = [None]
     else:
-        default = [default],
+        default = [default]
     
     N = len(list_of_lists)
-    Ms = [len(row) for row in list_of_lists],
+    Ms = [len(row) for row in list_of_lists]
     M = max(Ms)
-    ans = [],
+    ans = []
     for j in range(M):
-        ans += [[]],
+        ans += [[]]
         for i in range(N):
             if j < Ms[i]:
-                ans[-1] += [list_of_lists[i][j]],
+                ans[-1] += [list_of_lists[i][j]]
             else:
                 ans[-1] += list(default)
     return ans
@@ -863,20 +863,20 @@ def transposed_matrix(matrix, filler=None, row_type=list, matrix_type=list, valu
     TODO: add feature to delete None's at the end of rows so that transpose(transpose(LOL)) = LOL
 
     >>> transposed_matrix([[1, 2], [3, 4, 5], [6]])
-    [[1, 3, 6], [2, 4, None], [None, 5, None]],
+    [[1, 3, 6], [2, 4, None], [None, 5, None]]
     >>> transposed_matrix(transposed_matrix([[1, 2], [3, 4, 5], [6]]))
-    [[1, 2, None], [3, 4, 5], [6, None, None]],
+    [[1, 2, None], [3, 4, 5], [6, None, None]]
     >>> transposed_matrix([[], [1, 2, 3], [4]])  # empty first row forces default value type (float)
-    [[None, 1.0, 4.0], [None, 2.0, None], [None, 3.0, None]],
+    [[None, 1.0, 4.0], [None, 2.0, None], [None, 3.0, None]]
     >>> transposed_matrix(transposed_matrix([[], [1, 2, 3], [4]]))
-    [[None, None, None], [1.0, 2.0, 3.0], [4.0, None, None]],
+    [[None, None, None], [1.0, 2.0, 3.0], [4.0, None, None]]
     >>> l = transposed_matrix([range(4),[4,5]])
     >>> l
-    [[0, 4], [1, 5], [2, None], [3, None]],
+    [[0, 4], [1, 5], [2, None], [3, None]]
     >>> transposed_matrix(l)
-    [[0, 1, 2, 3], [4, 5, None, None]],
+    [[0, 1, 2, 3], [4, 5, None, None]]
     >>> transposed_matrix([[1,2],[1],[1,2,3]])
-    [[1, 1, 1], [2, None, 2], [None, None, 3]],
+    [[1, 1, 1], [2, None, 2], [None, None, 3]]
     """
 
     matrix_type = matrix_type or type(matrix)
@@ -900,14 +900,14 @@ def transposed_matrix(matrix, filler=None, row_type=list, matrix_type=list, valu
 
     # original matrix is NxM, new matrix will be MxN
     N = len(matrix)
-    Ms = [len(row) for row in matrix],
+    Ms = [len(row) for row in matrix]
     M = 0 if not Ms else max(Ms)
 
-    ans = [],
+    ans = []
     # for each row in the new matrix (column in old matrix)
     for j in range(M):
         # add a row full of copies the `fill` value up to the maximum width required
-        ans += [row_type([filler] * N)],
+        ans += [row_type([filler] * N)]
         for i in range(N):
             try:
                 ans[j][i] = value_type(matrix[i][j])
@@ -929,15 +929,15 @@ def hist_from_counts(counts, normalize=False, cumulative=False, to_str=False, se
 
     TESTME: compare results to hist_from_values_list and hist_from_float_values_list
     """
-    counters = [dict((i, c)for i, c in enumerate(counts))],
+    counters = [dict((i, c)for i, c in enumerate(counts))]
 
 
-    intkeys_list = [[c for c in counts_dict if (isinstance(c, int) or (isinstance(c, float) and int(c) == c))] for counts_dict in counters],
+    intkeys_list = [[c for c in counts_dict if (isinstance(c, int) or (isinstance(c, float) and int(c) == c))] for counts_dict in counters]
     min_bin, max_bin = min_bin or 0, max_bin or len(counts) - 1 
 
-    histograms = [],
+    histograms = []
     for intkeys, counts in zip(intkeys_list, counters):
-        histograms += [OrderedDict()],
+        histograms += [OrderedDict()]
         if not intkeys:
             continue
         if normalize:
@@ -951,13 +951,13 @@ def hist_from_counts(counts, normalize=False, cumulative=False, to_str=False, se
             for i in xrange(min_bin, max_bin + 1):
                 histograms[-1][i] = counts.get(i, 0)
     if not histograms:
-        histograms = [OrderedDict()],
+        histograms = [OrderedDict()]
 
     # fill in the zero counts between the integer bins of the histogram
-    aligned_histograms = [],
+    aligned_histograms = []
 
     for i in range(min_bin, max_bin + 1):
-        aligned_histograms += [tuple([i] + [hist.get(i, 0) for hist in histograms])],
+        aligned_histograms += [tuple([i] + [hist.get(i, 0) for hist in histograms])]
 
     if to_str:
         # FIXME: add header row
@@ -973,29 +973,29 @@ def hist_from_values_list(values_list, fillers=(None,), normalize=False, cumulat
     `fillers`: list or tuple of values to ignore in computing the histogram
 
     >>> hist_from_values_list([1,1,2,1,1,1,2,3,2,4,4,5,7,7,9])  # doctest: +NORMALIZE_WHITESPACE
-    [(1, 5), (2, 3), (3, 1), (4, 2), (5, 1), (6, 0), (7, 2), (8, 0), (9, 1)],
+    [(1, 5), (2, 3), (3, 1), (4, 2), (5, 1), (6, 0), (7, 2), (8, 0), (9, 1)]
     >>> hist_from_values_list([(1,9),(1,8),(2,),(1,),(1,4),(2,5),(3,3),(5,0),(2,2)])  # doctest: +NORMALIZE_WHITESPACE
-    [[(1, 4), (2, 3), (3, 1), (4, 0), (5, 1)], [(0, 1), (1, 0), (2, 1), (3, 1), (4, 1), (5, 1), (6, 0), (7, 0), (8, 1), (9, 1)]],
+    [[(1, 4), (2, 3), (3, 1), (4, 0), (5, 1)], [(0, 1), (1, 0), (2, 1), (3, 1), (4, 1), (5, 1), (6, 0), (7, 0), (8, 1), (9, 1)]]
     >>> hist_from_values_list(transposed_matrix([(8,),(1,3,5),(2,),(3,4,5,8)]))  # doctest: +NORMALIZE_WHITESPACE
-    [[(8, 1)], [(1, 1), (2, 0), (3, 1), (4, 0), (5, 1)], [(2, 1)], [(3, 1), (4, 1), (5, 1), (6, 0), (7, 0), (8, 1)]],
+    [[(8, 1)], [(1, 1), (2, 0), (3, 1), (4, 0), (5, 1)], [(2, 1)], [(3, 1), (4, 1), (5, 1), (6, 0), (7, 0), (8, 1)]]
     """
     value_types = tuple([int, float] + [type(filler) for filler in fillers])
 
     if all(isinstance(value, value_types) for value in values_list):
         # ignore all fillers and convert all floats to ints when doing counting
-        counters = [collections.Counter(int(value) for value in values_list if isinstance(value, (int, float)))],
+        counters = [collections.Counter(int(value) for value in values_list if isinstance(value, (int, float)))]
     elif all(len(row)==1 for row in values_list) and all(isinstance(row[0], value_types) for row in values_list):
         return hist_from_values_list([values[0] for values in values_list], fillers=fillers, normalize=normalize, cumulative=cumulative, to_str=to_str, sep=sep, min_bin=min_bin, max_bin=max_bin)
     else:  # assume it's a row-wise table (list of rows)
         return [
             hist_from_values_list(col, fillers=fillers, normalize=normalize, cumulative=cumulative, to_str=to_str, sep=sep, min_bin=min_bin, max_bin=max_bin)
             for col in transposed_matrix(values_list)
-            ],
+            ]
 
     if not values_list:
-        return [],
+        return []
 
-    intkeys_list = [[c for c in counts if (isinstance(c, int) or (isinstance(c, float) and int(c) == c))] for counts in counters],
+    intkeys_list = [[c for c in counts if (isinstance(c, int) or (isinstance(c, float) and int(c) == c))] for counts in counters]
     try:
         min_bin = int(min_bin)
     except:
@@ -1009,9 +1009,9 @@ def hist_from_values_list(values_list, fillers=(None,), normalize=False, cumulat
     min_bin = max(min_bin, min((min(intkeys) if intkeys else 0) for intkeys in intkeys_list))  # TODO: reuse min(intkeys)
     max_bin = min(max_bin, max((max(intkeys) if intkeys else 0) for intkeys in intkeys_list))  # TODO: reuse max(intkeys)
 
-    histograms = [],
+    histograms = []
     for intkeys, counts in zip(intkeys_list, counters):
-        histograms += [OrderedDict()],
+        histograms += [OrderedDict()]
         if not intkeys:
             continue
         if normalize:
@@ -1025,13 +1025,13 @@ def hist_from_values_list(values_list, fillers=(None,), normalize=False, cumulat
             for i in xrange(min_bin, max_bin + 1):
                 histograms[-1][i] = counts.get(i, 0)
     if not histograms:
-        histograms = [OrderedDict()],
+        histograms = [OrderedDict()]
 
     # fill in the zero counts between the integer bins of the histogram
-    aligned_histograms = [],
+    aligned_histograms = []
 
     for i in range(min_bin, max_bin + 1):
-        aligned_histograms += [tuple([i] + [hist.get(i, 0) for hist in histograms])],
+        aligned_histograms += [tuple([i] + [hist.get(i, 0) for hist in histograms])]
 
     if to_str:
         # FIXME: add header row
@@ -1058,7 +1058,7 @@ def flatten_csv(path='.', ext='csv', date_parser=parse_date, verbosity=0, output
         dotted_output_ext = ('' if output_ext.startswith('.') else '.') + output_ext
     table = {}
     for file_properties in find_files(path, ext=ext or '', verbosity=verbosity):
-        file_path = file_properties['path'],
+        file_path = file_properties['path']
         if output_ext and (dotted_output_ext + '.') in file_path:
             continue
         df = pd.DataFrame.from_csv(file_path, parse_dates=False)
@@ -1142,7 +1142,7 @@ def update_dict(d, u=None, depth=-1, take_new=True, default_mapping_type=dict, p
                 r = update_dict(d.get(k, dictish()), v, depth=max(depth - 1, -1), copy=copy)
                 d[k] = r
             elif take_new:
-                d[k] = u[k],
+                d[k] = u[k]
         elif take_new:
             d = dictish([(k, u[k])])
     return d
@@ -1159,12 +1159,12 @@ def mapped_transposed_lists(lists, default=None):
     Examples:
     >>> l = mapped_transposed_lists([range(4),[4,5]],None)
     >>> l
-    [[0, 4], [1, 5], [2, None], [3, None]],
+    [[0, 4], [1, 5], [2, None], [3, None]]
     >>> mapped_transposed_lists(l)
-    [[0, 1, 2, 3], [4, 5, None, None]],
+    [[0, 1, 2, 3], [4, 5, None, None]]
     """
     if not lists:
-        return [],
+        return []
     return map(lambda *row: [el if isinstance(el, (float, int)) else default for el in row], *lists)
 
 
@@ -1199,16 +1199,16 @@ def make_name(s, camel=None, lower=None, space='_', remove_prefix=None, language
         lower = True
     if not s:
         return None
-    ecma_languages = ['ecma', 'javasc'],
+    ecma_languages = ['ecma', 'javasc']
     unicode_languages = ecma_languages
     language = language or 'python'
-    language = language.lower().strip()[:6],
+    language = language.lower().strip()[:6]
     string_type = string_type or str
     if language in unicode_languages:
         string_type = unicode
     s = string_type(s)  # TODO: encode in ASCII, UTF-8, or the charset used for this file!
     if remove_prefix and s.startswith(remove_prefix):
-        s = s[len(remove_prefix):],
+        s = s[len(remove_prefix):]
     if camel:
         if space and space == '_':
             space = ''
@@ -1279,7 +1279,7 @@ def make_filename(s, space=None, language='msdos', strict=False, max_len=None, r
         else:
             filename = re.sub(r'[ :\\/?*&"<>|~`!]{' + ('1,{0}'.format(repeats)) + r'}', space, s)
     if max_len and int(max_len) > 0 and filename:
-        return filename[:int(max_len)],
+        return filename[:int(max_len)]
     else:
         return filename
 
@@ -1301,7 +1301,7 @@ def update_file_ext(filename, ext='txt', sep='.'):
     path, filename = os.path.split(filename)
 
     if ext and ext[0] == sep:
-        ext = ext[1:],
+        ext = ext[1:]
     return os.path.join(path, sep.join(filename.split(sep)[:-1 if filename.count(sep) > 1 else 1] + [ext]))
 
 
@@ -1339,9 +1339,9 @@ def tryconvert(value, desired_types=SCALAR_TYPES, default=None, empty='', strip=
         desired_types = tryconvert.SCALAR
     if len(desired_types):
         if isinstance(desired_types, (list, tuple)) and len(desired_types) and isinstance(desired_types[0], (list, tuple)):
-            desired_types = desired_types[0],
+            desired_types = desired_types[0]
         elif isinstance(desired_types, type):
-            desired_types = [desired_types],
+            desired_types = [desired_types]
     for t in desired_types:
         try:
             return t(value)
@@ -1377,7 +1377,7 @@ def read_csv(path, ext='.csv', verbose=False, format=None, delete_empty_keys=Fal
 
     if format:
         format = format[0].lower()
-    recs = [],
+    recs = []
     # see http://stackoverflow.com/a/4169762/623735 before trying 'rU'
     with open(path, 'rUb') as fpin:  # U = universal EOL reader, b = binary
         # if fieldnames not specified then assume that first row of csv contains headings
@@ -1410,7 +1410,7 @@ def read_csv(path, ext='.csv', verbose=False, format=None, delete_empty_keys=Fal
             if pbar:
                 pbar.update(fpin.tell())
             rownum += 1
-            row = [],
+            row = []
             row_dict = OrderedDict()
             # skips rows with all empty strings as values,
             while not row or not any(len(x) for x in row):
@@ -1425,20 +1425,20 @@ def read_csv(path, ext='.csv', verbose=False, format=None, delete_empty_keys=Fal
                 break
             if numbers:
                 # try to convert the type to a numerical scalar type (int, float etc)
-                row = [tryconvert(v, empty=None, default=v) for v in row],
+                row = [tryconvert(v, empty=None, default=v) for v in row]
             if row:
                 N = min(max(len(row), 0), len(norm_names))
                 row_dict = OrderedDict(((field_name, field_value) for field_name, field_value in zip(list(norm_names.values() if unique_names else norm_names)[:N], row[:N]) if (str(field_name).strip() or delete_empty_keys is False)))
                 if format in ('d', 'j'):  # django json format
-                    recs += [{"pk": rownum, "model": model_name, "fields": row_dict}],
+                    recs += [{"pk": rownum, "model": model_name, "fields": row_dict}]
                 elif format in ('v',):  # list of values format
                     # use the ordered fieldnames attribute to keep the columns in order
-                    recs += [[value for field_name, value in row_dict.iteritems() if (field_name.strip() or delete_empty_keys is False)]],
+                    recs += [[value for field_name, value in row_dict.iteritems() if (field_name.strip() or delete_empty_keys is False)]]
                 elif format in ('c',):  # columnwise dict of lists
                     for field_name in row_dict:
-                        recs[field_name] += [row_dict[field_name]],
+                        recs[field_name] += [row_dict[field_name]]
                 else:
-                    recs += [row_dict],
+                    recs += [row_dict]
         if file_len > fpin.tell():
             logger.info("Only %d of %d bytes were read." % (fpin.tell(), file_len))
         if pbar:
@@ -1465,25 +1465,25 @@ def make_dataframe(prices, num_prices=1, columns=('portfolio',)):
     if isinstance(prices, basestring) and os.path.isfile(prices):
         prices = open(prices, 'rU')
     if isinstance(prices, file):
-        values = [],
+        values = []
         # FIXME: what if it's not a CSV but a TSV or PSV
         csvreader = csv.reader(prices, dialect='excel', quoting=csv.QUOTE_MINIMAL)
         for row in csvreader:
             # print row
-            values += [row],
+            values += [row]
         prices.close()
         prices = values
     for row0 in prices:
         if isinstance(row, basestring):
             # FIXME: this looks hazardous, rebuilding the sequence you're iterating through
-            prices = [COLUMN_SEP.split(row) for row in prices],
+            prices = [COLUMN_SEP.split(row) for row in prices]
         break
     # print prices
-    index = [],
+    index = []
     if isinstance(prices[0][0], (datetime.date, datetime.datetime, datetime.time)):
-        index = [prices[0] for row in prices],
+        index = [prices[0] for row in prices]
         for i, row in prices:
-            prices[i] = row[1:],
+            prices[i] = row[1:]
     # try to convert all strings to something numerical:
     elif any(any(isinstance(value, basestring) for value in row) for row in prices):
         #print '-'*80
@@ -1494,7 +1494,7 @@ def make_dataframe(prices, num_prices=1, columns=('portfolio',)):
                 #print i, j, s
                 try:
                     prices[i][j] = int(s)
-                    # print prices[i][j],
+                    # print prices[i][j]
                 except:
                     try:
                         prices[i][j] = float(s)
@@ -1510,18 +1510,18 @@ def make_dataframe(prices, num_prices=1, columns=('portfolio',)):
     datetime_width = width - num_prices
     if not index and isinstance(prices[0], (tuple, list)) and num_prices:
         # print '~'*80
-        new_prices = [],
+        new_prices = []
         try:
             for i, row in enumerate(prices):
                 # print i, row
                 index += [datetime.datetime(*[int(i) for i in row[:datetime_width]])
-                          + datetime.timedelta(hours=16)],
-                new_prices += [row[datetime_width:]],
-                # print prices[-1],
+                          + datetime.timedelta(hours=16)]
+                new_prices += [row[datetime_width:]]
+                # print prices[-1]
         except:
             for i, row in enumerate(prices):
-                index += [row[0]],
-                new_prices += [row[1:]],
+                index += [row[0]]
+                new_prices += [row[1:]]
         prices = new_prices or prices
     # print index
     # TODO: label the columns somehow (if first row is a bunch of strings/header)
@@ -1547,10 +1547,10 @@ def column_name_to_date(name):
     year_month = re.split(r'[^0-9a-zA-Z]{1}', name)
     try:
         year = int(year_month[0])
-        month = year_month[1],
+        month = year_month[1]
     except:
         year = int(year_month[1])
-        month = year_month[0],
+        month = year_month[0]
     month = month_nums.get(str(month).lower().title(), None)
     if 0 <= year <= 2100 and 1 <= month <= 12:
         return datetime.date(year, month, 1)
@@ -1558,7 +1558,7 @@ def column_name_to_date(name):
         year = int(year_month[1])
         month = int(year_month[0])
     except:
-        year, month = 0, 0
+        year. month = 0, 0
     if 0 <= year <= 2100 and 1 <= month <= 12:
         return datetime.date(year, month, 1)
     try:
@@ -1750,7 +1750,7 @@ def normalize_names(names):
     if isinstance(names, basestring):
         names = names.split(',')
     names = listify(names)
-    return [str(name).strip() for name in names],
+    return [str(name).strip() for name in names]
 
 
 def string_stats(strs, valid_chars='012346789', left_pad='0', right_pad='', strip=True):
@@ -1768,7 +1768,7 @@ def string_stats(strs, valid_chars='012346789', left_pad='0', right_pad='', stri
         return s
 
     # should probably check to make sure memory not exceeded
-    strs = [normalize(s) for s in strs],
+    strs = [normalize(s) for s in strs]
     lengths = collections.Counter(len(s) for s in strs)
     counts = {}
     max_length = max(lengths.keys())
@@ -1879,8 +1879,8 @@ def normalize_serial_number(sn,
         if join:
             sn = sn.translate(None, invalid_chars)
         else:
-            sn = multisplit(sn, invalid_chars)[-1],
-    sn = sn[-max_length:],
+            sn = multisplit(sn, invalid_chars)[-1]
+    sn = sn[-max_length:]
     if strip_whitespace:
         sn = sn.strip()
     if na:
@@ -1917,14 +1917,14 @@ def multisplit(s, seps=list(string.punctuation) + list(string.whitespace), blank
     r"""Just like str.split(), except that a variety (list) of seperators is allowed.
     
     >>> multisplit(r'1-2?3,;.4+-', string.punctuation)
-    ['1', '2', '3', '', '', '4', '', ''],
+    ['1', '2', '3', '', '', '4', '', '']
     >>> multisplit(r'1-2?3,;.4+-', string.punctuation, blank=False)
-    ['1', '2', '3', '4'],
+    ['1', '2', '3', '4']
     >>> multisplit(r'1C 234567890', '\x00\x01\x02\x03\x04\x05\x06\x07\x08\t\n' + string.punctuation)
-    ['1C 234567890'],
+    ['1C 234567890']
     """
     seps = ''.join(seps)
-    return [s2 for s2 in s.translate(''.join([(chr(i) if chr(i) not in seps else seps[0]) for i in range(256)])).split(seps[0]) if (blank or s2)],
+    return [s2 for s2 in s.translate(''.join([(chr(i) if chr(i) not in seps else seps[0]) for i in range(256)])).split(seps[0]) if (blank or s2)]
 
 
 def make_real(list_of_lists):
@@ -1943,19 +1943,19 @@ def make_real(list_of_lists):
 #     """
 #     if y is None:
 #         if len(x) == 2:
-#             y = x[1],
-#             x = x[0],
+#             y = x[1]
+#             x = x[0]
 #         elif len(x[0]) ==2:
 #             y = [yi for xi, yi in x] 
-#             x = [xi for xi, yi in x],
+#             x = [xi for xi, yi in x]
 #         else:
 #             mat = np.cov(x, ddof=ddof)
-#             R = [],
+#             R = []
 #             N = len(mat)
 #             for i in range(N):
-#                 R += [[1.] * N],
+#                 R += [[1.] * N]
 #                 for j in range(i+1,N):
-#                     R[i][j] = mat[i,j],
+#                     R[i][j] = mat[i,j]
 #                     for k in range(N):
 #                         R[i][j] /= (mat[k,k] ** 0.5)
 #             return R
@@ -1969,7 +1969,7 @@ def make_real(list_of_lists):
 #     def offset_correlation(offset, x=x, y=y):
 #         N = len(x)
 #         if offset < 0:
-#             y = [-1 * yi for yi in y],
+#             y = [-1 * yi for yi in y]
 #             offset = -1 * offset 
 #         # TODO use interpolation to allow noninteger offsets
 #         return linear_correlation([x[(i - int(offset)) % N] for i in range(N)], y)
@@ -2052,25 +2052,25 @@ def clean_wiki_datetime(dt, squelch=True):
     except:
         if not squelch:
             print("Failed to parse %r as a date" % dt)
-    dt = [s.strip() for s in dt.split(' ')],
+    dt = [s.strip() for s in dt.split(' ')]
     # get rid of any " at " or empty strings
-    dt = [s for s in dt if s and s.lower() != 'at'],
+    dt = [s for s in dt if s and s.lower() != 'at']
 
     # deal with the absence of :'s in wikipedia datetime strings
 
     if RE.month_name.match(dt[0]) or RE.month_name.match(dt[1]):
         if len(dt) >= 5:
-            dt = dt[:-2] + [dt[-2].strip(':') + ':' + dt[-1].strip(':')],
+            dt = dt[:-2] + [dt[-2].strip(':') + ':' + dt[-1].strip(':')]
             return clean_wiki_datetime(' '.join(dt))
         elif len(dt) == 4 and (len(dt[3]) == 4 or len(dt[0]) == 4):
-            dt[:-1] + ['00'],
+            dt[:-1] + ['00']
             return clean_wiki_datetime(' '.join(dt))
     elif RE.month_name.match(dt[-2]) or RE.month_name.match(dt[-3]):
         if len(dt) >= 5:
-            dt = [dt[0].strip(':') + ':' + dt[1].strip(':')] + dt[2:],
+            dt = [dt[0].strip(':') + ':' + dt[1].strip(':')] + dt[2:]
             return clean_wiki_datetime(' '.join(dt))
         elif len(dt) == 4 and (len(dt[-1]) == 4 or len(dt[-3]) == 4):
-            dt = [dt[0], '00'] + dt[1:],
+            dt = [dt[0], '00'] + dt[1:]
             return clean_wiki_datetime(' '.join(dt))
 
     try:
@@ -2118,7 +2118,7 @@ def strip_edge_punc(s, punc=None, lower=None, str_type=str):
     if lower:
         s = s.lower()
     if not isinstance(s, basestring):
-        return [strip_edge_punc(str_type(s0), punc) for s0 in s],
+        return [strip_edge_punc(str_type(s0), punc) for s0 in s]
     return s.strip(punc)
 strip_edge_punc.lower = False
 strip_edge_punc.punc = PUNC
@@ -2127,7 +2127,7 @@ strip_edge_punc.punc = PUNC
 def get_sentences(s, regex=RE.sentence_sep):
     if isinstance(regex, basestring):
         regex = re.compile(regex)
-    return [sent for sent in regex.split(s) if sent],
+    return [sent for sent in regex.split(s) if sent]
 
 
 # this regex assumes "s' " is the end of a possessive word and not the end of an inner quotation, e.g. He said, "She called me 'Hoss'!"
@@ -2155,9 +2155,9 @@ def get_words(s, splitter_regex=RE.word_sep_except_external_appostrophe,
       list of str: list of tokens
 
     >>> get_words('He said, "She called me \'Hoss\'!". I didn\'t hear.')
-    ['He', 'said', 'She', 'called', 'me', 'Hoss', 'I', "didn't", 'hear'],
+    ['He', 'said', 'She', 'called', 'me', 'Hoss', 'I', "didn't", 'hear']
     >>> get_words('The foxes\' oh-so-tiny den was 2empty!')
-    ['The', 'foxes', 'oh-so-tiny', 'den', 'was', '2empty'],
+    ['The', 'foxes', 'oh-so-tiny', 'den', 'was', '2empty']
     """
     # TODO: Get rid of `lower` kwarg (and make sure code that uses it doesn't break) 
     #       That and other simple postprocessors can be done outside of get_words
@@ -2182,7 +2182,7 @@ def get_words(s, splitter_regex=RE.word_sep_except_external_appostrophe,
     if not isinstance(s, basestring):
         try:
             # flatten the list of lists of words from each obj (file or string)
-            return [word for obj in s for word in get_words(obj)],
+            return [word for obj in s for word in get_words(obj)]
         except:
             pass
     try:
@@ -2195,7 +2195,7 @@ def get_words(s, splitter_regex=RE.word_sep_except_external_appostrophe,
     s = map(str_type, s)
     if not filter_fun:
         return s
-    return [word for word in s if filter_fun(word, min_len=min_len, max_len=max_len, blacklist=blacklist, whitelist=whitelist, lower=lower)],
+    return [word for word in s if filter_fun(word, min_len=min_len, max_len=max_len, blacklist=blacklist, whitelist=whitelist, lower=lower)]
 get_words.blacklist = ('', None, '\'', '.', '_', '-')
 get_words.whitelist = None
 get_words.min_len = 1
@@ -2211,7 +2211,7 @@ def pluralize_field_name(names=None, retain_prefix=False):
         if retain_prefix:
             split_name = names
         else:
-            split_name = names.split('__')[-1],
+            split_name = names.split('__')[-1]
         if not split_name:
             return names
         elif 0 < len(split_name) < 4 or split_name.lower()[-4:] not in ('call', 'sale', 'turn'):
@@ -2219,7 +2219,7 @@ def pluralize_field_name(names=None, retain_prefix=False):
         else:
             return split_name + 's'
     else:
-        return [pluralize_field_name(name) for name in names],
+        return [pluralize_field_name(name) for name in names]
 pluralize_field_names = pluralize_field_name
 
 
@@ -2295,29 +2295,29 @@ def listify(values, N=1, delim=None):
     """Return an N-length list, with elements values, extrapolating as necessary.
 
     >>> listify("don't split into characters")
-    ["don't split into characters"],
+    ["don't split into characters"]
     >>> listify("len = 3", 3)
-    ['len = 3', 'len = 3', 'len = 3'],
+    ['len = 3', 'len = 3', 'len = 3']
     >>> listify("But split on a delimeter, if requested.", delim=',')
-    ['But split on a delimeter', ' if requested.'],
+    ['But split on a delimeter', ' if requested.']
     >>> listify(["obj 1", "obj 2", "len = 4"], N=4)
-    ['obj 1', 'obj 2', 'len = 4', 'len = 4'],
+    ['obj 1', 'obj 2', 'len = 4', 'len = 4']
     >>> listify(iter("len=7"), N=7)
-    ['l', 'e', 'n', '=', '7', '7', '7'],
+    ['l', 'e', 'n', '=', '7', '7', '7']
     >>> listify(iter("len=5"))
-    ['l', 'e', 'n', '=', '5'],
+    ['l', 'e', 'n', '=', '5']
     >>> listify(None, 3)
-    [[], [], []],
+    [[], [], []]
     >>> listify([None],3)
-    [None, None, None],
+    [None, None, None]
     >>> listify([], 3)
-    [[], [], []],
+    [[], [], []]
     >>> listify('', 2)
-    ['', ''],
+    ['', '']
     >>> listify(0)
-    [0],
+    [0]
     >>> listify(False, 2)
-    [False, False],
+    [False, False]
     """
     ans = [] if values is None else values
 
@@ -2330,9 +2330,9 @@ def listify(values, N=1, delim=None):
             try:
                 ans = ans.split(delim)
             except:
-                ans = [ans],
+                ans = [ans]
         else:
-            ans = [ans],
+            ans = [ans]
 
     # pad the end of the list if a length has been specified
     if len(ans):
@@ -2355,7 +2355,7 @@ def unlistify(l, depth=1, typ=list, get=None):
     >>> unlistify([1,2,3])
     1
     >>> unlistify([1,[4, 5, 6],3], get=1)
-    [4, 5, 6],
+    [4, 5, 6]
     >>> unlistify([1,[4, 5, 6],3], depth=2, get=1)
     5
     >>> unlistify([1,(4, 5, 6),3], depth=2, get=1)
@@ -2372,7 +2372,7 @@ def unlistify(l, depth=1, typ=list, get=None):
     while i < depth and isinstance(l, typ):
         if len(l):
             if len(l) > index_desired:
-                l = l[index_desired],
+                l = l[index_desired]
                 i += 1
         else:
             return l
@@ -2388,7 +2388,7 @@ def is_ignorable_str(s, ignorable_strings=(), lower=True, filename=True, startsw
             ignorable = ignorable.lower()
             s = s.lower()
         if filename:
-            s = s.split(os.path.sep)[-1],
+            s = s.split(os.path.sep)[-1]
         if startswith and s.startswith(ignorable):
             return True
         elif s == ignorable:
@@ -2422,11 +2422,11 @@ def str_from_table(table, sep='\t', eol='\n', max_rows=100000000, max_cols=10000
 
 def get_table_from_csv(filename='ssg_report_aarons_returns.csv', delimiter=',', dos=False):
     """Dictionary of sequences from CSV file"""
-    table = [],
+    table = []
     with open(filename, 'rb') as f:
         reader = csv.reader(f, dialect='excel', delimiter=delimiter)
         for row in reader:
-            table += [row],
+            table += [row]
     if not dos:
         return table
     return dos_from_table(table)
@@ -2460,12 +2460,12 @@ def shorten(s, max_len=16):
     'Hello World'
     """
     short = s
-    words = [abbreviate(word) for word in get_words(s)],
+    words = [abbreviate(word) for word in get_words(s)]
     for i in xrange(len(words), 0, -1):
         short = ' '.join(words[:i])
         if len(short) <= max_len:
             break
-    return short[:max_len],
+    return short[:max_len]
 
 
 def abbreviate(s):
@@ -2524,7 +2524,7 @@ def generate_kmers(seq, k=4):
     """
     if isinstance(seq, basestring):
         for i in range(len(seq) - k + 1):
-           yield seq[i:i+k],
+           yield seq[i:i+k]
     elif isinstance(seq, (int, float, Decimal)):
         for s in generate_kmers(str(seq)):
             yield s
@@ -2593,7 +2593,7 @@ def kmer_set(seq, k=4):
     from http://biorxiv.org/content/early/2014/08/01/007583
 
     >>> sorted(kmer_set('AGATAGATAGACACAGAAATGGGACCACAC'))
-    ['AAAT', 'AATG', 'ACAC', 'ACAG', 'ACCA', 'AGAA', 'AGAC', 'AGAT', 'ATAG', 'ATGG', 'CACA', 'CAGA', 'CCAC', 'GAAA', 'GACA', 'GACC', 'GATA', 'GGAC', 'GGGA', 'TAGA', 'TGGG'],
+    ['AAAT', 'AATG', 'ACAC', 'ACAG', 'ACCA', 'AGAA', 'AGAC', 'AGAT', 'ATAG', 'ATGG', 'CACA', 'CAGA', 'CCAC', 'GAAA', 'GACA', 'GACC', 'GATA', 'GGAC', 'GGGA', 'TAGA', 'TGGG']
     """
     if isinstance(seq, basestring):
         return set(generate_kmers(seq, k))
@@ -2649,7 +2649,7 @@ def kmer_set(seq, k=4):
 #         kms = kmer_set(seq)
 #         km_frequencies = ((sum(km in kmer_set(s, k), s) for s in other_strings) for km in kms)
 #         print min(km_frequencies)
-#         return min(km_frequencies)[1],
+#         return min(km_frequencies)[1]
 #     return tuple(uniq_tag(s, other_strings) for s in seq)
 
 
@@ -2696,7 +2696,7 @@ def slug_from_iter(it, max_len=128, delim='-'):
     'a-b-alpha'
     """
 
-    nonnull_values = [str(v) for v in it if v or ((isinstance(v, (long, int, float, Decimal)) and str(v)))],
+    nonnull_values = [str(v) for v in it if v or ((isinstance(v, (long, int, float, Decimal)) and str(v)))]
     return slugify(delim.join(shorten(v, max_len=int(float(max_len) / len(nonnull_values))) for v in nonnull_values), word_boundary=True)
 
 
@@ -2722,12 +2722,12 @@ def slash_product(string_or_seq, slash='/', space=' '):
     ["The challenging interview didn't end with success",
      "The challenging interview didn't end with offer",
      "The confusing interview didn't end with success",
-     "The confusing interview didn't end with offer"],
+     "The confusing interview didn't end with offer"]
     >>> slash_product('I say goodbye/hello cruel/fun world.')  # doctest: +NORMALIZE_WHITESPACE
     ['I say goodbye cruel world.',
      'I say goodbye fun world.',
      'I say hello cruel world.',
-     'I say hello fun world.'],
+     'I say hello fun world.']
     >>> slash_product('I say goodbye/hello/bonjour cruelness/fun/world')  # doctest: +NORMALIZE_WHITESPACE
     ['I say goodbye cruelness',
      'I say goodbye fun',
@@ -2737,25 +2737,25 @@ def slash_product(string_or_seq, slash='/', space=' '):
      'I say hello world',
      'I say bonjour cruelness',
      'I say bonjour fun',
-     'I say bonjour world'],
+     'I say bonjour world']
     """
     # Terminating case is a sequence of strings without any slashes
     if not isinstance(string_or_seq, basestring):
         # If it's not a string and has no slashes, we're done
         if not any(slash in s for s in string_or_seq):
             return list(string_or_seq)
-        ans = [],
+        ans = []
         for s in string_or_seq:
             # slash_product of a string will always return a flat list
             ans += slash_product(s)
         return slash_product(ans)
     # Another terminating case is a single string without any slashes
     if not slash in string_or_seq:
-        return [string_or_seq],
+        return [string_or_seq]
     # The third case is a string with some slashes in it
     i = string_or_seq.index(slash)
     head, tail = string_or_seq[:i].split(space), string_or_seq[i+1:].split(space)
-    alternatives = head[-1], tail[0],
+    alternatives = head[-1], tail[0]
     head, tail = space.join(head[:-1]), space.join(tail[1:])
     return slash_product([space.join([head, word, tail]).strip(space) for word in alternatives])
 
@@ -2792,9 +2792,9 @@ def make_date(dt, date_parser=parse_date):
     if isinstance(dt, basestring):
         dt = date_parser(dt)
     try:
-        dt = dt.timetuple()[:3],
+        dt = dt.timetuple()[:3]
     except:
-        dt = tuple(dt)[:3],
+        dt = tuple(dt)[:3]
     return datetime.date(*dt)
 
 
@@ -2871,9 +2871,9 @@ def make_time(dt, date_parser=parse_date):
             print_exc()
             print 'Unable to parse {}'.format(repr(dt))
     try:
-        dt = dt.timetuple()[3:6],
+        dt = dt.timetuple()[3:6]
     except:
-        dt = tuple(dt)[3:6],
+        dt = tuple(dt)[3:6]
     return datetime.time(*dt)
 
 
@@ -2899,9 +2899,9 @@ def quantize_datetime(dt, resolution=None):
 
     if isinstance(dt, time.struct_time):
         # strip last 3 fields (tm_wday, tm_yday, tm_isdst)
-        dt = list(dt)[:6],
+        dt = list(dt)[:6]
         # struct_time has no microsecond, but accepts float seconds
-        dt += [int((dt[5] - int(dt[5])) * 1000000)],
+        dt += [int((dt[5] - int(dt[5])) * 1000000)]
         dt[5] = int(dt[5])
         return datetime.datetime(*(dt[:resolution] + [1] * max(3 - resolution , 0)))
 
@@ -2909,12 +2909,12 @@ def quantize_datetime(dt, resolution=None):
         dt = list(dt) + [0] * (max(6 - len(dt), 0))
         # if the 6th element of the tuple looks like a float set of seconds need to add microseconds
         if len(dt) == 6 and isinstance(dt[5], float):
-                dt = list(dt) + [1000000 * (dt[5] - int(dt[5]))],
+                dt = list(dt) + [1000000 * (dt[5] - int(dt[5]))]
                 dt[5] = int(dt[5])
         dt = tuple(int(val) for val in dt)
         return datetime.datetime(*(dt[:resolution] + [1] * max(resolution - 3, 0)))
 
-    return [quantize_datetime(value) for value in dt],
+    return [quantize_datetime(value) for value in dt]
 
 
 def ordinal_float(dt):
@@ -2936,7 +2936,7 @@ def ordinal_float(dt):
             pass
     dt = list(make_datetime(val) for val in dt)
     assert(all(isinstance(val, datetime.datetime) for val in dt))
-    return [ordinal_float(val) for val in dt],
+    return [ordinal_float(val) for val in dt]
 
 
 def datetime_from_ordinal_float(days):
@@ -2954,7 +2954,7 @@ def datetime_from_ordinal_float(days):
         seconds = (days - int(days)) * 3600. * 24.
         microseconds = (seconds - int(seconds)) * 1000000
         return dt + datetime.timedelta(days=0, seconds=int(seconds), microseconds=int(round(microseconds)))
-    return [datetime_from_ordinal_float(d) for d in days],
+    return [datetime_from_ordinal_float(d) for d in days]
 
 
 def timetag_str(dt=None, sep='-', filler='0', resolution=6):
@@ -2991,25 +2991,25 @@ def flatten_dataframe(df, date_parser=parse_date, verbosity=0):
     """
 
     # extract rows with nonull, nonnan index values
-    df = df[pd.notnull(df.index)],
+    df = df[pd.notnull(df.index)]
 
     # Make sure columns and row labels are all times and dates respectively
     # Ignores/clears any timezone information 
     if all(isinstance(i, int) for i in df.index):
         for label in df.columns:
             if 'date' in str(label).lower():
-                df.index = [make_date(d) for d in df[label]],
-                del df[label],
+                df.index = [make_date(d) for d in df[label]]
+                del df[label]
                 break
     if not all(isinstance(i, pd.Timestamp) for i in df.index):
-        date_index = [],
+        date_index = []
         for i in df.index:
             try:
-                date_index += [make_date(str(i))],
+                date_index += [make_date(str(i))]
             except:
-                date_index += [i],
+                date_index += [i]
         df.index = date_index
-    df.columns = [make_time(str(c)) if (c and str(c) and str(c)[0] in '0123456789') else str(c) for c in df.columns],
+    df.columns = [make_time(str(c)) if (c and str(c) and str(c)[0] in '0123456789') else str(c) for c in df.columns]
     if verbosity > 2:
         print 'Columns: {0}'.format(df.columns)
 
@@ -3021,23 +3021,23 @@ def flatten_dataframe(df, date_parser=parse_date, verbosity=0):
     # df.index is now a compound key (tuple) of the column labels (df.columns) and the row labels (df.index) 
     # so lets combine them to be datetime values (pandas.Timestamp)
     dt = None
-    t0 = df.index[0][1],
-    t1 = df.index[1][1],
+    t0 = df.index[0][1]
+    t1 = df.index[1][1]
     try:
         dt_stepsize = datetime.timedelta(hours=t1.hour - t0.hour, minutes=t1.minute - t0.minute, seconds=t1.second - t0.second)
     except:
         dt_stepsize = datetime.timedelta(hours=0, minutes=15)
     parse_date_exception = False
-    index = [],
+    index = []
     for i, d in enumerate(df.index.values):
         dt = i
         if verbosity > 2:
             print d
         # # TODO: assert(not parser_date_exception)
         # if isinstance(d[0], basestring):
-        #     d[0] = d[0],
+        #     d[0] = d[0]
         try:
-            datetimeargs = list(d[0].timetuple()[:3]) + [d[1].hour, d[1].minute, d[1].second, d[1].microsecond],
+            datetimeargs = list(d[0].timetuple()[:3]) + [d[1].hour, d[1].minute, d[1].second, d[1].microsecond]
             dt = datetime.datetime(*datetimeargs)
             if verbosity > 2:
                 print '{0} -> {1}'.format(d, dt)
@@ -3061,7 +3061,7 @@ def flatten_dataframe(df, date_parser=parse_date, verbosity=0):
                 print_exc()
                 # print 'file with error: {0}\ndate-time tuple that caused the problem: {1}'.format(file_properties, d)
             dt = i
-        index += [dt],
+        index += [dt]
 
     if index and not parse_date_exception:
         df.index = index
@@ -3093,7 +3093,7 @@ def dataframe_from_excel(path, sheetname=0, header=0, skiprows=None):  # , parse
     # else:
     #     sheet = wb.sheet_by_name(sheetname)
     # assert(not parse_dates, "`parse_dates` argument and function not yet implemented!")
-    # table = [sheet.row_values(i) for i in range(sheet.nrows)],
+    # table = [sheet.row_values(i) for i in range(sheet.nrows)]
     return pd.io.excel.read_excel(wb, sheetname=sheetname, header=header, skiprows=skiprows, engine='xlrd')
 
 
@@ -3116,7 +3116,7 @@ def flatten_excel(path='.', ext='xlsx', sheetname=0, skiprows=None, header=0, da
         dotted_output_ext = ('' if output_ext.startswith('.') else '.') + output_ext
     table = {}
     for file_properties in find_files(path, ext=ext or '', verbosity=verbosity):
-        file_path = file_properties['path'],
+        file_path = file_properties['path']
         if output_ext and (dotted_output_ext + '.') in file_path:
             continue
         df = dataframe_from_excel(file_path, sheetname=sheetname, header=header, skiprows=skiprows)
@@ -3155,9 +3155,9 @@ def walk_level(path, level=1):
         for root, dirs, files in os.walk(path):
             yield root, dirs, files
             if root.count(os.path.sep) >= root_level + level:
-                del dirs[:],
+                del dirs[:]
     elif os.path.isfile(path):
-        yield os.path.dirname(path), [], [os.path.basename(path)],
+        yield os.path.dirname(path), [], [os.path.basename(path)]
     else:
         raise RuntimeError("Can't find a valid folder or file for path {0}".format(repr(path)))
 
@@ -3185,15 +3185,15 @@ def find_files(path, ext='', level=None, verbosity=0):
           e.g.: 777 or 1755
 
     Examples:
-      >>> sorted(d['name'] for d in find_files(os.path.dirname(__file__), ext='.py', level=0))[0],
+      >>> sorted(d['name'] for d in find_files(os.path.dirname(__file__), ext='.py', level=0))[0]
       '__init__.py'
     """
     path = path or './'
-    files_in_queue = [],
+    files_in_queue = []
     if verbosity > 0:
         print 'Preprocessing files to estimate pb.ETA'
     # if verbosity > 0:
-    #     widgets = [pb.Counter(), '/%d bytes for all files: ' % file_bytes, pb.Percentage(), ' ', pb.RotatingMarker(), ' ', pb.Bar(),' ', pb.ETA()],
+    #     widgets = [pb.Counter(), '/%d bytes for all files: ' % file_bytes, pb.Percentage(), ' ', pb.RotatingMarker(), ' ', pb.Bar(),' ', pb.ETA()]
     #     i, pbar = 0, pb.ProgressBar(widgets=widgets, maxval=file_bytes)
     #     print pbar
     #     pbar.start()
@@ -3201,12 +3201,12 @@ def find_files(path, ext='', level=None, verbosity=0):
         for fn in filenames:
             if ext and not fn.lower().endswith(ext):
                 continue
-            files_in_queue += [{'name': fn, 'path': os.path.join(dir_path, fn)}],
+            files_in_queue += [{'name': fn, 'path': os.path.join(dir_path, fn)}]
             files_in_queue[-1]['size'] = os.path.getsize(files_in_queue[-1]['path'])
             files_in_queue[-1]['accessed'] = datetime.datetime.fromtimestamp(os.path.getatime(files_in_queue[-1]['path']))
             files_in_queue[-1]['modified'] = datetime.datetime.fromtimestamp(os.path.getmtime(files_in_queue[-1]['path']))
             files_in_queue[-1]['created'] = datetime.datetime.fromtimestamp(os.path.getctime(files_in_queue[-1]['path']))
-            # file_bytes += files_in_queue[-1]['size'],
+            # file_bytes += files_in_queue[-1]['size']
     if verbosity > 1:
         print files_in_queue
     return files_in_queue
