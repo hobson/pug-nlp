@@ -312,7 +312,7 @@ def clean_field_dict(field_dict, cleaner=unicode.strip, time_zone=None):
     r"""Normalize field values by stripping whitespace from strings, localizing datetimes to a timezone, etc
 
     >>> sorted(clean_field_dict({'_state': object(), 'x': 1, 'y': u"\t  Wash Me! \n" }).items())
-    [('x', 1), ('y', u'Wash Me!')],
+    [('x', 1), ('y', u'Wash Me!')]
     """
     d = {}
     if time_zone is None:
@@ -1558,7 +1558,7 @@ def column_name_to_date(name):
         year = int(year_month[1])
         month = int(year_month[0])
     except:
-        year. month = 0, 0
+        year, month = 0, 0
     if 0 <= year <= 2100 and 1 <= month <= 12:
         return datetime.date(year, month, 1)
     try:
