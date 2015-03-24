@@ -28,6 +28,3 @@ python-Levenshtein==0.12.0
 progressbar2==2.7.3
 
 python-slugify==0.1.0
-
-# pug-ann==0.0.9b
-#-e git+git@github.com:hobson/pug-ann.git@master#egg=pug-ann-master

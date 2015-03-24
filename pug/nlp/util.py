@@ -1364,13 +1364,17 @@ def transcode(infile, outfile=None, incoding="shift-jis", outcoding="utf-8"):
             fpout.write(fpin.read())
 
 
-def read_csv(csv_file, ext='.csv', verbose=False, format=None, delete_empty_keys=False,
-             fieldnames=[], rowlimit=100000000, numbers=False, normalize_names=True, unique_names=True):
+def read_csv(csv_file, ext='.csv', format=None, delete_empty_keys=False,
+             fieldnames=[], rowlimit=100000000, numbers=False, normalize_names=True, unique_names=True,
+             verbosity=0):
     """
     Read a csv file from a path or file pointer, returning a dict of lists, or list of lists (according to `format`)
 
     filename: a directory or list of file paths
     numbers: whether to attempt to convert strings in csv to numbers
+
+    TODO:
+        combine this with `nlp.util.make_dataframe` function
 
     >>> read_csv('"name","rank","serial number","date"\n"McCain","1","123456789",9/11/2001\nBob,big cheese,1-23,1/1/2001 12:00 GMT')
 
@@ -1403,7 +1407,7 @@ def read_csv(csv_file, ext='.csv', verbose=False, format=None, delete_empty_keys
     if not fieldnames:
         while not fieldnames or not any(fieldnames):
             fieldnames = csvr.next()
-        if verbose:
+        if verbosity > 0:
             logger.info('Column Labels: ' + repr(fieldnames))
     if unique_names:
         norm_names = OrderedDict([(fldnm, fldnm) for fldnm in fieldnames])
@@ -1415,13 +1419,19 @@ def read_csv(csv_file, ext='.csv', verbose=False, format=None, delete_empty_keys
         model_name = make_name(path, **make_name.DJANGO_MODEL)
     if format in ('c',):  # columnwise dict of lists
         recs = OrderedDict((norm_name, []) for norm_name in norm_names.values())
-    if verbose:
+    if verbosity > 0:
         logger.info('Field Names: ' + repr(norm_names if normalize_names else fieldnames))
     rownum = 0
     eof = False
     pbar = None
-    file_len = os.fstat(fpin.fileno()).st_size
-    if verbose:
+    start_seek_pos = fpin.tell()
+    if verbosity > 1:
+        print('Starting at byte {} in file buffer.'.format(start_seek_pos))
+    file_len = fpin.seek(0, os.SEEK_END).tell() - start_seek_pos  # os.fstat(fpin.fileno()).st_size
+    fpin.seek(0, start_seek_pos)
+    if verbosity > 1:
+        print('There appear to be {} bytes remaining in the file buffer. Resetting (seek) to starting position in file.'.format(file_len))
+    if verbosity > 0:
         pbar = progressbar.ProgressBar(maxval=file_len)
         pbar.start()
     while csvr and rownum < rowlimit and not eof:
@@ -1434,7 +1444,7 @@ def read_csv(csv_file, ext='.csv', verbose=False, format=None, delete_empty_keys
         while not row or not any(len(x) for x in row):
             try:
                 row = csvr.next()
-                if verbose > 1:
+                if verbosity > 1:
                     logger.info('  row content: ' + repr(row))
             except StopIteration:
                 eof = True
