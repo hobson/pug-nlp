@@ -27,7 +27,7 @@ class Basic:
     def weighted_feature_probability(self, feature, category, weight=1., assumed_probability=.5):
         """
         Use an assumed probability (for 0 occurence features) and weight it to produce a pseudo-probability
-        >>> import examples as e
+        >>> import pug.data.tobes as e
         >>> cl = Basic()
         >>> cl.train(e.training_set)
         >>> cl.weighted_feature_probability('quick', 'good')
