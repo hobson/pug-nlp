@@ -37,7 +37,7 @@ from traceback import print_exc
 from decimal import Decimal
 import math
 from types import NoneType
-
+from StringIO import StringIO
 
 import pandas as pd
 np = pd.np
@@ -1364,85 +1364,104 @@ def transcode(infile, outfile=None, incoding="shift-jis", outcoding="utf-8"):
             fpout.write(fpin.read())
 
 
-def read_csv(path, ext='.csv', verbose=False, format=None, delete_empty_keys=False,
+def read_csv(csv_file, ext='.csv', verbose=False, format=None, delete_empty_keys=False,
              fieldnames=[], rowlimit=100000000, numbers=False, normalize_names=True, unique_names=True):
     """
-    Read a csv file from the specified path, return a dict of lists or list of lists (according to `format`)
+    Read a csv file from a path or file pointer, returning a dict of lists, or list of lists (according to `format`)
 
     filename: a directory or list of file paths
     numbers: whether to attempt to convert strings in csv to numbers
+
+    >>> read_csv('"name","rank","serial number","date"\n"McCain","1","123456789",9/11/2001\nBob,big cheese,1-23,1/1/2001 12:00 GMT')
+
     """
-    if not path:
+    if not csv_file:
         return
+    if isinstance(csv_file, basestring):
+        # truncate `csv_file` in case it is a string buffer containing GBs of data
+        path = csv_file[:1025]
+        try:
+            # see http://stackoverflow.com/a/4169762/623735 before trying 'rU'
+            fpin = open(path, 'rUb')  # U = universal EOL reader, b = binary
+        except:
+            # truncate path more, in case path is used later as a file description:
+            path = csv_file[:128]
+            fpin = StringIO(csv_file)
+    else:
+        fpin = csv_file
+        try:
+            path = csv_file.name
+        except:
+            path = 'unknown file buffer path'
 
     if format:
         format = format[0].lower()
     recs = []
-    # see http://stackoverflow.com/a/4169762/623735 before trying 'rU'
-    with open(path, 'rUb') as fpin:  # U = universal EOL reader, b = binary
-        # if fieldnames not specified then assume that first row of csv contains headings
-        csvr = csv.reader(fpin, dialect=csv.excel)
-        if not fieldnames:
-            while not fieldnames or not any(fieldnames):
-                fieldnames = csvr.next()
-            if verbose:
-                logger.info('Column Labels: ' + repr(fieldnames))
-        if unique_names:
-            norm_names = OrderedDict([(fldnm, fldnm) for fldnm in fieldnames])
-        else:
-            norm_names = OrderedDict([(num, fldnm) for num, fldnm in enumerate(fieldnames)])
-        if normalize_names:
-            norm_names = OrderedDict([(num, make_name(fldnm, **make_name.DJANGO_FIELD)) for num, fldnm in enumerate(fieldnames)])
-            # required for django-formatted json files
-            model_name = make_name(path, **make_name.DJANGO_MODEL)
-        if format in ('c',):  # columnwise dict of lists
-            recs = OrderedDict((norm_name, []) for norm_name in norm_names.values())
+
+    # if fieldnames not specified then assume that first row of csv contains headings
+    csvr = csv.reader(fpin, dialect=csv.excel)
+    if not fieldnames:
+        while not fieldnames or not any(fieldnames):
+            fieldnames = csvr.next()
         if verbose:
-            logger.info('Field Names: ' + repr(norm_names if normalize_names else fieldnames))
-        rownum = 0
-        eof = False
-        pbar = None
-        file_len = os.fstat(fpin.fileno()).st_size
-        if verbose:
-            pbar = progressbar.ProgressBar(maxval=file_len)
-            pbar.start()
-        while csvr and rownum < rowlimit and not eof:
-            if pbar:
-                pbar.update(fpin.tell())
-            rownum += 1
-            row = []
-            row_dict = OrderedDict()
-            # skips rows with all empty strings as values,
-            while not row or not any(len(x) for x in row):
-                try:
-                    row = csvr.next()
-                    if verbose > 1:
-                        logger.info('  row content: ' + repr(row))
-                except StopIteration:
-                    eof = True
-                    break
-            if eof:
-                break
-            if numbers:
-                # try to convert the type to a numerical scalar type (int, float etc)
-                row = [tryconvert(v, empty=None, default=v) for v in row]
-            if row:
-                N = min(max(len(row), 0), len(norm_names))
-                row_dict = OrderedDict(((field_name, field_value) for field_name, field_value in zip(list(norm_names.values() if unique_names else norm_names)[:N], row[:N]) if (str(field_name).strip() or delete_empty_keys is False)))
-                if format in ('d', 'j'):  # django json format
-                    recs += [{"pk": rownum, "model": model_name, "fields": row_dict}]
-                elif format in ('v',):  # list of values format
-                    # use the ordered fieldnames attribute to keep the columns in order
-                    recs += [[value for field_name, value in row_dict.iteritems() if (field_name.strip() or delete_empty_keys is False)]]
-                elif format in ('c',):  # columnwise dict of lists
-                    for field_name in row_dict:
-                        recs[field_name] += [row_dict[field_name]]
-                else:
-                    recs += [row_dict]
-        if file_len > fpin.tell():
-            logger.info("Only %d of %d bytes were read." % (fpin.tell(), file_len))
+            logger.info('Column Labels: ' + repr(fieldnames))
+    if unique_names:
+        norm_names = OrderedDict([(fldnm, fldnm) for fldnm in fieldnames])
+    else:
+        norm_names = OrderedDict([(num, fldnm) for num, fldnm in enumerate(fieldnames)])
+    if normalize_names:
+        norm_names = OrderedDict([(num, make_name(fldnm, **make_name.DJANGO_FIELD)) for num, fldnm in enumerate(fieldnames)])
+        # required for django-formatted json files
+        model_name = make_name(path, **make_name.DJANGO_MODEL)
+    if format in ('c',):  # columnwise dict of lists
+        recs = OrderedDict((norm_name, []) for norm_name in norm_names.values())
+    if verbose:
+        logger.info('Field Names: ' + repr(norm_names if normalize_names else fieldnames))
+    rownum = 0
+    eof = False
+    pbar = None
+    file_len = os.fstat(fpin.fileno()).st_size
+    if verbose:
+        pbar = progressbar.ProgressBar(maxval=file_len)
+        pbar.start()
+    while csvr and rownum < rowlimit and not eof:
         if pbar:
-            pbar.finish()
+            pbar.update(fpin.tell())
+        rownum += 1
+        row = []
+        row_dict = OrderedDict()
+        # skips rows with all empty strings as values,
+        while not row or not any(len(x) for x in row):
+            try:
+                row = csvr.next()
+                if verbose > 1:
+                    logger.info('  row content: ' + repr(row))
+            except StopIteration:
+                eof = True
+                break
+        if eof:
+            break
+        if numbers:
+            # try to convert the type to a numerical scalar type (int, float etc)
+            row = [tryconvert(v, empty=None, default=v) for v in row]
+        if row:
+            N = min(max(len(row), 0), len(norm_names))
+            row_dict = OrderedDict(((field_name, field_value) for field_name, field_value in zip(list(norm_names.values() if unique_names else norm_names)[:N], row[:N]) if (str(field_name).strip() or delete_empty_keys is False)))
+            if format in ('d', 'j'):  # django json format
+                recs += [{"pk": rownum, "model": model_name, "fields": row_dict}]
+            elif format in ('v',):  # list of values format
+                # use the ordered fieldnames attribute to keep the columns in order
+                recs += [[value for field_name, value in row_dict.iteritems() if (field_name.strip() or delete_empty_keys is False)]]
+            elif format in ('c',):  # columnwise dict of lists
+                for field_name in row_dict:
+                    recs[field_name] += [row_dict[field_name]]
+            else:
+                recs += [row_dict]
+    if file_len > fpin.tell():
+        logger.info("Only %d of %d bytes were read and processed." % (fpin.tell(), file_len))
+    if pbar:
+        pbar.finish()
+    fpin.close()
     if not unique_names:
         return recs, norm_names
     return recs
@@ -1473,11 +1492,8 @@ def make_dataframe(prices, num_prices=1, columns=('portfolio',)):
             values += [row]
         prices.close()
         prices = values
-    for row0 in prices:
-        if isinstance(row, basestring):
-            # FIXME: this looks hazardous, rebuilding the sequence you're iterating through
-            prices = [COLUMN_SEP.split(row) for row in prices]
-        break
+    if any(isinstance(row, basestring) for row in prices):
+        prices = [COLUMN_SEP.split(row) for row in prices]
     # print prices
     index = []
     if isinstance(prices[0][0], (datetime.date, datetime.datetime, datetime.time)):
