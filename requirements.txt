@@ -1,7 +1,7 @@
 pip==6.0.8
 
 #$ sudo yum install pandoc
-pypandoc==0.8.2
+pypandoc>=0.9.6
 wsgiref==0.1.2
 future==0.14.3
 six==1.9.0
