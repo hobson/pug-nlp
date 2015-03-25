@@ -38,6 +38,7 @@ from decimal import Decimal, InvalidOperation, InvalidContext
 import math
 from types import NoneType
 from StringIO import StringIO
+import copy
 
 import pandas as pd
 np = pd.np
@@ -658,18 +659,20 @@ def list_set(seq):
     return type(seq)(new_list)
 
 
-def fuzzy_get(dict_obj, approximate_key, default=None, similarity=0.6, tuple_joiner='|', key_and_value=False, dict_keys=None, ):
-    r"""Find the closest matching key in a dictionary and optionally retrieve the associated value
+def fuzzy_get(possible_keys, approximate_key, default=None, similarity=0.6, tuple_joiner='|', key_and_value=False, dict_keys=None, ):
+    r"""Find the closest matching key in a dictionary (or element in a list)
+
+    For a dict, optionally retrieve the associated value associated with the closest key
 
     Notes:
-      `dict_obj` must have all string keys!
+      `possible_keys` must have all string elements or keys!
       Argument order is in reverse order relative to `fuzzywuzzy.process.extractOne()` 
         but in the same order as get(self, key) method on dicts
 
     Arguments:
-      dict_obj (dict): object to run the get method on using the key that is most similar to one within the dict
+      possible_keys (dict): object to run the get method on using the key that is most similar to one within the dict
       approximate_key (str): key to look for a fuzzy match within the dict keys
-      default (obj): the value to return if a similar key cannote be found in the `dict_obj`
+      default (obj): the value to return if a similar key cannote be found in the `possible_keys`
       similarity (str): fractional similiarity between the approximate_key and the dict key (0.9 means 90% of characters must be identical)
       tuple_joiner (str): Character to use as delimitter/joiner between tuple elements.
         Used to create keys of any tuples to be able to use fuzzywuzzy string matching on it.
@@ -693,7 +696,16 @@ def fuzzy_get(dict_obj, approximate_key, default=None, similarity=0.6, tuple_joi
       (None, None)
       >>> fuzzy_get({'word': tuple('word'), 'noun': tuple('noun')}, 'woh!', similarity=.9, default='darn :-()', key_and_value=True)
       (None, 'darn :-()')
+      >>> possible_keys = 'alerts astronomy conditions currenthurricane forecast forecast10day geolookup history hourly hourly10day planner rawtide satellite tide webcams yesterday'.split(' ')
+      >>> fuzzy_get(possible_keys, "cond")
+      'conditions'
+      >>> fuzzy_get(possible_keys, "Tron")
+      'astronomy'
     """
+    dict_obj = copy.copy(possible_keys)
+    if not isinstance(dict_obj, collections.Mapping):
+        dict_obj = dict((x, x) for x in dict_obj)
+
     fuzzy_key, value = None, default
     if approximate_key in dict_obj:
         fuzzy_key, value = approximate_key, dict_obj[approximate_key]
