@@ -34,7 +34,7 @@ import csv
 import warnings
 from collections import OrderedDict
 from traceback import print_exc
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation, InvalidContext
 import math
 from types import NoneType
 from StringIO import StringIO
@@ -56,9 +56,18 @@ import logging
 logger = logging.getLogger('pug.nlp.util')
 
 
+def parse_time(timestr):
+    dt = parse_date(timestr)
+    if dt.date() == datetime.datetime.today().date() and re.match('^\s*\d+\:\d+.*', timestr):
+        return dt.time()
+    raise ValueError('Unknown string format.')
+
+
 ROUNDABLE_NUMERIC_TYPES = (float, long, int, Decimal, bool)
 FLOATABLE_NUMERIC_TYPES = (float, long, int, Decimal, bool)
 BASIC_NUMERIC_TYPES = (float, long, int) 
+NUMERIC_TYPES = (float, long, int, Decimal, complex, str)  # datetime.datetime, datetime.date
+NUMBERS_AND_DATETIMES = (float, long, int, Decimal, complex, parse_time, parse_date, str)
 SCALAR_TYPES = (float, long, int, Decimal, bool, complex, basestring, str, unicode)  # datetime.datetime, datetime.date
 # numpy types are derived from these so no need to include numpy.float64, numpy.int64 etc
 DICTABLE_TYPES = (collections.Mapping, tuple, list)  # convertable to a dictionary (inherits collections.Mapping or is a list of key/value pairs)
@@ -1345,7 +1354,7 @@ def tryconvert(value, desired_types=SCALAR_TYPES, default=None, empty='', strip=
     for t in desired_types:
         try:
             return t(value)
-        except (ValueError, TypeError):
+        except (ValueError, TypeError, InvalidOperation, InvalidContext):
             continue
         # if any other weird exception happens then need to get out of here
         return default
@@ -1355,6 +1364,7 @@ tryconvert.EMPTY = ('', None, float('nan'))
 tryconvert.SCALAR = SCALAR_TYPES
 
 import codecs
+
 
 def transcode(infile, outfile=None, incoding="shift-jis", outcoding="utf-8"):
     if not outfile:
@@ -1374,10 +1384,17 @@ def read_csv(csv_file, ext='.csv', format=None, delete_empty_keys=False,
     numbers: whether to attempt to convert strings in csv to numbers
 
     TODO:
-        combine this with `nlp.util.make_dataframe` function
+        merge with `nlp.util.make_dataframe` function
 
-    >>> read_csv('"name","rank","serial number","date"\n"McCain","1","123456789",9/11/2001\nBob,big cheese,1-23,1/1/2001 12:00 GMT')
-
+    Handles unquoted and quoted strings, quoted commas, quoted newlines (EOLs), complex numbers, times, dates, datetimes,
+    >>> read_csv('"name\r\n","rank","serial\nnumber","date"\n"McCain, John","1","123456789",9/11/2001\nBob,big cheese,1-23,1/1/2001 12:00 GMT'\
+    ...          format='values list', numbers=True)  # doctest: +NORMALIZE_WHITESPACE
+    [['name', 'rank', 'serial\nnumber', 'date'],
+     ['McCain, John', 1.0, 123456789.0, datetime.datetime(2001, 9, 11, 0, 0)],
+     ['Bob',
+      'big cheese',
+      datetime.datetime(2015, 1, 23, 0, 0),
+      datetime.datetime(2001, 1, 1, 12, 0, tzinfo=tzutc())]]
     """
     if not csv_file:
         return
@@ -1424,10 +1441,11 @@ def read_csv(csv_file, ext='.csv', format=None, delete_empty_keys=False,
     rownum = 0
     eof = False
     pbar = None
-    start_seek_pos = fpin.tell()
+    start_seek_pos = fpin.tell() or 0
     if verbosity > 1:
         print('Starting at byte {} in file buffer.'.format(start_seek_pos))
-    file_len = fpin.seek(0, os.SEEK_END).tell() - start_seek_pos  # os.fstat(fpin.fileno()).st_size
+    fpin.seek(0, os.SEEK_END)
+    file_len = fpin.tell() - start_seek_pos  # os.fstat(fpin.fileno()).st_size
     fpin.seek(0, start_seek_pos)
     if verbosity > 1:
         print('There appear to be {} bytes remaining in the file buffer. Resetting (seek) to starting position in file.'.format(file_len))
@@ -1436,7 +1454,7 @@ def read_csv(csv_file, ext='.csv', format=None, delete_empty_keys=False,
         pbar.start()
     while csvr and rownum < rowlimit and not eof:
         if pbar:
-            pbar.update(fpin.tell())
+            pbar.update(fpin.tell() - start_seek_pos)
         rownum += 1
         row = []
         row_dict = OrderedDict()
@@ -1453,7 +1471,7 @@ def read_csv(csv_file, ext='.csv', format=None, delete_empty_keys=False,
             break
         if numbers:
             # try to convert the type to a numerical scalar type (int, float etc)
-            row = [tryconvert(v, empty=None, default=v) for v in row]
+            row = [tryconvert(v, desired_types=NUMBERS_AND_DATETIMES, empty=None, default=v) for v in row]
         if row:
             N = min(max(len(row), 0), len(norm_names))
             row_dict = OrderedDict(((field_name, field_value) for field_name, field_value in zip(list(norm_names.values() if unique_names else norm_names)[:N], row[:N]) if (str(field_name).strip() or delete_empty_keys is False)))
