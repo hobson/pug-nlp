@@ -32,12 +32,12 @@ python-slugify==0.1.0
 # pug-ann requirements
 
 # pybrain requires scipy which requires these, but doesn't install them when you do `pip install pybrain` (which fails due to failed imports)
-numpy==1.9.2
+# numpy==1.9.2
 pyparsing==2.0.3
 # scipy==0.15.1
 
 # pug-nlp
-pybrain==0.3.3
+pybrain
 
 ######################
 # # dev requirements
