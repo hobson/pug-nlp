@@ -104,7 +104,7 @@ setup(
         "Programming Language :: Python :: 2.7",
         "Development Status :: 3 - Alpha",
         "Environment :: Other Environment",
-        # "Environment :: Console",
+        "Environment :: Console",
         "Intended Audience :: Developers",
         "License :: OSI Approved :: MIT License",
         "Operating System :: OS Independent",
