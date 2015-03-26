@@ -38,6 +38,7 @@ from decimal import Decimal, InvalidOperation, InvalidContext
 import math
 from types import NoneType
 from StringIO import StringIO
+import copy
 
 import pandas as pd
 np = pd.np
@@ -658,18 +659,20 @@ def list_set(seq):
     return type(seq)(new_list)
 
 
-def fuzzy_get(dict_obj, approximate_key, default=None, similarity=0.6, tuple_joiner='|', key_and_value=False, dict_keys=None, ):
-    r"""Find the closest matching key in a dictionary and optionally retrieve the associated value
+def fuzzy_get(possible_keys, approximate_key, default=None, similarity=0.6, tuple_joiner='|', key_and_value=False, dict_keys=None, ):
+    r"""Find the closest matching key in a dictionary (or element in a list)
+
+    For a dict, optionally retrieve the associated value associated with the closest key
 
     Notes:
-      `dict_obj` must have all string keys!
+      `possible_keys` must have all string elements or keys!
       Argument order is in reverse order relative to `fuzzywuzzy.process.extractOne()` 
         but in the same order as get(self, key) method on dicts
 
     Arguments:
-      dict_obj (dict): object to run the get method on using the key that is most similar to one within the dict
+      possible_keys (dict): object to run the get method on using the key that is most similar to one within the dict
       approximate_key (str): key to look for a fuzzy match within the dict keys
-      default (obj): the value to return if a similar key cannote be found in the `dict_obj`
+      default (obj): the value to return if a similar key cannote be found in the `possible_keys`
       similarity (str): fractional similiarity between the approximate_key and the dict key (0.9 means 90% of characters must be identical)
       tuple_joiner (str): Character to use as delimitter/joiner between tuple elements.
         Used to create keys of any tuples to be able to use fuzzywuzzy string matching on it.
@@ -693,6 +696,11 @@ def fuzzy_get(dict_obj, approximate_key, default=None, similarity=0.6, tuple_joi
       (None, None)
       >>> fuzzy_get({'word': tuple('word'), 'noun': tuple('noun')}, 'woh!', similarity=.9, default='darn :-()', key_and_value=True)
       (None, 'darn :-()')
+      >>> possible_keys = 'alerts astronomy conditions currenthurricane forecast forecast10day geolookup history hourly hourly10day planner rawtide satellite tide webcams yesterday'.split(' ')
+      >>> fuzzy_get(possible_keys, "cond")
+      'conditions'
+      >>> fuzzy_get(possible_keys, "Tron")
+      'astronomy'
     """
     fuzzy_key, value = None, default
     if approximate_key in dict_obj:
@@ -2044,7 +2052,13 @@ def make_tz_aware(dt, tz='UTC', is_dst=None):
      datetime.datetime(1970, 10, 31, 0, 0, tzinfo=<DstTzInfo 'US/Central' CST-1 day, 18:00:00 STD>),
      datetime.datetime(1970, 12, 25, 0, 0, tzinfo=<DstTzInfo 'US/Central' CST-1 day, 18:00:00 STD>), 
      datetime.datetime(1971, 7, 4, 0, 0, tzinfo=<DstTzInfo 'US/Central' CDT-1 day, 19:00:00 DST>)]
+    >>> make_tz_aware(datetime.time(22, 23, 59, 123456))
+    datetime.time(22, 23, 59, 123456, tzinfo=<UTC>)
+    >>> make_tz_aware(datetime.time(22, 23, 59, 123456), 'PDT', is_dst=True)
+    datetime.time(22, 23, 59, 123456, tzinfo=<DstTzInfo 'US/Pacific' LMT-1 day, 16:07:00 STD>)
+
     """
+    # make sure dt is a datetime, time, or list of datetime/times
     dt = make_datetime(dt)
     if not isinstance(dt, (list, datetime.datetime, datetime.date, datetime.time, pd.Timestamp)):
         return dt
@@ -2063,13 +2077,20 @@ def make_tz_aware(dt, tz='UTC', is_dst=None):
     try:
         tz = pytz.timezone(tz)
     except AttributeError:
-        pass
-    try:
-        return tz.localize(dt, is_dst=is_dst)
-    except:
         # from traceback import print_exc
         # print_exc()
         pass
+    try:
+        return tz.localize(dt, is_dst=is_dst)
+    except: 
+        # from traceback import print_exc
+        # print_exc()  # TypeError: unsupported operand type(s) for +: 'datetime.time' and 'datetime.timedelta'
+        pass
+    # could be datetime.time, which can't be localized. Insted `replace` the TZ
+    # don't try/except in case dt is not a datetime or time type -- should raise an exception
+    if not isinstance(dt, list):
+        return dt.replace(tzinfo=tz)
+
     return [make_tz_aware(dt0, tz=tz, is_dst=is_dst) for dt0 in dt]
 
 
