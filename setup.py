@@ -69,13 +69,11 @@ dependency_links = []
 
 print('install_requires: {}'.format(install_requires))
 
-
-
 EXCLUDE_FROM_PACKAGES = []
 
 setup(
     name=project_name,
-    packages=find_packages(exclude=EXCLUDE_FROM_PACKAGES),
+    packages=[package_name],
     namespace_packages=[__namespace_package__],
 
     # install non-.py files listed in MANIFEST.in (.js, .html, .txt, .md, etc)
