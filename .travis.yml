@@ -5,12 +5,10 @@ python:
 # command to install dependencies
 install:
     - "pip install --upgrade -r requirements/travis.txt"
-    - "pip list -vvv"
-    - "pip install --upgrade -e ."
-    - "pip list -vvv"
+    # - "pip install --upgrade -e ."
 # shell command run tests
 script: 
-    - "python pug/nlp/tests.py"
+    - "python pug/ann/tests.py"
 # build notifications
 notifications:
   email:

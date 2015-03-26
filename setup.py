@@ -61,7 +61,7 @@ try:
 except:
     from traceback import print_exc
     print_exc()
-    requirements = []
+
 print('requirements: {}'.format(requirements))
 
 install_requires=[str(req.req).split(' ')[0].strip() for req in requirements if req.req and not req.url]
