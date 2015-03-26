@@ -31,17 +31,28 @@ long_description = package_docstring
 __url__  = env.get('__url__', 'http://github.com/hobson/')
 __authors__  = env.get('__authors__', ('Hobson <hobson@totalgood.com>',))
 try:
-    import pypandoc
-    long_description = pypandoc.convert('README.md', 'rst', 'md')
+    long_description = open('README.rst', 'r').read()
 except:  # (IOError, ImportError, OSError, RuntimeError):
-    # from traceback import print_exc
-    # print_exc()
-    print('Unable to use pypandoc to reformat the README.md file into RST format')
+    try:
+        import pypandoc
+        long_description = pypandoc.convert('README.md', 'rst', 'md')
+        # from traceback import print_exc
+        # print_exc()
+    except:
+        print('WARNING: Unable to find README.rst or use pypandoc to reformat the README.md file into RST.')
 
 print('Installing package named {} from the {} project. . .'.format(package_name, project_name))
 
+# sudo yum install libjpeg-devel openjpeg-devel
+requirements = [
+    'wsgiref==0.1.2', 'six==1.9.0', 
+    # 'pypandoc==0.8.2', 'future==0.14.3',
+    'pyzmq==14.5.0', 'Unidecode==0.04.16', 'cffi==0.8.6', 'chardet==2.3.0', 'pyOpenSSL==0.14',
+    'pytz==2014.10', 'python-dateutil==2.4.0', 
+    'pandas==0.15.2', 'xlrd==0.9.3', 'matplotlib==1.4.3',  'Pillow==2.7', 
+    'fuzzywuzzy==0.5.0', 'python-Levenshtein==0.12.0', 'progressbar2==2.7.3', 'python-slugify==0.1.0']
 try:
-    import pip
+    # import pip
     # print(pip.__version__)
     import uuid
     # print(uuid.uuid1)
