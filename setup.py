@@ -53,19 +53,19 @@ install_requires = [
     'fuzzywuzzy==0.5.0', 'python-Levenshtein==0.12.0', 'progressbar2==2.7.3', 'python-slugify==0.1.0',
     ]
 dependency_links = []
-try:
-    # import pip
-    # print(pip.__version__)
-    import uuid
-    # print(uuid.uuid1)
-    from pip.req import parse_requirements
-    requirements = list(parse_requirements('requirements.txt', session=uuid.uuid1()))
-    install_requires=[str(req.req).split(' ')[0].strip() for req in requirements if req.req and not req.url]
-    dependency_links=[req.url for req in requirements if req.url]
-    print('Dependency links: {}'.format(dependency_links))
-except:
-    from traceback import print_exc
-    print_exc()
+# try:
+#     # import pip
+#     # print(pip.__version__)
+#     import uuid
+#     # print(uuid.uuid1)
+#     from pip.req import parse_requirements
+#     requirements = list(parse_requirements('requirements/travis.txt', session=uuid.uuid1()))
+#     install_requires=[str(req.req).split(' ')[0].strip() for req in requirements if req.req and not req.url]
+#     dependency_links=[req.url for req in requirements if req.url]
+#     print('Dependency links: {}'.format(dependency_links))
+# except:
+#     from traceback import print_exc
+#     print_exc()
 
 print('install_requires: {}'.format(install_requires))
 
