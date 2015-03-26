@@ -1,6 +1,6 @@
 pip==6.0.7  # this is the version used by travis
 
-#$ sudo yum install pandoc
+#$ sudo yum install -y pandoc
 # pypandoc>=0.8.2  # this one doesn't error if pandoc lib/dev isn't present, 0.9.* will error on travis
 wsgiref==0.1.2
 six==1.9.0
@@ -19,7 +19,7 @@ python-dateutil==2.4.0
 pandas==0.15.2
 xlrd==0.9.3
 
-#$ sudo yum install libjpeg-devel openjpeg-devel
+#$ sudo yum install -y libjpeg-devel openjpeg-devel libpng libpng-devel
 Pillow==2.7
 matplotlib==1.4.3
 fuzzywuzzy==0.5.0
@@ -27,3 +27,21 @@ python-Levenshtein==0.12.0
 progressbar2==2.7.3
 
 python-slugify==0.1.0
+
+######################
+# pug-ann requirements
+
+# pybrain requires scipy which requires these, but doesn't install them when you do `pip install pybrain` (which fails due to failed imports)
+numpy==1.9.2
+pyparsing==2.0.3
+# scipy==0.15.1
+
+# pug-nlp
+pybrain==0.3.3
+
+######################
+# # dev requirements
+# #$ sudo yum install -y pandoc
+# pypandoc>=0.9.6
+# # alternative backend for matplotlib (like tkagg)
+# python-qt5==0.1.8 
