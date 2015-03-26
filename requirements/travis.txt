@@ -1,4 +1,5 @@
 pip==6.0.7  # this is the version used by travis
+setuptools==3.6  # 14.3.1
 
 #$ sudo yum install -y pandoc
 # pypandoc>=0.8.2  # this one doesn't error if pandoc lib/dev isn't present, 0.9.* will error on travis
@@ -8,7 +9,7 @@ six==1.9.0
 # ipython needs ZeroMQ
 pyzmq==14.5.0
 
-Unidecode==0.04.16
+Unidecode==0.4.16
 cffi==0.8.6
 chardet==2.3.0
 
