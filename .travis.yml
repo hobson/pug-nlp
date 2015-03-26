@@ -4,7 +4,7 @@ python:
 # TODO: What about yum (rpm) or apt (deb) binaries and C code like BLAS and lapack?
 # command to install dependencies
 install:
-    - "pip install --upgrade -r requirements.txt"
+    - "pip install --upgrade -r requirements/travis.txt"
     - "pip list -vvv"
     - "pip install --upgrade -e ."
     - "pip list -vvv"

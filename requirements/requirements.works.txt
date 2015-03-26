@@ -1,0 +1,33 @@
+pip==6.0.8
+
+#$ sudo yum install pandoc
+pypandoc==0.8.2
+wsgiref==0.1.2
+future==0.14.3
+six==1.9.0
+
+# ipython needs ZeroMQ
+pyzmq==14.5.0
+
+Unidecode==0.04.16
+cffi==0.8.6
+chardet==2.3.0
+
+pyOpenSSL==0.14
+pytz==2014.10
+python-dateutil==2.4.0
+
+pandas==0.15.2
+xlrd==0.9.3
+
+#$ sudo yum install libjpeg-devel openjpeg-devel
+Pillow==2.7
+matplotlib==1.4.3
+fuzzywuzzy==0.5.0
+python-Levenshtein==0.12.0
+progressbar2==2.7.3
+
+python-slugify==0.1.0
+
+# pug-ann==0.0.9b
+#-e git+git@github.com:hobson/pug-ann.git@master#egg=pug-ann-master
