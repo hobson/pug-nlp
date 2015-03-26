@@ -1389,7 +1389,7 @@ def transcode(infile, outfile=None, incoding="shift-jis", outcoding="utf-8"):
 def read_csv(csv_file, ext='.csv', format=None, delete_empty_keys=False,
              fieldnames=[], rowlimit=100000000, numbers=False, normalize_names=True, unique_names=True,
              verbosity=0):
-    """
+    r"""
     Read a csv file from a path or file pointer, returning a dict of lists, or list of lists (according to `format`)
 
     filename: a directory or list of file paths
@@ -1399,8 +1399,7 @@ def read_csv(csv_file, ext='.csv', format=None, delete_empty_keys=False,
         merge with `nlp.util.make_dataframe` function
 
     Handles unquoted and quoted strings, quoted commas, quoted newlines (EOLs), complex numbers, times, dates, datetimes,
-    >>> read_csv('"name\r\n","rank","serial\nnumber","date"\n"McCain, John","1","123456789",9/11/2001\nBob,big cheese,1-23,1/1/2001 12:00 GMT'\
-    ...          format='values list', numbers=True)  # doctest: +NORMALIZE_WHITESPACE
+    >>> read_csv('"name\r\n","rank","serial\nnumber","date"\n"McCain, John","1","123456789",9/11/2001\nBob,big cheese,1-23,1/1/2001 12:00 GMT'.format='values list', numbers=True)  # doctest: +NORMALIZE_WHITESPACE
     [['name', 'rank', 'serial\nnumber', 'date'],
      ['McCain, John', 1.0, 123456789.0, datetime.datetime(2001, 9, 11, 0, 0)],
      ['Bob',
