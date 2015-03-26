@@ -44,7 +44,7 @@ except:  # (IOError, ImportError, OSError, RuntimeError):
 print('Installing package named {} from the {} project. . .'.format(package_name, project_name))
 
 # sudo yum install libjpeg-devel openjpeg-devel
-requirements = [
+install_requires = [
     'wsgiref==0.1.2', 'six==1.9.0', 
     # 'pypandoc==0.8.2', 'future==0.14.3',
     'pyzmq==14.5.0', 'Unidecode==0.04.16', 'cffi==0.8.6', 'chardet==2.3.0', 'pyOpenSSL==0.14',
@@ -61,14 +61,13 @@ try:
     from pip.req import parse_requirements
     requirements = list(parse_requirements('requirements.txt', session=uuid.uuid1()))
     install_requires=[str(req.req).split(' ')[0].strip() for req in requirements if req.req and not req.url]
-    print('Install requires: {}'.format(install_requires))
     dependency_links=[req.url for req in requirements if req.url]
     print('Dependency links: {}'.format(dependency_links))
 except:
     from traceback import print_exc
     print_exc()
 
-print('requirements: {}'.format(requirements))
+print('install_requires: {}'.format(install_requires))
 
 
 
