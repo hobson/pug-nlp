@@ -27,3 +27,10 @@ python-Levenshtein==0.12.0
 progressbar2>=2.7.3
 
 python-slugify==0.1.0
+
+# ######################
+# # dev requirements
+# #$ sudo yum install pandoc
+# pypandoc>=0.9.6
+# # alternative backend for matplotlib (like tkagg)
+# python-qt5>=0.1.8 

@@ -86,7 +86,7 @@ def entropy_and_impurity(qs, field, num_categories=2):
 
     Impurity is the probability or frequency with which the *wrong* category or prediction is assigned to an element.
 
-    >>> from pug.data.tobes_example import tobes_data
+    >>> from pug.nlp.data.tobes_example import tobes_data
     >>> entropy_and_impurity(tobes_data, -1)  # doctest: +ELLIPSIS
     (1.50524..., 0.6328125)
     """
@@ -111,7 +111,7 @@ def entropy_and_impurity(qs, field, num_categories=2):
 def impure_entropy(qs, field=-1):
     """Product of entropy and impurity (probability), in nats (log base e).
 
-    >>> from pug.data.tobes_example import tobes_data
+    >>> from pug.nlp.data.tobes_example import tobes_data
     >>> -0.0001 < entropy_and_impurity(tobes_data, -1) - 1.50524 * 0.632813 < 0.0001 # doctest: +ELLIPSIS
     True
     """
@@ -132,7 +132,7 @@ class DecisionNode:
 def build_tree(qs, field, scoref=entropy, ignore_fields=None, include_fields=None):
     """Build a classification decision tree
 
-    >>> from pug.data.tobes_example import tobes_data
+    >>> from pug.nlp.data.tobes_example import tobes_data
     >>> print_tree(build_tree(tobes_data))  # doctest: +NORMALIZE_WHITESPACE
     0:google? 
       T-> 3:21? 
