@@ -37,7 +37,7 @@ pyparsing==2.0.3
 # scipy==0.15.1
 
 # pug-nlp
-pybrain
+pybrain==0.3
 
 ######################
 # # dev requirements
