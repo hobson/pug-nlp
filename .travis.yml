@@ -4,7 +4,7 @@ python:
 # TODO: What about yum (rpm) or apt (deb) binaries and C code like BLAS and lapack?
 # command to install dependencies
 install:
-    - "sudo apt-get install libatlas-base-dev gfortran python-scipy scipy"
+    - "sudo apt-get install libatlas-base-dev gfortran python-scipy"
     - "pip install -r requirements/travis.txt"
     - "pip install ."
 # shell command run tests
