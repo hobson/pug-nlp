@@ -16,4 +16,5 @@ __all__ = [
     'plot',
     'crypto',
     'words',
+    'data',
     ]
