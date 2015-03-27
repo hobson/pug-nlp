@@ -1,6 +1,8 @@
 pug-nlp |alt text|
 ==================
 
+|Build Status| |Coverage Status| |Version Status| |Downloads|
+
 Natural Language Processing (NLP) algorithms
 --------------------------------------------
 
@@ -74,4 +76,11 @@ I love merging PRs and adding contributors to the **authors** list:
 
     git clone https://github.com/hobson/pug-nlp.git
 
-.. |alt text| image:: https://travis-ci.org/hobson/pug-nlp.svg?branch=master
+.. |Build Status| image:: https://travis-ci.org/hobson/pug-nlp.svg
+   :target: https://travis-ci.org/hobson/pug-nlp
+.. |Coverage Status| image:: https://coveralls.io/repos/hobson/pug-nlp/badge.png
+   :target: https://coveralls.io/r/hobson/pug-nlp
+.. |Version Status| image:: https://pypip.in/v/pug-nlp/badge.png
+   :target: https://pypi.python.org/pypi/pug-nlp/
+.. |Downloads| image:: https://pypip.in/d/pug-nlp/badge.png
+   :target: https://pypi.python.org/pypi/pug-nlp/
