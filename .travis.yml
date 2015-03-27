@@ -4,7 +4,6 @@ python:
 # TODO: What about yum (rpm) or apt (deb) binaries and C code like BLAS and lapack?
 # command to install dependencies
 before_install:
-    - sudo apt-get search gfortran
     - sudo apt-get install gfortran-4.6
     - sudo apt-get install gfortran python-scipy libatlas-base-dev 
 install:

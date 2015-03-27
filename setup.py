@@ -57,7 +57,7 @@ install_requires = [
     'xlrd==0.9.3', 'Pillow==2.7',
     'fuzzywuzzy==0.5.0', 'python-Levenshtein==0.12.0',  'python-slugify==0.1.0',
     'matplotlib==1.4.3',
-    #'numpy==1.9.2',
+    #'numpy==1.8.2',
     # 'pyparsing==2.0.3', 
     # 'scipy==0.15.1',
     'pybrain==0.3',
