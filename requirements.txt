@@ -8,7 +8,7 @@ six>=1.9.0
 # ipython needs ZeroMQ
 pyzmq==14.5.0
 
-Unidecode==0.04.16
+Unidecode==0.4.16
 cffi==0.8.6
 chardet==2.3.0
 
