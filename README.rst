@@ -1,21 +1,14 @@
-pug-nlp |alt text|
-==================
+pug-nlp
+=======
 
 |Build Status| |Coverage Status| |Version Status| |Downloads|
 
-Natural Language Processing (NLP) algorithms
---------------------------------------------
+PUG Natural Language Processing (NLP) Utilities
+-----------------------------------------------
 
-This is a namespace package (sub-package) of the pug package a
-collection of utilities by and for the PDX Python User Group.
-
---------------
-
-Introduction
-------------
-
-Natural Language Processing (NLP) algorithms by and for the PDX Python
-User Group (PUG).
+This sub-package of the pug namespace package, provides natural language
+processing (NLP) and text processing utilities built by and for the PDX
+Python User Group (PUG).
 
 --------------
 
@@ -76,7 +69,7 @@ I love merging PRs and adding contributors to the **authors** list:
 
     git clone https://github.com/hobson/pug-nlp.git
 
-.. |Build Status| image:: https://travis-ci.org/hobson/pug-nlp.svg
+.. |Build Status| image:: https://travis-ci.org/hobson/pug-nlp.svg?branch=master
    :target: https://travis-ci.org/hobson/pug-nlp
 .. |Coverage Status| image:: https://coveralls.io/repos/hobson/pug-nlp/badge.png
    :target: https://coveralls.io/r/hobson/pug-nlp
