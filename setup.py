@@ -49,7 +49,7 @@ install_requires = [
     'progressbar2==2.7.3',
     # 'pypandoc==0.8.2', 'future==0.14.3',
     'pyzmq==14.5.0', 'Unidecode==0.04.16', 'cffi==0.8.6', 'chardet==2.3.0', 'pyOpenSSL==0.14',
-    'pytz==2015.2', 'python-dateutil==2.4.0',
+    'pytz==2015.2', 'python-dateutil==2.4.1',
     # 'cython==0.22',
     'pandas==0.15.2',
     #'pandas==0.15.2',
