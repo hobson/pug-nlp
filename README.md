@@ -5,15 +5,9 @@
 [![Version Status](https://pypip.in/v/pug-nlp/badge.png)](https://pypi.python.org/pypi/pug-nlp/)
 [![Downloads](https://pypip.in/d/pug-nlp/badge.png)](https://pypi.python.org/pypi/pug-nlp/)
 
-## Natural Language Processing (NLP) algorithms
+## PUG Natural Language Processing (NLP) Utilities
 
-This is a namespace package (sub-package) of the pug package a collection of utilities by and for the PDX Python User Group.
-
----
-
-## Introduction
-
-Natural Language Processing (NLP) algorithms by and for the PDX Python User Group (PUG).
+This sub-package of the pug namespace package, provides natural language processing (NLP) and text processing utilities built by and for the PDX Python User Group (PUG).
 
 ---
 
