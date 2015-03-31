@@ -59,7 +59,7 @@ install_requires = [
     'numpy==1.9.2',
     # 'pyparsing==2.0.3', 
     # 'scipy==0.15.1',
-    'pybrain==0.3',
+    # 'pybrain>=0.3.3',
     ]
 dependency_links = []
 # try:
