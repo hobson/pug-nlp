@@ -39,6 +39,7 @@ import math
 from types import NoneType
 from StringIO import StringIO
 import copy
+import codecs
 
 import pandas as pd
 np = pd.np
@@ -1375,10 +1376,10 @@ def tryconvert(value, desired_types=SCALAR_TYPES, default=None, empty='', strip=
 tryconvert.EMPTY = ('', None, float('nan'))
 tryconvert.SCALAR = SCALAR_TYPES
 
-import codecs
 
 
 def transcode(infile, outfile=None, incoding="shift-jis", outcoding="utf-8"):
+    """Change encoding of text file"""
     if not outfile:
         outfile = os.path.basename(infile) + '.utf8'
     with codecs.open(infile, "rb", incoding) as fpin:
@@ -2911,7 +2912,11 @@ def make_datetime(dt, date_parser=parse_date):
     if not dt:
         return datetime.datetime(1970, 1, 1)
     if isinstance(dt, basestring):
-        return date_parser(dt)
+        try:
+            return date_parser(dt)
+        except:
+            print('Unable to make_datetime({})'.format(dt))
+            raise
     try:
         return datetime.datetime(*dt.timetuple()[:7])
     except:
