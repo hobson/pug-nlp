@@ -66,7 +66,9 @@ install_requires = [
     'python-slugify==0.1.0',
     'matplotlib==1.4.3',
     'numpy==1.9.2',
-    'pybrain==0.3',
+    # 'pyparsing==2.0.3', 
+    # 'scipy==0.15.1',
+    # 'pybrain>=0.3.3',
     ]
 print('install_requires: {}'.format(install_requires))
 
@@ -93,7 +95,7 @@ setup(
     #tests_require = ['django-setuptest', 'south'],
     #test_suite = 'setuptest.setuptest.SetupTestSuite',
     #cmdclass = {'test': test},
-    url = __url__,
+    # url = __url__,
 
     # Force setup.py to use the latest github master source files rather than the cheeseshop tarball: 
     download_url = "{}/tarball/master".format(__url__),
