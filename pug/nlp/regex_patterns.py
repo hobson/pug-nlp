@@ -46,7 +46,7 @@ not_digit_list = re.compile(r'[^\d,]+')
 not_digit_nor_sign = re.compile(r'[^0-9-+]+')
 
 word_sep_except_external_appostrophe = re.compile('\W*\s\'{1,3}|\'{1,3}\W+|[^-\'_.a-zA-Z0-9]+|\W+\s+')
-word_sep_permissive = re.compile('[^-\'_.a-zA-Z0-9]+|[^\'a-zA-Z0-9]\s\W*')
+word_sep_permissive = re.compile('[^\'a-zA-Z0-9]\s\W*|[^-\'_.a-zA-Z0-9]+')
 sentence_sep = re.compile('[.?!](\W+)|$')
 month_name = re.compile('(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[acbeihmlosruty]*', re.IGNORECASE)
 
