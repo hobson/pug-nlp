@@ -51,7 +51,7 @@ install_requires = [
     'pyzmq==14.5.0', 'Unidecode==0.04.16', 'cffi==0.8.6', 'chardet==2.3.0', 'pyOpenSSL==0.14',
     'pytz==2015.2', 'python-dateutil==2.4.1',
     # 'cython==0.22',
-    'pandas==0.15.2',
+    'pandas>=0.15.2',
     #'pandas==0.15.2',
     'xlrd==0.9.3', 'Pillow==2.7',
     'fuzzywuzzy==0.5.0', 'python-Levenshtein==0.12.0',  'python-slugify==0.1.0',
