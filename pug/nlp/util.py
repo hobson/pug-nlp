@@ -39,6 +39,7 @@ import math
 from types import NoneType
 from StringIO import StringIO
 import copy
+import codecs
 
 import pandas as pd
 np = pd.np
@@ -701,9 +702,15 @@ def fuzzy_get(possible_keys, approximate_key, default=None, similarity=0.6, tupl
       'conditions'
       >>> fuzzy_get(possible_keys, "Tron")
       'astronomy'
+      >>> df = pd.DataFrame(np.arange(6*2).reshape(2,6), columns=('alpha','beta','omega','begin','life','end'))
+      >>> fuzzy_get(df, 'beg')
+      'begin'
+      >>> df[fuzzy_get(df, 'et')][1]
+      7
+
     """
     dict_obj = copy.copy(possible_keys)
-    if not isinstance(dict_obj, collections.Mapping):
+    if not isinstance(dict_obj, (collections.Mapping, pd.DataFrame, pd.Series)):
         dict_obj = dict((x, x) for x in dict_obj)
 
     fuzzy_key, value = None, default
@@ -740,10 +747,52 @@ def fuzzy_get(possible_keys, approximate_key, default=None, similarity=0.6, tupl
                         fuzzy_score, fuzzy_key = sorted(fuzzy_score_keys)[-1]
                         value = dict_obj[fuzzy_key]
     if key_and_value:
+        if key_and_value in ('v', 'V', 'value', 'VALUE', 'Value'):
+            return value
         return fuzzy_key, value
     else:
         return value
 
+
+def fuzzy_get_value(obj, approximate_key, default=None, **kwargs):
+    """ Like fuzzy_get, but assume the obj is dict-like and return the value without the key
+
+    Notes:
+      Argument order is in reverse order relative to `fuzzywuzzy.process.extractOne()` 
+        but in the same order as get(self, key) method on dicts
+
+    Arguments:
+      obj (dict-like): object to run the get method on using the key that is most similar to one within the dict
+      approximate_key (str): key to look for a fuzzy match within the dict keys
+      default (obj): the value to return if a similar key cannote be found in the `possible_keys`
+      similarity (str): fractional similiarity between the approximate_key and the dict key (0.9 means 90% of characters must be identical)
+      tuple_joiner (str): Character to use as delimitter/joiner between tuple elements.
+        Used to create keys of any tuples to be able to use fuzzywuzzy string matching on it.
+      key_and_value (bool): Whether to return both the key and its value (True) or just the value (False). 
+        Default is the same behavior as dict.get (i.e. key_and_value=False)
+      dict_keys (list of str): if you already have a set of keys to search, this will save this funciton a little time and RAM
+
+    Examples:
+      >>> fuzzy_get_value({'seller': 2.7, 'sailor': set('e')}, 'sail')
+      set(['e'])
+      >>> fuzzy_get_value({'seller': 2.7, 'sailor': set('e'), 'camera': object()}, 'SLR')
+      2.7
+      >>> fuzzy_get_value({'seller': 2.7, 'sailor': set('e'), 'camera': object()}, 'I')
+      set(['e'])
+      >>> fuzzy_get_value({'word': tuple('word'), 'noun': tuple('noun')}, 'woh!', similarity=.3, key_and_value=True)
+      ('word', ('w', 'o', 'r', 'd'))
+      >>> df = pd.DataFrame(np.arange(6*2).reshape(2,6), columns=('alpha','beta','omega','begin','life','end'))
+      >>> fuzzy_get(df, 'life')[0], fuzzy_get(df, 'omega')[0]
+      4, 2
+    """
+    dict_obj = OrderedDict(obj)
+    try:
+        return dict_obj[dict_obj.keys()[int(approximate_key)]]
+    except (ValueError, IndexError):
+        pass
+    k = fuzzy_get(dict_obj, approximate_key, **kwargs)
+    return dict_obj.get(k, default)
+    
 
 def fuzzy_get_tuple(dict_obj, approximate_key, dict_keys=None, key_and_value=False, similarity=0.6, default=None):
     """Find the closest matching key and/or value in a dictionary (must have all string keys!)"""
@@ -1093,10 +1142,11 @@ def flatten_csv(path='.', ext='csv', date_parser=parse_date, verbosity=0, output
 def get_similar(obj, labels, default=None, min_similarity=0.5):
     """Similar to fuzzy_get, but allows non-string keys and a list of possible keys
 
-    Searches attributes in addition to keys and indexes.
+    Searches attributes in addition to keys and indexes to find the closest match.
 
     See Also:
         `fuzzy_get`
+
     """
     raise NotImplementedError("Unfinished implementation, needs to be incorporated into fuzzy_get where a list of scores and keywords is sorted.")
     labels = listify(labels)
@@ -1118,6 +1168,10 @@ def get_similar(obj, labels, default=None, min_similarity=0.5):
         if similarity_score == min_score:
             if not result is not_found:
                 return result
+
+
+def normalize_column_labels(obj, labels):
+    """Like `get_similar` but returns the matched labels/keys rather than the values and 1 key for each label in labels"""
 
 
 def update_dict(d, u=None, depth=-1, take_new=True, default_mapping_type=dict, prefer_update_type=False, copy=False):
@@ -1375,10 +1429,10 @@ def tryconvert(value, desired_types=SCALAR_TYPES, default=None, empty='', strip=
 tryconvert.EMPTY = ('', None, float('nan'))
 tryconvert.SCALAR = SCALAR_TYPES
 
-import codecs
 
 
 def transcode(infile, outfile=None, incoding="shift-jis", outcoding="utf-8"):
+    """Change encoding of text file"""
     if not outfile:
         outfile = os.path.basename(infile) + '.utf8'
     with codecs.open(infile, "rb", incoding) as fpin:
@@ -2911,7 +2965,11 @@ def make_datetime(dt, date_parser=parse_date):
     if not dt:
         return datetime.datetime(1970, 1, 1)
     if isinstance(dt, basestring):
-        return date_parser(dt)
+        try:
+            return date_parser(dt)
+        except:
+            print('Unable to make_datetime({})'.format(dt))
+            raise
     try:
         return datetime.datetime(*dt.timetuple()[:7])
     except:

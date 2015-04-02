@@ -44,7 +44,7 @@ This software is in alpha testing.  Install at your own risk.
 
 ## Development
 
-I love merging PRs and adding contributors to the __authors__ list:
+I love merging PRs and adding contributors to the `__authors__` list:
 
     git clone https://github.com/hobson/pug-nlp.git
 
