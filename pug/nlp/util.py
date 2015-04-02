@@ -786,7 +786,7 @@ def fuzzy_get_value(obj, approximate_key, default=None, **kwargs):
       ('w', 'o', 'r', 'd')
       >>> df = pd.DataFrame(np.arange(6*2).reshape(2,6), columns=('alpha','beta','omega','begin','life','end'))
       >>> fuzzy_get_value(df, 'life')[0], fuzzy_get(df, 'omega')[0]
-      4, 2
+      (4, 2)
     """
     dict_obj = OrderedDict(obj)
     try:
