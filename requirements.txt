@@ -14,7 +14,7 @@ chardet==2.3.0
 
 pyOpenSSL==0.14
 pytz>=2014.10
-python-dateutil==2.4.0
+python-dateutil>=2.4.1
 
 pandas>=0.15.2
 xlrd>=0.9.3
