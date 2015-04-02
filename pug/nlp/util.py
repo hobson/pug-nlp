@@ -703,11 +703,14 @@ def fuzzy_get(possible_keys, approximate_key, default=None, similarity=0.6, tupl
       >>> fuzzy_get(possible_keys, "Tron")
       'astronomy'
       >>> df = pd.DataFrame(np.arange(6*2).reshape(2,6), columns=('alpha','beta','omega','begin','life','end'))
-      >>> fuzzy_get(df, 'beg')
-      'begin'
-      >>> df[fuzzy_get(df, 'et')][1]
+      >>> fuzzy_get(df, 'beg', key_and_value=True)  # doctest: +NORMALIZE_WHITESPACE, +ELLIPSIS
+      0    3
+      1    9
+      Name: begin, dtype: int...
+      >>> fuzzy_get(df, 'get')
+      >>> fuzzy_get(df, 'et')[1]
       7
-
+      >>> fuzzy_get(df, 'get')
     """
     dict_obj = copy.copy(possible_keys)
     if not isinstance(dict_obj, (collections.Mapping, pd.DataFrame, pd.Series)):
