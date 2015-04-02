@@ -57,7 +57,7 @@ install_requires = [
     'chardet==2.3.0',
     'pyOpenSSL==0.14',
     'pytz==2015.2',
-    'python-dateutil==2.4.1',
+    'python-dateutil>=2.4.1',
     'pandas==0.15.2',
     'xlrd==0.9.3',
     'Pillow==2.7',
