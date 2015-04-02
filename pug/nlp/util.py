@@ -703,11 +703,14 @@ def fuzzy_get(possible_keys, approximate_key, default=None, similarity=0.6, tupl
       >>> fuzzy_get(possible_keys, "Tron")
       'astronomy'
       >>> df = pd.DataFrame(np.arange(6*2).reshape(2,6), columns=('alpha','beta','omega','begin','life','end'))
-      >>> fuzzy_get(df, 'beg')
-      'begin'
-      >>> df[fuzzy_get(df, 'et')][1]
+      >>> fuzzy_get(df, 'beg')  # doctest: +NORMALIZE_WHITESPACE, +ELLIPSIS
+      0    3
+      1    9
+      Name: begin, dtype: int...
+      >>> fuzzy_get(df, 'get')
+      >>> fuzzy_get(df, 'et')[1]
       7
-
+      >>> fuzzy_get(df, 'get')
     """
     dict_obj = copy.copy(possible_keys)
     if not isinstance(dict_obj, (collections.Mapping, pd.DataFrame, pd.Series)):
@@ -773,14 +776,14 @@ def fuzzy_get_value(obj, approximate_key, default=None, **kwargs):
       dict_keys (list of str): if you already have a set of keys to search, this will save this funciton a little time and RAM
 
     Examples:
-      >>> fuzzy_get_value({'seller': 2.7, 'sailor': set('e')}, 'sail')
-      set(['e'])
+      >>> fuzzy_get_value({'seller': 2.7, 'sailor': set('e')}, 'sail') == set(['e'])
+      True
       >>> fuzzy_get_value({'seller': 2.7, 'sailor': set('e'), 'camera': object()}, 'SLR')
       2.7
-      >>> fuzzy_get_value({'seller': 2.7, 'sailor': set('e'), 'camera': object()}, 'I')
-      set(['e'])
-      >>> fuzzy_get_value({'word': tuple('word'), 'noun': tuple('noun')}, 'woh!', similarity=.3, key_and_value=True)
-      ('word', ('w', 'o', 'r', 'd'))
+      >>> fuzzy_get_value({'seller': 2.7, 'sailor': set('e'), 'camera': object()}, 'I') == set(['e'])
+      True
+      >>> fuzzy_get_value({'word': tuple('word'), 'noun': tuple('noun')}, 'woh!', similarity=.3)
+      ('w', 'o', 'r', 'd')
       >>> df = pd.DataFrame(np.arange(6*2).reshape(2,6), columns=('alpha','beta','omega','begin','life','end'))
       >>> fuzzy_get_value(df, 'life')[0], fuzzy_get(df, 'omega')[0]
       (4, 2)
@@ -790,9 +793,8 @@ def fuzzy_get_value(obj, approximate_key, default=None, **kwargs):
         return dict_obj[dict_obj.keys()[int(approximate_key)]]
     except (ValueError, IndexError):
         pass
-    k = fuzzy_get(dict_obj, approximate_key, **kwargs)
-    return dict_obj.get(k, default)
-    
+    return fuzzy_get(dict_obj, approximate_key, key_and_value=False, **kwargs)
+
 
 def fuzzy_get_tuple(dict_obj, approximate_key, dict_keys=None, key_and_value=False, similarity=0.6, default=None):
     """Find the closest matching key and/or value in a dictionary (must have all string keys!)"""
