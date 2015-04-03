@@ -3413,7 +3413,7 @@ def path_status(path, filename='', status=None, verbosity=0):
     return status
 
 
-def find_files(path='', ext='', level=None, dirs=False, files=True, verbosity=0):
+def find_files(path='', ext='', level=None, typ=list, dirs=False, files=True, verbosity=0):
     """Recursively find all files in the indicated directory with the indicated file name extension
 
     Args:
@@ -3423,6 +3423,10 @@ def find_files(path='', ext='', level=None, dirs=False, files=True, verbosity=0)
         None = full recursion to as deep as it goes
         0 = nonrecursive, just provide a list of files at the root level of the tree
         1 = one level of depth deeper in the tree
+      typ (type):  output type (default: list). if a mapping type is provided the keys will be the full paths (unique)
+      dirs (bool):  Whether to yield dir paths along with file paths (default: False)
+      files (bool): Whether to yield file paths (default: True)
+        `dirs=True`, `files=False` is equivalent to `ls -d`
 
     Returns: 
       list of dicts: dict keys are { 'path', 'name', 'bytes', 'created', 'modified', 'accessed', 'permissions' }
@@ -3453,7 +3457,11 @@ def find_files(path='', ext='', level=None, dirs=False, files=True, verbosity=0)
       True
     """
     path = path or './'
-    files_found = []
+    if isinstance(typ(), collections.Mapping):
+        return typ((ff['path'], ff) for ff in find_files(path, ext=ext, level=level, typ=None, dirs=dirs, files=files, verbosity=verbosity))
+    elif typ is not None:
+        return typ(find_files(path, ext=ext, level=level, typ=None, dirs=dirs, files=files, verbosity=verbosity))
+
     for dir_path, dir_names, filenames in walk_level(path, level=level):
         if verbosity > 0:
             print('Checking path "{}"'.format(dir_path))
@@ -3461,16 +3469,17 @@ def find_files(path='', ext='', level=None, dirs=False, files=True, verbosity=0)
             for fn in filenames:  # itertools.chain(filenames, dir_names)
                 if ext and not fn.lower().endswith(ext):
                     continue
-                files_found += [path_status(dir_path, fn, verbosity=verbosity)]
+                yield path_status(dir_path, fn, verbosity=verbosity)
         if dirs:
             # TODO: warn user if ext and dirs both set
             for fn in dir_names:
                 if ext and not fn.lower().endswith(ext):
                     continue
-                files_found += [path_status(dir_path, fn, verbosity=verbosity)]
-    if verbosity > 1:
-        print files_found
-    return files_found
+                yield path_status(dir_path, fn, verbosity=verbosity)
+
+    # if verbosity > 1:
+    #     print files_found
+    # return files_found
 
 
 def find_dirs(*args, **kwargs):
