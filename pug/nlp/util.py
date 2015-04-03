@@ -21,8 +21,9 @@
 '''
 
 import os
+import stat
 import collections
-from itertools import islice
+import itertools
 import datetime
 import time
 import pytz
@@ -554,7 +555,7 @@ def sliding_window(seq, n=2):
      (3, 4, 5)]
     """
     it = iter(seq)
-    result = tuple(islice(it, n))
+    result = tuple(itertools.islice(it, n))
     if len(result) == n:
         yield result    
     for elem in it:
@@ -858,8 +859,8 @@ def consolidate_stats(dict_of_seqs, stats_key=None, sep=','):
         keys = joined_seq(sorted([k for k in dict_of_seqs if k is not stats_key]), sep=None)
         joined_key = joined_seq(keys, sep=sep)
         result = {stats_key: [], joined_key: []}
-        for i, stat in enumerate(stats):
-            result[stats_key] += [stat]
+        for i, statistic in enumerate(stats):
+            result[stats_key] += [statistic]
             result[joined_key] += [joined_seq((dict_of_seqs[k][i] for k in keys if k is not stats_key), sep)]
         return list({k: result[stats_key][i]} for i, k in enumerate(result[joined_key]))
     return [{joined_seq((d[k] for k in sorted(d) if k is not stats_key), sep): d[stats_key]} for d in dict_of_seqs]
@@ -1440,8 +1441,12 @@ def transcode(infile, outfile=None, incoding="shift-jis", outcoding="utf-8"):
         with codecs.open(outfile, "wb", outcoding) as fpout:
             fpout.write(fpin.read())
 
+
 def strip_br(s):
-    r""" Strip the trailing html linebreak character (<BR />) from a string or list of strings 
+    r""" Strip the trailing html linebreak character (<BR />) from a string or sequence of strings 
+
+    A sequence of strings is assumed to be a row in a CSV/TSV file or words from a line of text
+    so only the last element in a sequence is "stripped"
 
     >>> strip_br(' Title <BR> ')
     ' Title'
@@ -3350,7 +3355,65 @@ def walk_level(path, level=1):
         raise RuntimeError("Can't find a valid folder or file for path {0}".format(repr(path)))
 
 
-def find_files(path, ext='', level=None, verbosity=0):
+def path_status(path, filename='', status=None, verbosity=0):
+    """ Retrieve the access, modify, and create timetags for a path along with its size
+
+    Arguments:
+        path (str): full path to the file or directory to be statused
+        status (dict): optional existing status to be updated/overwritten with new status values
+
+    Returns:
+        dict: {'size': bytes (int), 'accessed': (datetime), 'modified': (datetime), 'created': (datetime)}
+    """
+    status = status or {}
+    if not filename:
+        dir_path, filename = os.path.split()  # this will split off a dir and as `filename` if path doesn't end in a /
+    else:
+        dir_path = path
+    full_path = os.path.join(dir_path, filename)
+    if verbosity > 1:
+        print(full_path)
+    status['name'] = filename
+    status['path'] = full_path
+    status['dir']  = dir_path
+    status['type'] = []
+    try:
+        status['size']     = os.path.getsize(full_path)
+        status['accessed'] = datetime.datetime.fromtimestamp(os.path.getatime(full_path))
+        status['modified'] = datetime.datetime.fromtimestamp(os.path.getmtime(full_path))
+        status['created']  = datetime.datetime.fromtimestamp(os.path.getctime(full_path))
+        status['mode'] = os.stat(full_path).st_mode   # first 3 digits are User, Group, Other permissions: 1=execute,2=write,4=read
+        if os.path.ismount(full_path):
+            status['type'] += ['mount-point']
+        elif os.path.islink(full_path):
+            status['type'] += ['symlink']
+        if os.path.isfile(full_path):
+            status['type'] += ['file']
+        elif os.path.isdir(full_path):
+            status['type'] += ['dir']
+        if not status['type']:
+            if stat.S_ISSOCK(status['mode']):
+                status['type'] += ['socket']
+            elif stat.S_ISCHR(status['mode']):
+                status['type'] += ['special']
+            elif stat.S_ISBLK(status['mode']):
+                status['type'] += ['block-device']
+            elif stat.S_ISFIFO(status['mode']):
+                status['type'] += ['pipe']
+        if not status['type']:
+            status['type'] += ['unknown']
+        elif status['type'] and status['type'][-1] == 'symlink':
+            status['type'] += ['broken']
+    except OSError:
+        status['type'] = ['nonexistent'] + status['type']
+        if verbosity > -1:
+            warnings.warn("Unable to stat path '{}'".format(full_path))
+    status['type'] = '->'.join(status['type'])
+
+    return status
+
+
+def find_files(path='', ext='', level=None, dirs=False, files=True, verbosity=0):
     """Recursively find all files in the indicated directory with the indicated file name extension
 
     Args:
@@ -3370,33 +3433,48 @@ def find_files(path, ext='', level=None, verbosity=0):
         modified (datetime): File modification timestamp from file system
         accessed (datetime): File access timestamp from file system
         permissions (int): File permissions bytes as a chown-style integer with a maximum of 4 digits 
+        type (str): One of 'file', 'dir', 'symlink->file', 'symlink->dir', 'symlink->broken'
           e.g.: 777 or 1755
 
     Examples:
+      >>> 'util.py' in [d['name'] for d in find_files(os.path.dirname(__file__), ext='.py', level=0)]
+      True
+      >>> (d for d in find_files(os.path.dirname(__file__), ext='.py') if d['name'] == 'util.py').next()['size'] > 1000
+      True
+
+
+      There should be an __init__ file in the same directory as this script.
+      And it should be at the top of the list.
       >>> sorted(d['name'] for d in find_files(os.path.dirname(__file__), ext='.py', level=0))[0]
       '__init__.py'
+      >>> sorted(find_files()[0].keys())
+      ['accessed', 'created', 'dir', 'mode', 'modified', 'name', 'path', 'size', 'type']
+      >>> all(d['type'] in ('file','dir','symlink->file','symlink->dir','mount-point->file','mount-point->dir','block-device','symlink->broken','pipe','special','socket','unknown') for d in find_files(level=1, files=True, dirs=True))
+      True
     """
     path = path or './'
-    files_in_queue = []
-    if verbosity > 0:
-        print 'Preprocessing files to estimate pb.ETA'
-    # if verbosity > 0:
-    #     widgets = [pb.Counter(), '/%d bytes for all files: ' % file_bytes, pb.Percentage(), ' ', pb.RotatingMarker(), ' ', pb.Bar(),' ', pb.ETA()]
-    #     i, pbar = 0, pb.ProgressBar(widgets=widgets, maxval=file_bytes)
-    #     print pbar
-    #     pbar.start()
+    files_found = []
     for dir_path, dir_names, filenames in walk_level(path, level=level):
-        for fn in filenames:
-            if ext and not fn.lower().endswith(ext):
-                continue
-            files_in_queue += [{'name': fn, 'path': os.path.join(dir_path, fn)}]
-            files_in_queue[-1]['size'] = os.path.getsize(files_in_queue[-1]['path'])
-            files_in_queue[-1]['accessed'] = datetime.datetime.fromtimestamp(os.path.getatime(files_in_queue[-1]['path']))
-            files_in_queue[-1]['modified'] = datetime.datetime.fromtimestamp(os.path.getmtime(files_in_queue[-1]['path']))
-            files_in_queue[-1]['created'] = datetime.datetime.fromtimestamp(os.path.getctime(files_in_queue[-1]['path']))
-            # file_bytes += files_in_queue[-1]['size']
+        if verbosity > 0:
+            print('Checking path "{}"'.format(dir_path))
+        if files:
+            for fn in filenames:  # itertools.chain(filenames, dir_names)
+                if ext and not fn.lower().endswith(ext):
+                    continue
+                files_found += [path_status(dir_path, fn, verbosity=verbosity)]
+        if dirs:
+            # TODO: warn user if ext and dirs both set
+            for fn in dir_names:
+                if ext and not fn.lower().endswith(ext):
+                    continue
+                files_found += [path_status(dir_path, fn, verbosity=verbosity)]
     if verbosity > 1:
-        print files_in_queue
-    return files_in_queue
+        print files_found
+    return files_found
 
+
+def find_dirs(*args, **kwargs):
+    kwargs['files'] = kwargs.get('files', False)
+    kwargs.update({'dirs': True})
+    return find_files(*args, **kwargs)
 
