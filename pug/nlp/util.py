@@ -1488,7 +1488,7 @@ def read_csv(csv_file, ext='.csv', format=None, delete_empty_keys=False,
     csvr = csv.reader(fpin, dialect=csv.excel)
     if not fieldnames:
         while not fieldnames or not any(fieldnames):
-            fieldnames = csvr.next()
+            fieldnames = [str(s).strip() for s in csvr.next()]
         if verbosity > 0:
             logger.info('Column Labels: ' + repr(fieldnames))
     if unique_names:
