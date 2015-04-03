@@ -1454,7 +1454,7 @@ def read_csv(csv_file, ext='.csv', format=None, delete_empty_keys=False,
         merge with `nlp.util.make_dataframe` function
 
     Handles unquoted and quoted strings, quoted commas, quoted newlines (EOLs), complex numbers, times, dates, datetimes,
-    >>> read_csv('"name\r\n","rank","serial\nnumber","date"\n"McCain, John","1","123456789",9/11/2001\nBob,big cheese,1-23,1/1/2001 12:00 GMT', format='values list', numbers=True)  # doctest: +NORMALIZE_WHITESPACE
+    >>> read_csv('"name\r\n","rank","serial\nnumber","date"\n"McCain, John","1","123456789",9/11/2001\nBob,big cheese,1-23,1/1/2001 12:00 GMT', format='header+values list', numbers=True)  # doctest: +NORMALIZE_WHITESPACE
     [['name', 'rank', 'serial\nnumber', 'date'],
      ['McCain, John', 1.0, 123456789.0, datetime.datetime(2001, 9, 11, 0, 0)],
      ['Bob',
@@ -1499,8 +1499,12 @@ def read_csv(csv_file, ext='.csv', format=None, delete_empty_keys=False,
         norm_names = OrderedDict([(num, make_name(fldnm, **make_name.DJANGO_FIELD)) for num, fldnm in enumerate(fieldnames)])
         # required for django-formatted json files
         model_name = make_name(path, **make_name.DJANGO_MODEL)
-    if format in ('c',):  # columnwise dict of lists
+    if format in 'c':  # columnwise dict of lists
         recs = OrderedDict((norm_name, []) for norm_name in norm_names.values())
+    elif format in 'vh':
+        recs = [fieldnames]
+    else:
+        recs = []
     if verbosity > 0:
         logger.info('Field Names: ' + repr(norm_names if normalize_names else fieldnames))
     rownum = 0
@@ -1512,8 +1516,6 @@ def read_csv(csv_file, ext='.csv', format=None, delete_empty_keys=False,
     fpin.seek(0, os.SEEK_END)
     file_len = fpin.tell() - start_seek_pos  # os.fstat(fpin.fileno()).st_size
     fpin.seek(start_seek_pos)
-
-    recs = [fieldnames] if format == 'h' else [] 
 
     if verbosity > 1:
         print('There appear to be {} bytes remaining in the file buffer. Resetting (seek) to starting position in file.'.format(file_len))
@@ -1544,10 +1546,13 @@ def read_csv(csv_file, ext='.csv', format=None, delete_empty_keys=False,
             row = [tryconvert(v, desired_types=NUMBERS_AND_DATETIMES, empty=None, default=v) for v in row]
         if row:
             N = min(max(len(row), 0), len(norm_names))
-            row_dict = OrderedDict(((field_name, field_value) for field_name, field_value in zip(list(norm_names.values() if unique_names else norm_names)[:N], row[:N]) if (str(field_name).strip() or delete_empty_keys is False)))
-            if format in ('d', 'j'):  # django json format
+            row_dict = OrderedDict(((field_name, field_value) 
+                for field_name, field_value in zip(list(norm_names.values() 
+                    if unique_names else norm_names)[:N],row[:N]) 
+                        if (str(field_name).strip() or delete_empty_keys is False)))
+            if format in 'dj':  # django json format
                 recs += [{"pk": rownum, "model": model_name, "fields": row_dict}]
-            elif format in ('v', 'h'):  # list of values format
+            elif format in 'vh':  # list of values format
                 # use the ordered fieldnames attribute to keep the columns in order
                 recs += [[value for field_name, value in row_dict.iteritems() if (field_name.strip() or delete_empty_keys is False)]]
             elif format in ('c',):  # columnwise dict of lists
