@@ -1432,7 +1432,6 @@ tryconvert.EMPTY = ('', None, float('nan'))
 tryconvert.SCALAR = SCALAR_TYPES
 
 
-
 def transcode(infile, outfile=None, incoding="shift-jis", outcoding="utf-8"):
     """Change encoding of text file"""
     if not outfile:
@@ -1484,7 +1483,6 @@ def read_csv(csv_file, ext='.csv', format=None, delete_empty_keys=False,
 
     if format:
         format = format[0].lower()
-    recs = []
 
     # if fieldnames not specified then assume that first row of csv contains headings
     csvr = csv.reader(fpin, dialect=csv.excel)
@@ -1513,7 +1511,10 @@ def read_csv(csv_file, ext='.csv', format=None, delete_empty_keys=False,
         print('Starting at byte {} in file buffer.'.format(start_seek_pos))
     fpin.seek(0, os.SEEK_END)
     file_len = fpin.tell() - start_seek_pos  # os.fstat(fpin.fileno()).st_size
-    fpin.seek(0, start_seek_pos)
+    fpin.seek(start_seek_pos)
+
+    recs = [fieldnames] if format == 'h' else [] 
+
     if verbosity > 1:
         print('There appear to be {} bytes remaining in the file buffer. Resetting (seek) to starting position in file.'.format(file_len))
     if verbosity > 0:
@@ -1546,7 +1547,7 @@ def read_csv(csv_file, ext='.csv', format=None, delete_empty_keys=False,
             row_dict = OrderedDict(((field_name, field_value) for field_name, field_value in zip(list(norm_names.values() if unique_names else norm_names)[:N], row[:N]) if (str(field_name).strip() or delete_empty_keys is False)))
             if format in ('d', 'j'):  # django json format
                 recs += [{"pk": rownum, "model": model_name, "fields": row_dict}]
-            elif format in ('v',):  # list of values format
+            elif format in ('v', 'h'):  # list of values format
                 # use the ordered fieldnames attribute to keep the columns in order
                 recs += [[value for field_name, value in row_dict.iteritems() if (field_name.strip() or delete_empty_keys is False)]]
             elif format in ('c',):  # columnwise dict of lists
