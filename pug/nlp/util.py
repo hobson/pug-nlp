@@ -1440,6 +1440,27 @@ def transcode(infile, outfile=None, incoding="shift-jis", outcoding="utf-8"):
         with codecs.open(outfile, "wb", outcoding) as fpout:
             fpout.write(fpin.read())
 
+def strip_br(s):
+    r""" Strip the trailing html linebreak character (<BR />) from a string or list of strings 
+
+    >>> strip_br(' Title <BR> ')
+    ' Title'
+    >>> strip_br(range(1,4))
+    [1, 2, 3]
+    >>> strip_br((' Column 1<br />', ' Last Column < br / >  '))
+    (' Column 1<br />', ' Last Column')
+    >>> strip_br(['name', 'rank', 'serial\nnumber', 'date <BR />'])
+    ['name', 'rank', 'serial\nnumber', 'date']
+    """
+
+    if isinstance(s, basestring):
+        return re.sub(r'\s*<\s*[Bb][Rr]\s*[/]?\s*>\s*$','', s)
+    elif isinstance(s, (tuple, list)):
+        # strip just the last element in a list or tuple
+        return type(s)(list(s)[:-1] + [strip_br(s[-1])])
+    else:
+        return type(s)(strip_br(str(s)))
+
 
 def read_csv(csv_file, ext='.csv', format=None, delete_empty_keys=False,
              fieldnames=[], rowlimit=100000000, numbers=False, normalize_names=True, unique_names=True,
@@ -1454,7 +1475,7 @@ def read_csv(csv_file, ext='.csv', format=None, delete_empty_keys=False,
         merge with `nlp.util.make_dataframe` function
 
     Handles unquoted and quoted strings, quoted commas, quoted newlines (EOLs), complex numbers, times, dates, datetimes,
-    >>> read_csv('"name\r\n","rank","serial\nnumber","date"\n"McCain, John","1","123456789",9/11/2001\nBob,big cheese,1-23,1/1/2001 12:00 GMT', format='header+values list', numbers=True)  # doctest: +NORMALIZE_WHITESPACE
+    >>> read_csv('"name\r\n",rank,"serial\nnumber",date <BR />\t\n"McCain, John","1","123456789",9/11/2001\nBob,big cheese,1-23,1/1/2001 12:00 GMT', format='header+values list', numbers=True)  # doctest: +NORMALIZE_WHITESPACE
     [['name', 'rank', 'serial\nnumber', 'date'],
      ['McCain, John', 1.0, 123456789.0, datetime.datetime(2001, 9, 11, 0, 0)],
      ['Bob',
@@ -1488,7 +1509,7 @@ def read_csv(csv_file, ext='.csv', format=None, delete_empty_keys=False,
     csvr = csv.reader(fpin, dialect=csv.excel)
     if not fieldnames:
         while not fieldnames or not any(fieldnames):
-            fieldnames = [str(s).strip() for s in csvr.next()]
+            fieldnames = strip_br([str(s).strip() for s in csvr.next()])
         if verbosity > 0:
             logger.info('Column Labels: ' + repr(fieldnames))
     if unique_names:
@@ -1540,7 +1561,7 @@ def read_csv(csv_file, ext='.csv', format=None, delete_empty_keys=False,
         if eof:
             break
         if len(row) and isinstance(row[-1], basestring) and len(row[-1]):
-            row = row[:-1] + [re.sub(r'\s*<br\s*[/]?>\s*$','', row[-1])]
+            row = strip_br(row)
         if numbers:
             # try to convert the type to a numerical scalar type (int, float etc)
             row = [tryconvert(v, desired_types=NUMBERS_AND_DATETIMES, empty=None, default=v) for v in row]
