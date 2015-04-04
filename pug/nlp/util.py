@@ -1520,8 +1520,8 @@ def read_csv(csv_file, ext='.csv', format=None, delete_empty_keys=False,
         except:
             path = 'unknown file buffer path'
 
-    if format:
-        format = format[0].lower()
+    format = format or 'h'
+    format = format[0].lower()
 
     # if fieldnames not specified then assume that first row of csv contains headings
     csvr = csv.reader(fpin, dialect=csv.excel)
@@ -1567,7 +1567,7 @@ def read_csv(csv_file, ext='.csv', format=None, delete_empty_keys=False,
         rownum += 1
         row = []
         row_dict = OrderedDict()
-        # skips rows with all empty strings as values,
+        # skip rows with all empty strings as values,
         while not row or not any(len(x) for x in row):
             try:
                 row = csvr.next()
@@ -1591,14 +1591,18 @@ def read_csv(csv_file, ext='.csv', format=None, delete_empty_keys=False,
                         if (str(field_name).strip() or delete_empty_keys is False)))
             if format in 'dj':  # django json format
                 recs += [{"pk": rownum, "model": model_name, "fields": row_dict}]
-            elif format in 'vh':  # list of values format
-                # use the ordered fieldnames attribute to keep the columns in order
+            elif format in 'vhl':  # list of lists of values, with header row (list of str)
                 recs += [[value for field_name, value in row_dict.iteritems() if (field_name.strip() or delete_empty_keys is False)]]
-            elif format in ('c',):  # columnwise dict of lists
+            elif format in 'c':  # columnwise dict of lists
                 for field_name in row_dict:
                     recs[field_name] += [row_dict[field_name]]
+                if verbosity > 2:
+                    print([recs[field_name][-1] for field_name in row_dict])
             else:
                 recs += [row_dict]
+            if verbosity > 2 and not format in 'c':
+                print(recs[-1])
+
     if file_len > fpin.tell():
         logger.info("Only %d of %d bytes were read and processed." % (fpin.tell(), file_len))
     if pbar:
