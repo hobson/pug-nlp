@@ -3457,13 +3457,13 @@ def find_files(path='', ext='', level=None, typ=list, dirs=False, files=True, ve
       >>> all(d['type'] in ('file','dir','symlink->file','symlink->dir','mount-point->file','mount-point->dir','block-device','symlink->broken','pipe','special','socket','unknown') for d in generate_files(level=1, files=True, dirs=True))
       True
     """
-    it = generate_files(path, ext=ext, level=level, dirs=dirs, files=files, verbosity=verbosity)
+    gen = generate_files(path, ext=ext, level=level, dirs=dirs, files=files, verbosity=verbosity)
     if isinstance(typ(), collections.Mapping):
-        return typ((ff['path'], ff) for ff in it)
+        return typ((ff['path'], ff) for ff in gen)
     elif typ is not None:
-        return typ(it)
+        return typ(gen)
     else:
-        return it
+        return gen
 
 
 def generate_files(path='', ext='', level=None, dirs=False, files=True, verbosity=0):
