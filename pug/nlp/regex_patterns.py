@@ -3,7 +3,7 @@
 Compiled Regular Expression Patterns
 
 >>> scientific_notation_exponent.split(' 1 x 10 ** 23 ')
-[' 1', '23']
+[' 1', '23 ']
 >>> scientific_notation_exponent.split(' 1E10 and 1 x 10 ^23 ')
 [' 1', '10 and 1', '23 ']
 >>> scientific_notation_exponent.findall(' 1 x 10 ^23 ')
