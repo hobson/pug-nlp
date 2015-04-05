@@ -3,15 +3,17 @@
 Compiled Regular Expression Patterns
 
 >>> scientific_notation_exponent.split(' 1 x 10 ** 23 ')
-['1', '23']
+[' 1', '23']
 >>> scientific_notation_exponent.split(' 1E10 and 1 x 10 ^23 ')
 [' 1', '10 and 1', '23 ']
 >>> scientific_notation_exponent.findall(' 1 x 10 ^23 ')
-['x 10 ^']
+[' x 10 ^']
 >>> scientific_notation_exponent.findall(' 1E10 and 1 x 10 ^23 ')
-['E', 'x 10 ^']
+['E', ' x 10 ^']
 >>> [bool(zero_pad_4_10_digit.match(an)) for an in ['0000123744', '0', '0000', '0000000000', '0000001000', '000001', '0000126473', '000102952', '0000107079']]
 [True, False, False, False, True, False, True, True, True]
+>>> re_ver.match("__version__ = '0.0.18'").groups()
+(None, '0', '0', '.18', '18', None, None)
 """
 
 # try to make constant string variables all uppercase and regex patterns lowercase
@@ -73,6 +75,7 @@ zero_pad_4_10_digit = re.compile(r'[0]{0,6}[1-9][0-9]{3,9}')
 serial_number = zero_pad_4_10_digit
 account_number = zero_pad_4_10_digit
 
-
-
 optionally_notted_zero_pad_4_10_digit = re.compile(r'\s*(' + not_symbol.pattern + r')?\s*(' + zero_pad_4_10_digit.pattern + r')\s*')
+
+# python package version number specification (PEP 440: [N!]N(.N)*[{a|b|rc}N][.postN][.devN] )
+re_ver = re.compile(r"^\s*[_]{0,2}version[_]{0,2}\s*=\s*\'(\d*!)?(\d+)\.(\d+)(\.(\d+))?((a|b|rc)\d*)?\'")
