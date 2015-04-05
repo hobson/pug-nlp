@@ -19,7 +19,7 @@ You really want to contribute, right?
 
     git clone https://github.com/hobson/pug-nlp.git
 
-If your a user and not a developer, and have an up-to-date posix OS with the postgres, xml2, and xlst development packages installed, then just use `pip`.
+If you're a user and not a developer, and have an up-to-date posix OS with the postgres, xml2, and xlst development packages installed, then just use `pip`.
 
     pip install pug-nlp
 
