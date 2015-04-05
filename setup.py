@@ -4,8 +4,8 @@ __namespace_package__ = 'pug'
 # the subpackage that this installer is providing that you'd import like __import__(__namespace_package__ + '.' + '__subpackage__')
 __subpackage__ = 'nlp'
 # the name as it will appear in the pypi cheeseshop repositor, not the name you'd use to import it
-project_name = '{}-{}'.format(__namespace_package__, __subpackage__)
-package_name = '{}.{}'.format(__namespace_package__, __subpackage__)
+project_name = '{}'.format(__namespace_package__) + ('-' + __subpackage__ if __subpackage__ else '')
+package_name = '{}'.format(__namespace_package__) + ('.' + __subpackage__ if __subpackage__ else '')
 
 from setuptools import find_packages
 from distutils.core import setup
@@ -40,7 +40,7 @@ except:  # (IOError, ImportError, OSError, RuntimeError):
 
 
 dependency_links = [
-  #  'http://github.com/hobson/pybrain/tarball/master#egg=pybrain-0.3.3',
+  'http://github.com/hobson/pybrain/tarball/master#egg=pybrain-0.3.3',
 ] #  ['http://github.com/hobson/pug-nlp/tarball/master#egg=pug-nlp-master'] 
 EXCLUDE_FROM_PACKAGES = []
 
@@ -54,7 +54,7 @@ install_requires = [
     'six==1.9.0',
     'progressbar2==2.7.3',
     'pyzmq==14.5.0',
-    'Unidecode==0.04.16',
+    'Unidecode==0.4.16',
     'cffi==0.8.6',
     'chardet==2.3.0',
     'pyOpenSSL==0.14',
