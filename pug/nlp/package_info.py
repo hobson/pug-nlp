@@ -31,4 +31,3 @@ def try_read(filename, path=__package_path__):
 
 __license__ = try_read('LICENSE.txt', __package_path__)
 __doc__ = try_read('README.md', __package_path__) or __doc__
-

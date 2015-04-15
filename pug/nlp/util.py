@@ -668,7 +668,7 @@ def fuzzy_get(possible_keys, approximate_key, default=None, similarity=0.6, tupl
 
     Notes:
       `possible_keys` must have all string elements or keys!
-      Argument order is in reverse order relative to `fuzzywuzzy.process.extractOne()` 
+      Argument order is in reverse order relative to `fuzzywuzzy.process.extractOne()`
         but in the same order as get(self, key) method on dicts
 
     Arguments:
@@ -678,7 +678,7 @@ def fuzzy_get(possible_keys, approximate_key, default=None, similarity=0.6, tupl
       similarity (str): fractional similiarity between the approximate_key and the dict key (0.9 means 90% of characters must be identical)
       tuple_joiner (str): Character to use as delimitter/joiner between tuple elements.
         Used to create keys of any tuples to be able to use fuzzywuzzy string matching on it.
-      key_and_value (bool): Whether to return both the key and its value (True) or just the value (False). 
+      key_and_value (bool): Whether to return both the key and its value (True) or just the value (False).
         Default is the same behavior as dict.get (i.e. key_and_value=False)
       dict_keys (list of str): if you already have a set of keys to search, this will save this funciton a little time and RAM
 
@@ -723,7 +723,7 @@ def fuzzy_get(possible_keys, approximate_key, default=None, similarity=0.6, tupl
     else:
         strkey = unicode(approximate_key)
         if approximate_key and strkey and strkey.strip():
-            # print 'no exact match was found for {0} in {1} so preprocessing keys'.format(approximate_key, dict_obj.keys()) 
+            # print 'no exact match was found for {0} in {1} so preprocessing keys'.format(approximate_key, dict_obj.keys())
             if any(isinstance(k, (tuple, list)) for k in dict_obj):
                 dict_obj = dict((tuple_joiner.join(str(k2) for k2 in k), v) for (k, v) in dict_obj.iteritems())
                 if isinstance(approximate_key, (tuple, list)):
@@ -737,7 +737,7 @@ def fuzzy_get(possible_keys, approximate_key, default=None, similarity=0.6, tupl
                 if strkey in dict_keys:
                     fuzzy_key, value = strkey, dict_obj[strkey]
                 else:
-                    #print 'no exact match was found for {0} in {1} so checking with similarity cutoff of {2}'.format(strkey, dict_keys, similarity) 
+                    #print 'no exact match was found for {0} in {1} so checking with similarity cutoff of {2}'.format(strkey, dict_keys, similarity)
                     # WARN: extractBests will return [] if dict_keys is anything other than a list (even sets and tuples fail!)
                     fuzzy_key_scores = fuzzy.extractBests(strkey, dict_keys, score_cutoff=min(max(similarity*100.0 - 1, 0), 100), limit=6)
                     #print strkey, fuzzy_key_scores
@@ -746,7 +746,7 @@ def fuzzy_get(possible_keys, approximate_key, default=None, similarity=0.6, tupl
                         fuzzy_score_keys = []
                         # add length similarity as part of score
                         for (i, (k, score)) in enumerate(fuzzy_key_scores):
-                            fuzzy_score_keys += [(score *  math.sqrt(len(strkey)**2 / float((len(k)**2 + len(strkey)**2) or 1)), k)]
+                            fuzzy_score_keys += [(score * math.sqrt(len(strkey)**2 / float((len(k)**2 + len(strkey)**2) or 1)), k)]
                         # print fuzzy_score_keys
                         fuzzy_score, fuzzy_key = sorted(fuzzy_score_keys)[-1]
                         value = dict_obj[fuzzy_key]
