@@ -1,9 +1,9 @@
-# pug-nlp 
+# pug-nlp
 
 [![Build Status](https://travis-ci.org/hobson/pug-nlp.svg?branch=master "Travis Build & Test Status")](https://travis-ci.org/hobson/pug-nlp)
 [![Coverage Status](https://coveralls.io/repos/hobson/pug-nlp/badge.png)](https://coveralls.io/r/hobson/pug-nlp)
-[![Version Status](https://pypip.in/v/pug-nlp/badge.png)](https://pypi.python.org/pypi/pug-nlp/)
-[![Downloads](https://pypip.in/d/pug-nlp/badge.png)](https://pypi.python.org/pypi/pug-nlp/)
+[![Latest Release Version](https://badge.fury.io/py/pug-nlp.svg)](https://pypi.python.org/pypi/pug-nlp/)
+<!-- [![Downloads](https://pypip.in/d/pug-nlp/badge.png)](https://pypi.python.org/pypi/pug-nlp/) -->
 
 ## PUG Natural Language Processing (NLP) Utilities
 

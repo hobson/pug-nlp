@@ -1057,7 +1057,7 @@ def hist_from_values_list(values_list, fillers=(None,), normalize=False, cumulat
     if all(isinstance(value, value_types) for value in values_list):
         # ignore all fillers and convert all floats to ints when doing counting
         counters = [collections.Counter(int(value) for value in values_list if isinstance(value, (int, float)))]
-    elif all(len(row)==1 for row in values_list) and all(isinstance(row[0], value_types) for row in values_list):
+    elif all(len(row) == 1 for row in values_list) and all(isinstance(row[0], value_types) for row in values_list):
         return hist_from_values_list([values[0] for values in values_list], fillers=fillers, normalize=normalize, cumulative=cumulative, to_str=to_str, sep=sep, min_bin=min_bin, max_bin=max_bin)
     else:  # assume it's a row-wise table (list of rows)
         return [
@@ -1126,7 +1126,7 @@ def flatten_csv(path='.', ext='csv', date_parser=parse_date, verbosity=0, output
     """
     date_parser = date_parser or (lambda x: x)
     dotted_ext, dotted_output_ext = None, None
-    if ext != None and output_ext != None:
+    if ext is not None and output_ext is not None:
         dotted_ext = ('' if ext.startswith('.') else '.') + ext
         dotted_output_ext = ('' if output_ext.startswith('.') else '.') + output_ext
     table = {}
@@ -1136,7 +1136,7 @@ def flatten_csv(path='.', ext='csv', date_parser=parse_date, verbosity=0, output
             continue
         df = pd.DataFrame.from_csv(file_path, parse_dates=False)
         df = flatten_dataframe(df)
-        if dotted_ext != None and dotted_output_ext != None:
+        if dotted_ext is not None and dotted_output_ext is not None:
             df.to_csv(file_path[:-len(dotted_ext)] + dotted_output_ext + dotted_ext)
         table[file_path] = df
     return table
@@ -1252,7 +1252,7 @@ def make_name(s, camel=None, lower=None, space='_', remove_prefix=None, language
     Arguments:
       space (str): string to substitute for spaces ('' to delete all whitespace)
       camel (bool): whether to camel-case names, Django Model Name style (first letter capitalized)
-      lower (bool): whether to lowercase all strings 
+      lower (bool): whether to lowercase all strings
       language (str): case-insensitive language identifier (to deterimine allowable identifier characters)
         e.g. 'Python', 'Python2', 'Python3', 'Javascript', 'ECMA'
 
@@ -1260,7 +1260,7 @@ def make_name(s, camel=None, lower=None, space='_', remove_prefix=None, language
       Generate Django model names out of file names
       >>> make_name('women in IT.csv', camel=True)
       u'WomenInItCsv'
-      
+
       Generate Django field names out of CSV header strings
       >>> make_name('ID Number (9-digits)')
       u'id_number_9_digits_'
@@ -1299,10 +1299,10 @@ def make_name(s, camel=None, lower=None, space='_', remove_prefix=None, language
     # TODO: add language Regexes to filter characters appropriately for python or javascript
     space_escape = '\\' if space and space not in ' _' else ''
     if not language in ecma_languages:
-        invalid_char_regex = re.compile('[^a-zA-Z0-9' + space_escape + space +']+')
+        invalid_char_regex = re.compile('[^a-zA-Z0-9' + space_escape + space + ']+')
     else:
         # FIXME: Unicode categories and properties only works in Perl Regexes!
-        invalid_char_regex = re.compile('[\W' + space_escape + space +']+', re.UNICODE)
+        invalid_char_regex = re.compile('[\W' + space_escape + space + ']+', re.UNICODE)
     if space is not None:
         # get rid of all invalid characters, substitting the space-filler for them all
         s = invalid_char_regex.sub(space, s)
@@ -1341,13 +1341,13 @@ def make_filename(s, space=None, language='msdos', strict=False, max_len=None, r
     """
     filename = None
     if strict or language.lower().strip() in ('strict', 'variable', 'expression', 'python'):
-        if space == None:
+        if space is None:
             space = '_'
         elif not space:
             space = ''
         filename = make_name(s, space=space, lower=False)
     else:
-        if space == None:
+        if space is None:
             space = '-'
         elif not space:
             space = ''
@@ -1375,7 +1375,7 @@ def update_file_ext(filename, ext='txt', sep='.'):
     '/home/ninja.hobs/Anglofile.uk'
     >>> update_file_ext('/home/ninja-corsi/audio', 'file', sep='-')
     '/home/ninja-corsi/audio-file'
-    """ 
+    """
     path, filename = os.path.split(filename)
 
     if ext and ext[0] == sep:
@@ -1443,7 +1443,7 @@ def transcode(infile, outfile=None, incoding="shift-jis", outcoding="utf-8"):
 
 
 def strip_br(s):
-    r""" Strip the trailing html linebreak character (<BR />) from a string or sequence of strings 
+    r""" Strip the trailing html linebreak character (<BR />) from a string or sequence of strings
 
     A sequence of strings is assumed to be a row in a CSV/TSV file or words from a line of text
     so only the last element in a sequence is "stripped"
@@ -3500,22 +3500,22 @@ def generate_files(path='', ext='', level=None, dirs=False, files=True, verbosit
           e.g.: 777 or 1755
 
     Examples:
-      >>> 'util.py' in [d['name'] for d in find_files(os.path.dirname(__file__), ext='.py', level=0)]
+      >>> 'util.py' in [d['name'] for d in generate_files(os.path.dirname(__file__), ext='.py', level=0)]
       True
-      >>> (d for d in find_files(os.path.dirname(__file__), ext='.py') if d['name'] == 'util.py').next()['size'] > 1000
+      >>> (d for d in generate_files(os.path.dirname(__file__), ext='.py') if d['name'] == 'util.py').next()['size'] > 1000
       True
 
       There should be an __init__ file in the same directory as this script.
       And it should be at the top of the list.
-      >>> sorted(d['name'] for d in find_files(os.path.dirname(__file__), ext='.py', level=0))[0]
+      >>> sorted(d['name'] for d in generate_files(os.path.dirname(__file__), ext='.py', level=0))[0]
       '__init__.py'
-      >>> os.path.join(os.path.dirname(__file__), '__init__.py') in find_files(
+      >>> os.path.join(os.path.dirname(__file__), '__init__.py') in generate_files(
       ... os.path.dirname(__file__), ext='.py', level=0, typ=dict)
       True
-      >>> sorted(find_files()[0].keys())
+      >>> sorted(generate_files()[0].keys())
       ['accessed', 'created', 'dir', 'mode', 'modified', 'name', 'path', 'size', 'type']
       >>> all(d['type'] in ('file','dir','symlink->file','symlink->dir','mount-point->file','mount-point->dir','block-device','symlink->broken','pipe','special','socket','unknown')
-      ... for d in find_files(level=1, files=True, dirs=True))
+      ... for d in generate_files(level=1, files=True, dirs=True))
       True
     """
     path = path or './'
@@ -3546,3 +3546,22 @@ def find_dirs(*args, **kwargs):
     kwargs.update({'dirs': True})
     return find_files(*args, **kwargs)
 
+
+import string
+
+class PassageIter(object):
+    """Passage (document, sentence, line, phrase) generator for files at indicated path
+
+    Walks all the text files it finds in the indicated path,
+    segmenting sentences and yielding them one at a time
+
+    References:
+      Radim's [word2vec tutorial](http://radimrehurek.com/2014/02/word2vec-tutorial/)
+    """
+    def __init__(self, path='', ext='', level=None, dirs=False, files=True, sentence_segmenter=, word_segmenter=string.split, verbosity=0):
+        self.file_generator = generate_files(path=path, ext='', level=None, dirs=False, files=True, verbosity=0)
+ 
+    def __iter__(self):
+        for fname in os.listdir(self.file_generator):
+            for line in open(os.path.join(self.dirname, fname)):
+                yield line.split()

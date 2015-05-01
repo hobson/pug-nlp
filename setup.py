@@ -96,8 +96,9 @@ setup(
     #cmdclass={'test': test},
     # url=__url__,
 
-    # Force setup.py to use the latest github master source files rather than the cheeseshop tarball:
-    download_url="{}/tarball/master".format(__url__),
+    # # Force setup.py to use the latest github master source files rather than the cheeseshop tarball:
+    # download_url="{}/tarball/master".format(__url__),
+
     keywords=["nlp", "natural language processing", "text", "text processing", "bot", "ai", "agent", "data", "science", "data science", "math", "machine-learning", "statistics", "database"],
     classifiers=[
         "Programming Language :: Python",
@@ -109,8 +110,11 @@ setup(
         "License :: OSI Approved :: MIT License",
         "Operating System :: OS Independent",
         "Topic :: Software Development :: Libraries :: Python Modules",
-        "Topic :: Scientific/Engineering :: Artificial Intelligence",
+        "Topic :: Text Processing :: Linguistic",
+        "Topic :: Text Processing :: Filters",
+        "Topic :: Text Processing :: General",
+        "Topic :: Text Processing :: Indexing",
         "Topic :: Scientific/Engineering :: Mathematics",
-        "Topic :: Internet :: WWW/HTTP :: Indexing/Search",
+        "Topic :: Scientific/Engineering :: Artificial Intelligence",
         ],
 )
