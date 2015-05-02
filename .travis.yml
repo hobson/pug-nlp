@@ -11,7 +11,6 @@ install:
     - "pip install setuptools==3.6"
     - "pip install -r requirements/travis.txt"
     - "pip install git+https://github.com/cslu-nlp/nlup.git@master#egg=nlup-master"
-    - "pip install git+https://github.com/hobson/pybrain.git@master#egg=pybrain-0.3.3"
     - "pip install ."
 # shell command run tests
 script: 
