@@ -55,6 +55,8 @@ import regex_patterns as RE
 
 import xlrd
 
+from .segmentation import generate_sentences
+
 import logging
 logger = logging.getLogger('pug.nlp.util')
 
@@ -68,7 +70,7 @@ def parse_time(timestr):
 
 ROUNDABLE_NUMERIC_TYPES = (float, long, int, Decimal, bool)
 FLOATABLE_NUMERIC_TYPES = (float, long, int, Decimal, bool)
-BASIC_NUMERIC_TYPES = (float, long, int) 
+BASIC_NUMERIC_TYPES = (float, long, int)
 NUMERIC_TYPES = (float, long, int, Decimal, complex, str)  # datetime.datetime, datetime.date
 NUMBERS_AND_DATETIMES = (float, long, int, Decimal, complex, parse_time, parse_date, str)
 SCALAR_TYPES = (float, long, int, Decimal, bool, complex, basestring, str, unicode)  # datetime.datetime, datetime.date
@@ -77,43 +79,44 @@ DICTABLE_TYPES = (collections.Mapping, tuple, list)  # convertable to a dictiona
 VECTOR_TYPES = (list, tuple)
 PUNC = unicode(string.punctuation)
 
-
+# synonyms for "count"
+COUNT_NAMES = ['count', 'cnt', 'number', 'num', '#', 'frequency', 'probability', 'prob', 'occurences']
 # 4 types of "histograms" and their canonical name/label
 HIST_NAME = {
-                'hist': 'hist', 'ff':  'hist',  'fd': 'hist', 'dff':  'hist', 'dfd': 'hist', 'gfd': 'hist', 'gff': 'hist', 'bfd': 'hist', 'bff': 'hist',
-                'pmf':  'pmf',  'pdf': 'pmf',   'pd': 'pmf',
-                'cmf':  'cmf',  'cdf': 'cmf',
-                'cfd':  'cfd',  'cff': 'cfd',   'cdf': 'cfd',
-            }
+    'hist': 'hist', 'ff':  'hist',  'fd': 'hist', 'dff':  'hist', 'dfd': 'hist', 'gfd': 'hist', 'gff': 'hist', 'bfd': 'hist', 'bff': 'hist',
+    'pmf':  'pmf',  'pdf': 'pmf',   'pd': 'pmf',
+    'cmf':  'cmf',  'cdf': 'cmf',
+    'cfd':  'cfd',  'cff': 'cfd',   'cdf': 'cfd',
+    }
 HIST_CONFIG = {
-    'hist': { 
+    'hist': {
         'name': 'Histogram',  # frequency distribution, frequency function, discrete ff/fd, grouped ff/fd, binned ff/fd
-        'kwargs': { 'normalize': False, 'cumulative': False, },
+        'kwargs': {'normalize': False, 'cumulative': False, },
         'index': 0,
         'xlabel': 'Bin',
         'ylabel': 'Count',
         },
     'pmf': {
         # PMFs have discrete, exact values as bins rather than ranges (finite bin widths)
-        #   but this histogram configuration doesn't distinguish between PMFs and PDFs, 
-        #   since mathematically they have all the same properties. 
+        #   but this histogram configuration doesn't distinguish between PMFs and PDFs,
+        #   since mathematically they have all the same properties.
         #    PDFs just have a range associated with each discrete value (which should be when integrating a PDF but not when summing a PMF where the "width" is uniformly 1)
         'name': 'Probability Mass Function',   # probability density function, probability distribution [function]
-        'kwargs': { 'normalize': True, 'cumulative': False, },
+        'kwargs': {'normalize': True, 'cumulative': False, },
         'index': 1,
         'xlabel': 'Bin',
         'ylabel': 'Probability',
         },
     'cmf': {
         'name': 'Cumulative Probability',
-        'kwargs': { 'normalize': True, 'cumulative': True, },
+        'kwargs': {'normalize': True, 'cumulative': True, },
         'index': 2,
         'xlabel': 'Bin',
         'ylabel': 'Cumulative Probability',
         },
     'cfd': {
         'name': 'Cumulative Frequency Distribution',
-        'kwargs': { 'normalize': False, 'cumulative': True, },
+        'kwargs': {'normalize': False, 'cumulative': True, },
         'index': 3,
         'xlabel': 'Bin',
         'ylabel': 'Cumulative Count',
@@ -133,63 +136,64 @@ except:
     DEFAULT_TZ = timezone('UTC')
 
 
-# pytz.timezone offsets for str abbreviation. 
+# pytz.timezone offsets for str abbreviation.
 # WARNING: many abbreviations are ambiguous!
 # munged table from @NasBanov: http://stackoverflow.com/a/4766400/623735
 TZ_OFFSET_ABBREV = [
-[-12, 'Y'],
-[-11, 'X', 'NUT', 'SST'],
-[-10, 'W', 'CKT', 'HAST', 'HST', 'TAHT', 'TKT'],
-[-9, 'V', 'AKST', 'GAMT', 'GIT', 'HADT', 'HNY'],
-[-8, 'U', 'AKDT', 'CIST', 'HAY', 'HNP', 'PST', 'PT'],
-[-7, 'T', 'HAP', 'HNR', 'MST', 'PDT'],
-[-6, 'S', 'CST', 'EAST', 'GALT', 'HAR', 'HNC', 'MDT'],
-[-5, 'R', 'CDT', 'COT', 'EASST', 'ECT', 'EST', 'ET', 'HAC', 'HNE', 'PET'],
-[-4, 'Q', 'AST', 'BOT', 'CLT', 'COST', 'EDT', 'FKT', 'GYT', 'HAE', 'HNA', 'PYT'],
-[-3, 'P', 'ADT', 'ART', 'BRT', 'CLST', 'FKST', 'GFT', 'HAA', 'PMST', 'PYST', 'SRT', 'UYT', 'WGT'],
-[-2, 'O', 'BRST', 'FNT', 'PMDT', 'UYST', 'WGST'],
-[-1, 'N', 'AZOT', 'CVT', 'EGT'],
-[0, 'Z', 'EGST', 'GMT', 'UTC', 'WET', 'WT'],
-[1, 'A', 'CET', 'DFT', 'WAT', 'WEDT', 'WEST'],
-[2, 'B', 'CAT', 'CEDT', 'CEST', 'EET', 'SAST', 'WAST'],
-[3, 'C', 'EAT', 'EEDT', 'EEST', 'IDT', 'MSK'],
-[4, 'D', 'AMT', 'AZT', 'GET', 'GST', 'KUYT', 'MSD', 'MUT', 'RET', 'SAMT', 'SCT'],
-[5, 'E', 'AMST', 'AQTT', 'AZST', 'HMT', 'MAWT', 'MVT', 'PKT', 'TFT', 'TJT', 'TMT', 'UZT', 'YEKT'],
-[6, 'F', 'ALMT', 'BIOT', 'BTT', 'IOT', 'KGT', 'NOVT', 'OMST', 'YEKST'],
-[7, 'G', 'CXT', 'DAVT', 'HOVT', 'ICT', 'KRAT', 'NOVST', 'OMSST', 'THA', 'WIB'],
-[8, 'H', 'ACT', 'AWST', 'BDT', 'BNT', 'CAST', 'HKT', 'IRKT', 'KRAST', 'MYT', 'PHT', 'SGT', 'ULAT', 'WITA', 'WST'],
-[9, 'I', 'AWDT', 'IRKST', 'JST', 'KST', 'PWT', 'TLT', 'WDT', 'WIT', 'YAKT'],
-[10, 'K', 'AEST', 'ChST', 'PGT', 'VLAT', 'YAKST', 'YAPT'],
-[11, 'L', 'AEDT', 'LHDT', 'MAGT', 'NCT', 'PONT', 'SBT', 'VLAST', 'VUT'],
-[12, 'M', 'ANAST', 'ANAT', 'FJT', 'GILT', 'MAGST', 'MHT', 'NZST', 'PETST', 'PETT', 'TVT', 'WFT'],
-[13, 'FJST', 'NZDT'],
-[11.5, 'NFT'],
-[10.5, 'ACDT', 'LHST'],
-[9.5, 'ACST'],
-[6.5, 'CCT', 'MMT'],
-[5.75, 'NPT'],
-[5.5, 'SLT'],
-[4.5, 'AFT', 'IRDT'],
-[3.5, 'IRST'],
-[-2.5, 'HAT', 'NDT'],
-[-3.5, 'HNT', 'NST', 'NT'],
-[-4.5, 'HLV', 'VET'],
-[-9.5, 'MART', 'MIT']]
+    [-12, 'Y'],
+    [-11, 'X', 'NUT', 'SST'],
+    [-10, 'W', 'CKT', 'HAST', 'HST', 'TAHT', 'TKT'],
+    [-9, 'V', 'AKST', 'GAMT', 'GIT', 'HADT', 'HNY'],
+    [-8, 'U', 'AKDT', 'CIST', 'HAY', 'HNP', 'PST', 'PT'],
+    [-7, 'T', 'HAP', 'HNR', 'MST', 'PDT'],
+    [-6, 'S', 'CST', 'EAST', 'GALT', 'HAR', 'HNC', 'MDT'],
+    [-5, 'R', 'CDT', 'COT', 'EASST', 'ECT', 'EST', 'ET', 'HAC', 'HNE', 'PET'],
+    [-4, 'Q', 'AST', 'BOT', 'CLT', 'COST', 'EDT', 'FKT', 'GYT', 'HAE', 'HNA', 'PYT'],
+    [-3, 'P', 'ADT', 'ART', 'BRT', 'CLST', 'FKST', 'GFT', 'HAA', 'PMST', 'PYST', 'SRT', 'UYT', 'WGT'],
+    [-2, 'O', 'BRST', 'FNT', 'PMDT', 'UYST', 'WGST'],
+    [-1, 'N', 'AZOT', 'CVT', 'EGT'],
+    [0, 'Z', 'EGST', 'GMT', 'UTC', 'WET', 'WT'],
+    [1, 'A', 'CET', 'DFT', 'WAT', 'WEDT', 'WEST'],
+    [2, 'B', 'CAT', 'CEDT', 'CEST', 'EET', 'SAST', 'WAST'],
+    [3, 'C', 'EAT', 'EEDT', 'EEST', 'IDT', 'MSK'],
+    [4, 'D', 'AMT', 'AZT', 'GET', 'GST', 'KUYT', 'MSD', 'MUT', 'RET', 'SAMT', 'SCT'],
+    [5, 'E', 'AMST', 'AQTT', 'AZST', 'HMT', 'MAWT', 'MVT', 'PKT', 'TFT', 'TJT', 'TMT', 'UZT', 'YEKT'],
+    [6, 'F', 'ALMT', 'BIOT', 'BTT', 'IOT', 'KGT', 'NOVT', 'OMST', 'YEKST'],
+    [7, 'G', 'CXT', 'DAVT', 'HOVT', 'ICT', 'KRAT', 'NOVST', 'OMSST', 'THA', 'WIB'],
+    [8, 'H', 'ACT', 'AWST', 'BDT', 'BNT', 'CAST', 'HKT', 'IRKT', 'KRAST', 'MYT', 'PHT', 'SGT', 'ULAT', 'WITA', 'WST'],
+    [9, 'I', 'AWDT', 'IRKST', 'JST', 'KST', 'PWT', 'TLT', 'WDT', 'WIT', 'YAKT'],
+    [10, 'K', 'AEST', 'ChST', 'PGT', 'VLAT', 'YAKST', 'YAPT'],
+    [11, 'L', 'AEDT', 'LHDT', 'MAGT', 'NCT', 'PONT', 'SBT', 'VLAST', 'VUT'],
+    [12, 'M', 'ANAST', 'ANAT', 'FJT', 'GILT', 'MAGST', 'MHT', 'NZST', 'PETST', 'PETT', 'TVT', 'WFT'],
+    [13, 'FJST', 'NZDT'],
+    [11.5, 'NFT'],
+    [10.5, 'ACDT', 'LHST'],
+    [9.5, 'ACST'],
+    [6.5, 'CCT', 'MMT'],
+    [5.75, 'NPT'],
+    [5.5, 'SLT'],
+    [4.5, 'AFT', 'IRDT'],
+    [3.5, 'IRST'],
+    [-2.5, 'HAT', 'NDT'],
+    [-3.5, 'HNT', 'NST', 'NT'],
+    [-4.5, 'HLV', 'VET'],
+    [-9.5, 'MART', 'MIT'],
+    ]
 TZ_ABBREV_OFFSET = {}
 for row in TZ_OFFSET_ABBREV:
     for abbrev in row[1:]:
         TZ_ABBREV_OFFSET[abbrev.strip().upper()] = float(row[0])
-# FIXME: autogenerate this from pytz.timezone(iso_tz_name).tzname(datetime.datetime()) 
+# FIXME: autogenerate this from pytz.timezone(iso_tz_name).tzname(datetime.datetime())
 #         or [pytz.timezone(tz)._tzinfos.keys() for tz in pytz.all_timezones if hasattr(pytz.timezone(tz), '_tzinfos')]
 TZ_ABBREV_INFO = {
-    'AKST': ('US/Alaska',  -10), 'AKDT': ('US/Alaska',   -9),  'AKT': ('US/Alaska' , -10),
+    'AKST': ('US/Alaska',  -10), 'AKDT': ('US/Alaska',   -9),  'AKT': ('US/Alaska',  -10),
     'HAST': ('US/Hawaii',   -9), 'HADT': ('US/Hawaii',   -8),  'HAT': ('US/Hawaii',   -9),
-     'PST': ('US/Pacific',  -8),  'PDT': ('US/Pacific',  -7),   'PT': ('US/Pacific',  -8),
-     'MST': ('US/Mountain', -7),  'MDT': ('US/Mountain', -6),   'MT': ('US/Mountain', -7),
-     'CST': ('US/Central',  -6),  'CDT': ('US/Central',  -5),   'CT': ('US/Central',  -6),
-     'EST': ('US/Eastern',  -5),  'EDT': ('US/Eastern',  -4),   'ET': ('US/Eastern',  -5),
-     'AST': ('US/Atlantic', -4),  'ADT': ('US/Atlantic', -3),   'AT': ('US/Atlantic', -4),
-     'GMT': ('UTC', 0),
+    'PST':  ('US/Pacific',  -8),  'PDT': ('US/Pacific',  -7),   'PT': ('US/Pacific',  -8),
+    'MST':  ('US/Mountain', -7),  'MDT': ('US/Mountain', -6),   'MT': ('US/Mountain', -7),
+    'CST':  ('US/Central',  -6),  'CDT': ('US/Central',  -5),   'CT': ('US/Central',  -6),
+    'EST':  ('US/Eastern',  -5),  'EDT': ('US/Eastern',  -4),   'ET': ('US/Eastern',  -5),
+    'AST':  ('US/Atlantic', -4),  'ADT': ('US/Atlantic', -3),   'AT': ('US/Atlantic', -4),
+    'GMT':  ('UTC', 0),
     }
 TZ_ABBREV_OFFSET = dict(((abbrev, info[1]) for abbrev, info in TZ_ABBREV_INFO.iteritems()))
 TZ_ABBREV_NAME = dict(((abbrev, info[0]) for abbrev, info in TZ_ABBREV_INFO.iteritems()))
@@ -203,7 +207,7 @@ def qs_to_table(qs, excluded_fields=['id']):
         for f in fields:
             if f in excluded_fields:
                 continue
-            rowl += [getattr(row,f)]
+            rowl += [getattr(row, f)]
         rows, rowl = rows + [rowl], []
     return rows
 
@@ -213,7 +217,7 @@ def force_hashable(obj, recursive=True):
 
     Useful for memoization and constructing dicts or hashtables where keys must be immutable.
 
-    FIXME: Rename function because "hashable" is misleading. 
+    FIXME: Rename function because "hashable" is misleading.
            A better name might be `force_immutable`.
            because some hashable objects (generators) are tuplized  by this function
            `tuplized` is probably a better name, but strings are left alone, so not quite right
@@ -280,13 +284,13 @@ def sort_strings(strings, sort_order=None, reverse=False, case_sensitive=False, 
             If sort_order strings have varying length, the max length will determine the prefix length compared
         reverse (bool): whether to reverse the sort orded. Passed through to `sorted(strings, reverse=reverse)`
         case_senstive (bool): Whether to sort in lexographic rather than alphabetic order
-         and whether the prefixes  in sort_order are checked in a case-sensitive way 
+         and whether the prefixes  in sort_order are checked in a case-sensitive way
 
     Examples:
-        >>> sort_strings(['morn32', 'morning', 'unknown', 'date', 'dow', 'doy', 'moy'], 
+        >>> sort_strings(['morn32', 'morning', 'unknown', 'date', 'dow', 'doy', 'moy'],
         ...              ('dat', 'dow', 'moy', 'dom', 'doy', 'mor'))  # doctest: +NORMALIZE_WHITESPACE
         ['date', 'dow', 'moy', 'doy', 'morn32', 'morning', 'unknown']
-        >>> sort_strings(['morn32', 'morning', 'unknown', 'less unknown', 'lucy', 'date', 'dow', 'doy', 'moy'], 
+        >>> sort_strings(['morn32', 'morning', 'unknown', 'less unknown', 'lucy', 'date', 'dow', 'doy', 'moy'],
         ...              ('dat', 'dow', 'moy', 'dom', 'doy', 'mor'), reverse=True)  # doctest: +NORMALIZE_WHITESPACE
         ['unknown', 'lucy', 'less unknown', 'morning', 'morn32', 'doy', 'moy', 'dow', 'date']
 
@@ -499,7 +503,7 @@ def generate_batches(sequence, batch_len=1, allow_partial=True, ignore_errors=Tr
     """
     it = iter(sequence)
     last_value = False
-    # An exception will be thrown by `.next()` here and caught in the loop that called this iterator/generator 
+    # An exception will be thrown by `.next()` here and caught in the loop that called this iterator/generator
     while not last_value:
         batch = []
         for n in xrange(batch_len):
@@ -512,7 +516,7 @@ def generate_batches(sequence, batch_len=1, allow_partial=True, ignore_errors=Tr
                 else:
                     raise StopIteration
             except Exception:
-                # 'Error: new-line character seen in unquoted field - do you need to open the file in universal-newline mode?'       
+                # 'Error: new-line character seen in unquoted field - do you need to open the file in universal-newline mode?'
                 if verbosity > 0:
                     print_exc()
                 if not ignore_errors:
@@ -540,8 +544,8 @@ def generate_tuple_batches(qs, batch_len=1):
 
 def sliding_window(seq, n=2):
     """Generate overlapping sliding/rolling windows (of width n) over an iterable
-    
-    s -> (s0,s1,...s[n-1]), (s1,s2,...,sn), ...                   
+
+    s -> (s0,s1,...s[n-1]), (s1,s2,...,sn), ...
 
     References:
       http://stackoverflow.com/a/6822773/623735
@@ -557,7 +561,7 @@ def sliding_window(seq, n=2):
     it = iter(seq)
     result = tuple(itertools.islice(it, n))
     if len(result) == n:
-        yield result    
+        yield result
     for elem in it:
         result = result[1:] + (elem,)
         yield result
@@ -598,7 +602,6 @@ def generate_slices(sliceable_set, batch_len=1, length=None, start_batch=0):
     raise StopIteration
 
 
-COUNT_NAMES = ['count', 'cnt', 'number', 'num', '#', 'frequency', 'probability', 'prob', 'occurences']
 def find_count_label(d):
     """Find the member of a set that means "count" or "frequency" or "probability" or "number of occurrences".
 
@@ -762,7 +765,7 @@ def fuzzy_get_value(obj, approximate_key, default=None, **kwargs):
     """ Like fuzzy_get, but assume the obj is dict-like and return the value without the key
 
     Notes:
-      Argument order is in reverse order relative to `fuzzywuzzy.process.extractOne()` 
+      Argument order is in reverse order relative to `fuzzywuzzy.process.extractOne()`
         but in the same order as get(self, key) method on dicts
 
     Arguments:
@@ -772,7 +775,7 @@ def fuzzy_get_value(obj, approximate_key, default=None, **kwargs):
       similarity (str): fractional similiarity between the approximate_key and the dict key (0.9 means 90% of characters must be identical)
       tuple_joiner (str): Character to use as delimitter/joiner between tuple elements.
         Used to create keys of any tuples to be able to use fuzzywuzzy string matching on it.
-      key_and_value (bool): Whether to return both the key and its value (True) or just the value (False). 
+      key_and_value (bool): Whether to return both the key and its value (True) or just the value (False).
         Default is the same behavior as dict.get (i.e. key_and_value=False)
       dict_keys (list of str): if you already have a set of keys to search, this will save this funciton a little time and RAM
 
@@ -799,14 +802,13 @@ def fuzzy_get_value(obj, approximate_key, default=None, **kwargs):
 
 def fuzzy_get_tuple(dict_obj, approximate_key, dict_keys=None, key_and_value=False, similarity=0.6, default=None):
     """Find the closest matching key and/or value in a dictionary (must have all string keys!)"""
-    return fuzzy_get(dict(('|'.join(str(k2) for k2 in k), v) for (k, v) in dict_obj.iteritems()), 
+    return fuzzy_get(dict(('|'.join(str(k2) for k2 in k), v) for (k, v) in dict_obj.iteritems()),
                      '|'.join(str(k) for k in approximate_key), dict_keys=dict_keys, key_and_value=key_and_value, similarity=similarity, default=default)
-
 
 
 def sod_transposed(seq_of_dicts, align=True, fill=True, filler=None):
     """Return sequence (list) of dictionaries, transposed into a dictionary of sequences (lists)
-    
+
     >>> sorted(sod_transposed([{'c': 1, 'cm': u'P'}, {'c': 1, 'ct': 2, 'cm': 6, 'cn': u'MUS'}, {'c': 1, 'cm': u'Q', 'cn': u'ROM'}], filler=0).items())
     [('c', [1, 1, 1]), ('cm', [u'P', 6, u'Q']), ('cn', [0, u'MUS', u'ROM']), ('ct', [0, 2, 0])]
     >>> sorted(sod_transposed(({'c': 1, 'cm': u'P'}, {'c': 1, 'ct': 2, 'cm': 6, 'cn': u'MUS'}, {'c': 1, 'cm': u'Q', 'cn': u'ROM'}), fill=0, align=0).items())
@@ -881,9 +883,9 @@ def dos_from_table(table, header=None):
     header_list = header
     if header and isinstance(header, basestring):
         header_list = header.split('\t')
-        if len(header_list)!=len(table[0]):
+        if len(header_list) != len(table[0]):
             header_list = header.split(',')
-        if len(header_list)!=len(table[0]):
+        if len(header_list) != len(table[0]):
             header_list = header.split(' ')
     ans = {}
     for i, k in enumerate(header):
@@ -912,7 +914,7 @@ def transposed_lists(list_of_lists, default=None):
         default = [None]
     else:
         default = [default]
-    
+
     N = len(list_of_lists)
     Ms = [len(row) for row in list_of_lists]
     M = max(Ms)
@@ -930,7 +932,7 @@ def transposed_lists(list_of_lists, default=None):
 def transposed_matrix(matrix, filler=None, row_type=list, matrix_type=list, value_type=None):
     """Like numpy.transposed, evens up row (list) lengths that aren't uniform, filling with None.
 
-    Also, makes all elements a uniform type (default=type(matrix[0][0])), 
+    Also, makes all elements a uniform type (default=type(matrix[0][0])),
     except for filler elements.
 
     TODO: add feature to delete None's at the end of rows so that transpose(transpose(LOL)) = LOL
@@ -959,14 +961,14 @@ def transposed_matrix(matrix, filler=None, row_type=list, matrix_type=list, valu
         row_type = row_type or type(matrix[0])
     except:
         pass
-    if not row_type or row_type == type(None):
+    if not row_type or row_type is None:
         row_type = list
 
     try:
         value_type = value_type or type(matrix[0][0]) or float
     except:
         pass
-    if not value_type or value_type == type(None):
+    if not value_type or value_type is None:
         value_type = float
 
     #print matrix_type, row_type, value_type
@@ -1004,9 +1006,8 @@ def hist_from_counts(counts, normalize=False, cumulative=False, to_str=False, se
     """
     counters = [dict((i, c)for i, c in enumerate(counts))]
 
-
     intkeys_list = [[c for c in counts_dict if (isinstance(c, int) or (isinstance(c, float) and int(c) == c))] for counts_dict in counters]
-    min_bin, max_bin = min_bin or 0, max_bin or len(counts) - 1 
+    min_bin, max_bin = min_bin or 0, max_bin or len(counts) - 1
 
     histograms = []
     for intkeys, counts in zip(intkeys_list, counters):
@@ -1466,7 +1467,7 @@ def strip_br(s):
     """
 
     if isinstance(s, basestring):
-        return re.sub(r'\s*<\s*[Bb][Rr]\s*[/]?\s*>\s*$','', s)
+        return re.sub(r'\s*<\s*[Bb][Rr]\s*[/]?\s*>\s*$', '', s)
     elif isinstance(s, (tuple, list)):
         # strip just the last element in a list or tuple
         try:
@@ -1585,10 +1586,11 @@ def read_csv(csv_file, ext='.csv', format=None, delete_empty_keys=False,
             row = [tryconvert(v, desired_types=NUMBERS_AND_DATETIMES, empty=None, default=v) for v in row]
         if row:
             N = min(max(len(row), 0), len(norm_names))
-            row_dict = OrderedDict(((field_name, field_value) 
-                for field_name, field_value in zip(list(norm_names.values() 
-                    if unique_names else norm_names)[:N],row[:N]) 
-                        if (str(field_name).strip() or delete_empty_keys is False)))
+            row_dict = OrderedDict(
+                ((field_name, field_value) for field_name, field_value in zip(
+                    list(norm_names.values() if unique_names else norm_names)[:N], row[:N])
+                    if (str(field_name).strip() or delete_empty_keys is False))
+                )
             if format in 'dj':  # django json format
                 recs += [{"pk": rownum, "model": model_name, "fields": row_dict}]
             elif format in 'vhl':  # list of lists of values, with header row (list of str)
@@ -1732,7 +1734,6 @@ def column_name_to_date(name):
         return datetime.date(year, month, 1)
 
 
-
 def first_digits(s, default=0):
     """Return the fist (left-hand) digits in a string as a single integer, ignoring sign (+/-).
     >>> first_digits('+123.456')
@@ -1785,6 +1786,7 @@ def make_us_postal_code(s, allowed_lengths=(), allowed_digits=()):
     elif len(z) in (min(l, 5) for l in allowed_lengths):
         return z
     return ''
+
 
 # TODO: create and check MYSQL_MAX_FLOAT constant
 def make_float(s, default='', ignore_commas=True):
@@ -1917,9 +1919,9 @@ def normalize_names(names):
 
 def string_stats(strs, valid_chars='012346789', left_pad='0', right_pad='', strip=True):
     """Count the occurrence of a category of valid characters within an iterable of serial numbers, model numbers, or other strings"""
-    if left_pad == None:
+    if left_pad is None:
         left_pad = ''.join(c for c in RE.ASCII_CHARACTERS if c not in valid_chars)
-    if right_pad == None:
+    if right_pad is None:
         right_pad = ''.join(c for c in RE.ASCII_CHARACTERS if c not in valid_chars)
 
     def normalize(s):
@@ -1939,7 +1941,7 @@ def string_stats(strs, valid_chars='012346789', left_pad='0', right_pad='', stri
         # print i
         for s in strs:
             if i < len(s):
-                counts[ i]   = counts.get( i  , 0) + int(s[ i  ] in valid_chars)
+                counts[i] = counts.get(i, 0) + int(s[i] in valid_chars)
                 counts[-i-1] = counts.get(-i-1, 0) + int(s[-i-1] in valid_chars)
         long_enough_strings = float(sum(c for l, c in lengths.items() if l >= i))
         counts[i] = counts[i] / long_enough_strings
@@ -1948,10 +1950,10 @@ def string_stats(strs, valid_chars='012346789', left_pad='0', right_pad='', stri
     return counts
 
 
-def normalize_serial_number(sn, 
-                            max_length=None, left_fill='0', right_fill='', blank='', 
-                            valid_chars=' -0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ', 
-                            invalid_chars=None, 
+def normalize_serial_number(sn,
+                            max_length=None, left_fill='0', right_fill='', blank='',
+                            valid_chars=' -0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ',
+                            invalid_chars=None,
                             strip_whitespace=True, join=False, na=RE.nones):
     r"""Make a string compatible with typical serial number requirements
 
@@ -1966,7 +1968,7 @@ def normalize_serial_number(sn,
     ''
     >>> normalize_serial_number('N/A', blank='', left_fill='')
     'A'
-    
+
     >>> normalize_serial_number('1C 234567890             ', max_length=20, left_fill='')
     '1C 234567890'
 
@@ -2057,27 +2059,21 @@ def normalize_serial_number(sn,
     if right_fill:
         sn = sn + right_fill * (max_length - len(sn)/len(right_fill))
     return sn
-normalize_serial_number.max_length=10
-normalize_serial_number.left_fill='0'
-normalize_serial_number.right_fill=''
-normalize_serial_number.blank=''
-normalize_serial_number.valid_chars=' -0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ' 
-normalize_serial_number.invalid_chars=None
-normalize_serial_number.strip_whitespace=True
-normalize_serial_number.join=False
-normalize_serial_number.na=RE.nones
-invalid_chars=None
-strip_whitespace=True
-join=False
-na=RE.nones
-
-
+normalize_serial_number.max_length = 10
+normalize_serial_number.left_fill = '0'
+normalize_serial_number.right_fill = ''
+normalize_serial_number.blank = ''
+normalize_serial_number.valid_chars = ' -0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
+normalize_serial_number.invalid_chars = None
+normalize_serial_number.strip_whitespace = True
+normalize_serial_number.join = False
+normalize_serial_number.na = RE.nones
 normalize_account_number = normalize_serial_number
 
 
 def multisplit(s, seps=list(string.punctuation) + list(string.whitespace), blank=True):
     r"""Just like str.split(), except that a variety (list) of seperators is allowed.
-    
+
     >>> multisplit(r'1-2?3,;.4+-', string.punctuation)
     ['1', '2', '3', '', '', '4', '', '']
     >>> multisplit(r'1-2?3,;.4+-', string.punctuation, blank=False)
@@ -2108,7 +2104,7 @@ def make_real(list_of_lists):
 #             y = x[1]
 #             x = x[0]
 #         elif len(x[0]) ==2:
-#             y = [yi for xi, yi in x] 
+#             y = [yi for xi, yi in x]
 #             x = [xi for xi, yi in x]
 #         else:
 #             mat = np.cov(x, ddof=ddof)
@@ -2156,11 +2152,11 @@ def make_tz_aware(dt, tz='UTC', is_dst=None):
      datetime.datetime(1970, 12, 25, 0, 0, tzinfo=<DstTzInfo 'US/Central' CST-1 day, 18:00:00 STD>),
      datetime.datetime(1971,  7,  4, 0, 0, tzinfo=<DstTzInfo 'US/Central' CDT-1 day, 19:00:00 DST>)]
     >>> make_tz_aware([None, float('nan'), float('inf'), 1980, 1979.25*365.25, '1970-10-31', '1970-12-25', '1971-07-04'], 'CDT')  # doctest: +NORMALIZE_WHITESPACE
-    [None, nan, inf, 
-     datetime.datetime(6, 6, 3, 0, 0, tzinfo=<DstTzInfo 'US/Central' LMT-1 day, 18:09:00 STD>), 
-     datetime.datetime(1980, 4, 16, 1, 30, tzinfo=<DstTzInfo 'US/Central' CST-1 day, 18:00:00 STD>), 
+    [None, nan, inf,
+     datetime.datetime(6, 6, 3, 0, 0, tzinfo=<DstTzInfo 'US/Central' LMT-1 day, 18:09:00 STD>),
+     datetime.datetime(1980, 4, 16, 1, 30, tzinfo=<DstTzInfo 'US/Central' CST-1 day, 18:00:00 STD>),
      datetime.datetime(1970, 10, 31, 0, 0, tzinfo=<DstTzInfo 'US/Central' CST-1 day, 18:00:00 STD>),
-     datetime.datetime(1970, 12, 25, 0, 0, tzinfo=<DstTzInfo 'US/Central' CST-1 day, 18:00:00 STD>), 
+     datetime.datetime(1970, 12, 25, 0, 0, tzinfo=<DstTzInfo 'US/Central' CST-1 day, 18:00:00 STD>),
      datetime.datetime(1971, 7, 4, 0, 0, tzinfo=<DstTzInfo 'US/Central' CDT-1 day, 19:00:00 DST>)]
     >>> make_tz_aware(datetime.time(22, 23, 59, 123456))
     datetime.time(22, 23, 59, 123456, tzinfo=<UTC>)
@@ -2192,7 +2188,7 @@ def make_tz_aware(dt, tz='UTC', is_dst=None):
         pass
     try:
         return tz.localize(dt, is_dst=is_dst)
-    except: 
+    except:
         # from traceback import print_exc
         # print_exc()  # TypeError: unsupported operand type(s) for +: 'datetime.time' and 'datetime.timedelta'
         pass
@@ -2263,7 +2259,7 @@ def clean_wiki_datetime(dt, squelch=True):
     except Exception as e:
         if squelch:
             from traceback import format_exc
-            print format_exc(e) +  '\n^^^ Exception caught ^^^\nWARN: Failed to parse datetime string %r\n      from list of strings %r' % (' '.join(dt), dt)
+            print format_exc(e) + '\n^^^ Exception caught ^^^\nWARN: Failed to parse datetime string %r\n      from list of strings %r' % (' '.join(dt), dt)
             return dt
         raise(e)
 
@@ -2316,9 +2312,9 @@ def get_sentences(s, regex=RE.sentence_sep):
 
 
 # this regex assumes "s' " is the end of a possessive word and not the end of an inner quotation, e.g. He said, "She called me 'Hoss'!"
-def get_words(s, splitter_regex=RE.word_sep_except_external_appostrophe, 
+def get_words(s, splitter_regex=RE.word_sep_except_external_appostrophe,
               preprocessor=strip_HTML, postprocessor=strip_edge_punc, min_len=None, max_len=None, blacklist=None, whitelist=None, lower=False, filter_fun=None, str_type=str):
-    r"""Segment words (tokens), returning a list of all tokens 
+    r"""Segment words (tokens), returning a list of all tokens
 
     Does not return any separating whitespace or punctuation marks.
     Attempts to return external apostrophes at the end of words.
@@ -2344,7 +2340,7 @@ def get_words(s, splitter_regex=RE.word_sep_except_external_appostrophe,
     >>> get_words('The foxes\' oh-so-tiny den was 2empty!')
     ['The', 'foxes', 'oh-so-tiny', 'den', 'was', '2empty']
     """
-    # TODO: Get rid of `lower` kwarg (and make sure code that uses it doesn't break) 
+    # TODO: Get rid of `lower` kwarg (and make sure code that uses it doesn't break)
     #       That and other simple postprocessors can be done outside of get_words
     postprocessor = postprocessor or str_type
     preprocessor = preprocessor or str_type
@@ -3425,7 +3421,7 @@ def find_files(path='', ext='', level=None, typ=list, dirs=False, files=True, ve
     Args:
       path (str):  Root/base path to search.
       ext (str):   File name extension. Only file paths that ".endswith()" this string will be returned
-      level (int, optional): Depth of file tree to halt recursion at. 
+      level (int, optional): Depth of file tree to halt recursion at.
         None = full recursion to as deep as it goes
         0 = nonrecursive, just provide a list of files at the root level of the tree
         1 = one level of depth deeper in the tree
@@ -3434,7 +3430,7 @@ def find_files(path='', ext='', level=None, typ=list, dirs=False, files=True, ve
       files (bool): Whether to yield file paths (default: True)
         `dirs=True`, `files=False` is equivalent to `ls -d`
 
-    Returns: 
+    Returns:
       list of dicts: dict keys are { 'path', 'name', 'bytes', 'created', 'modified', 'accessed', 'permissions' }
         path (str): Full, absolute paths to file beneath the indicated directory and ending with `ext`
         name (str): File name only (everythin after the last slash in the path)
@@ -3442,7 +3438,7 @@ def find_files(path='', ext='', level=None, typ=list, dirs=False, files=True, ve
         created (datetime): File creation timestamp from file system
         modified (datetime): File modification timestamp from file system
         accessed (datetime): File access timestamp from file system
-        permissions (int): File permissions bytes as a chown-style integer with a maximum of 4 digits 
+        permissions (int): File permissions bytes as a chown-style integer with a maximum of 4 digits
         type (str): One of 'file', 'dir', 'symlink->file', 'symlink->dir', 'symlink->broken'
           e.g.: 777 or 1755
 
@@ -3547,8 +3543,6 @@ def find_dirs(*args, **kwargs):
     return find_files(*args, **kwargs)
 
 
-import string
-
 class PassageIter(object):
     """Passage (document, sentence, line, phrase) generator for files at indicated path
 
@@ -3558,9 +3552,9 @@ class PassageIter(object):
     References:
       Radim's [word2vec tutorial](http://radimrehurek.com/2014/02/word2vec-tutorial/)
     """
-    def __init__(self, path='', ext='', level=None, dirs=False, files=True, sentence_segmenter=, word_segmenter=string.split, verbosity=0):
+    def __init__(self, path='', ext='', level=None, dirs=False, files=True, sentence_segmenter=generate_sentences, word_segmenter=string.split, verbosity=0):
         self.file_generator = generate_files(path=path, ext='', level=None, dirs=False, files=True, verbosity=0)
- 
+
     def __iter__(self):
         for fname in os.listdir(self.file_generator):
             for line in open(os.path.join(self.dirname, fname)):
