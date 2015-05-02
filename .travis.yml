@@ -4,14 +4,16 @@ python:
 # TODO: What about yum (rpm) or apt (deb) binaries and C code like BLAS and lapack?
 # command to install dependencies
 before_install:
-    - sudo apt-get install gfortran-4.6
-    - sudo apt-get install gfortran python-scipy libatlas-base-dev 
-    - pip install --upgrade pip
+  - sudo apt-get install gfortran-4.6
+  - sudo apt-get install gfortran python-scipy libatlas-base-dev 
+  - pip install --upgrade pip
 install:
-    - "pip install setuptools==3.6"
-    - "pip install -r requirements/travis.txt"
-    - "pip install git+https://github.com/cslu-nlp/nlup.git@master#egg=nlup-master"
-    - "pip install ."
+  - pip install setuptools==3.6
+  - pip install git+https://github.com/cslu-nlp/nlup.git@master#egg=nlup-master
+  - pip install git+https://github.com/hobson/pug-nlp.git@master#egg=pug-nlp-master
+  - pip install git+https://github.com/hobson/pybrain.git@master#egg=pybrain-master
+  - pip install -r requirements/travis.txt
+  - pip install .
 # shell command run tests
 script: 
     - "python pug/nlp/tests.py"
