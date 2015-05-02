@@ -40,8 +40,11 @@ except:  # (IOError, ImportError, OSError, RuntimeError):
 
 
 dependency_links = [
-    'http://github.com/hobson/pybrain/tarball/master#egg=pybrain-hobs-master',
-    'http://github.com/cslu-nlp/nlup/tarball/master#egg=nlup-master',
+    'https://github.com/hobson/pybrain.git@master#egg=pybrain-0.3.3',
+    #'http://github.com/hobson/pybrain/tarball/master#egg=pybrain-hobs-master',
+    'https://github.com/cslu-nlp/nlup.git@master#egg=nlup-master',
+    #'http://github.com/cslu-nlp/nlup/tarball/master#egg=nlup-master',
+
     ]
 EXCLUDE_FROM_PACKAGES = []
 

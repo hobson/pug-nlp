@@ -6,7 +6,10 @@ python:
 before_install:
     - sudo apt-get install gfortran-4.6
     - sudo apt-get install gfortran python-scipy libatlas-base-dev 
-install:
+install:  
+    - "pip install git+https://github.com/hobson/pybrain.git@master#egg=pybrain-0.3.3"
+    - "pip install git+https://github.com/cslu-nlp/nlup.git@master#egg=nlup-master"
+
     - "pip install setuptools==3.6"
     - "pip install -r requirements/travis.txt"
     - "pip install ."
