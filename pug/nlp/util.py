@@ -955,7 +955,6 @@ def transposed_matrix(matrix, filler=None, row_type=list, matrix_type=list, valu
     """
 
     matrix_type = matrix_type or type(matrix)
-    # matrix = matrix_type(matrix)
 
     try:
         row_type = row_type or type(matrix[0])
@@ -965,7 +964,10 @@ def transposed_matrix(matrix, filler=None, row_type=list, matrix_type=list, valu
         row_type = list
 
     try:
-        value_type = value_type or type(matrix[0][0]) or float
+        if matrix[0][0] is None:
+            value_type = value_type or float
+        else:
+            value_type = value_type or type(matrix[0][0]) or float
     except:
         pass
     if not value_type or value_type is None:
@@ -3452,9 +3454,10 @@ def find_files(path='', ext='', level=None, typ=list, dirs=False, files=True, ve
       And it should be at the top of the list.
       >>> sorted(d['name'] for d in find_files(os.path.dirname(__file__), ext='.py', level=0))[0]
       '__init__.py'
-      >>> sorted(find_files().next().keys())
-      ['accessed', 'created', 'dir', 'mode', 'modified', 'name', 'path', 'size', 'type']
       >>> all(d['type'] in ('file','dir','symlink->file','symlink->dir','mount-point->file','mount-point->dir','block-device','symlink->broken','pipe','special','socket','unknown') for d in find_files(level=1, files=True, dirs=True))
+      True
+      >>> os.path.join(os.path.dirname(__file__), '__init__.py') in find_files(
+      ... os.path.dirname(__file__), ext='.py', level=0, typ=dict)
       True
     """
     gen = generate_files(path, ext=ext, level=level, dirs=dirs, files=files, verbosity=verbosity)
@@ -3467,8 +3470,8 @@ def find_files(path='', ext='', level=None, typ=list, dirs=False, files=True, ve
 
 
 def generate_files(path='', ext='', level=None, dirs=False, files=True, verbosity=0):
-    """ Recursively generate files (and thier stats) in the indicated directory 
-    
+    """ Recursively generate files (and thier stats) in the indicated directory
+
     Filter by the indicated file name extension (ext)
 
     Args:
@@ -3491,7 +3494,7 @@ def generate_files(path='', ext='', level=None, dirs=False, files=True, verbosit
         created (datetime): File creation timestamp from file system
         modified (datetime): File modification timestamp from file system
         accessed (datetime): File access timestamp from file system
-        permissions (int): File permissions bytes as a chown-style integer with a maximum of 4 digits 
+        permissions (int): File permissions bytes as a chown-style integer with a maximum of 4 digits
         type (str): One of 'file', 'dir', 'symlink->file', 'symlink->dir', 'symlink->broken'
           e.g.: 777 or 1755
 
@@ -3500,15 +3503,14 @@ def generate_files(path='', ext='', level=None, dirs=False, files=True, verbosit
       True
       >>> (d for d in generate_files(os.path.dirname(__file__), ext='.py') if d['name'] == 'util.py').next()['size'] > 1000
       True
+      >>> sorted(generate_files().next().keys())
+      ['accessed', 'created', 'dir', 'mode', 'modified', 'name', 'path', 'size', 'type']
 
       There should be an __init__ file in the same directory as this script.
       And it should be at the top of the list.
       >>> sorted(d['name'] for d in generate_files(os.path.dirname(__file__), ext='.py', level=0))[0]
       '__init__.py'
-      >>> os.path.join(os.path.dirname(__file__), '__init__.py') in generate_files(
-      ... os.path.dirname(__file__), ext='.py', level=0, typ=dict)
-      True
-      >>> sorted(generate_files()[0].keys())
+      >>> sorted(list(generate_files())[0].keys())
       ['accessed', 'created', 'dir', 'mode', 'modified', 'name', 'path', 'size', 'type']
       >>> all(d['type'] in ('file','dir','symlink->file','symlink->dir','mount-point->file','mount-point->dir','block-device','symlink->broken','pipe','special','socket','unknown')
       ... for d in generate_files(level=1, files=True, dirs=True))
