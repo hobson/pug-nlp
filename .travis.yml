@@ -14,7 +14,7 @@ install:
   - pip install -r requirements/travis.txt
   - pip install .
 script: 
-    - "python pug/nlp/tests.py"
+  - python pug/nlp/tests.py
 notifications:
   email:
     - admin@totalgood.com
