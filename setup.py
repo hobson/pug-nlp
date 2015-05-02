@@ -69,6 +69,7 @@ install_requires = [
     'python-slugify>=0.1.0',
     'matplotlib>=1.4.3',
     'numpy>=1.9.2',
+    'nltk>=3.0.2',
     ]
 print('install_requires: {}'.format(install_requires))
 
