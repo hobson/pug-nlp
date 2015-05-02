@@ -3450,11 +3450,11 @@ def find_files(path='', ext='', level=None, typ=list, dirs=False, files=True, ve
 
       There should be an __init__ file in the same directory as this script.
       And it should be at the top of the list.
-      >>> sorted(d['name'] for d in generate_files(os.path.dirname(__file__), ext='.py', level=0))[0]
+      >>> sorted(d['name'] for d in find_files(os.path.dirname(__file__), ext='.py', level=0))[0]
       '__init__.py'
-      >>> sorted(generate_files().next().keys())
+      >>> sorted(find_files().next().keys())
       ['accessed', 'created', 'dir', 'mode', 'modified', 'name', 'path', 'size', 'type']
-      >>> all(d['type'] in ('file','dir','symlink->file','symlink->dir','mount-point->file','mount-point->dir','block-device','symlink->broken','pipe','special','socket','unknown') for d in generate_files(level=1, files=True, dirs=True))
+      >>> all(d['type'] in ('file','dir','symlink->file','symlink->dir','mount-point->file','mount-point->dir','block-device','symlink->broken','pipe','special','socket','unknown') for d in find_files(level=1, files=True, dirs=True))
       True
     """
     gen = generate_files(path, ext=ext, level=level, dirs=dirs, files=files, verbosity=verbosity)
