@@ -40,11 +40,8 @@ except:  # (IOError, ImportError, OSError, RuntimeError):
 
 
 dependency_links = [
-    'https://github.com/cslu-nlp/nlup.git@master#egg=nlup-0.5',
+    #'https://github.com/cslu-nlp/nlup.git@master#egg=nlup-0.5',
     'https://github.com/hobson/pybrain.git@master#egg=pybrain-0.3.3',
-    #'http://github.com/cslu-nlp/nlup/tarball/master#egg=nlup-master',
-    #'http://github.com/hobson/pybrain/tarball/master#egg=pybrain-hobs-master',
-
     ]
 EXCLUDE_FROM_PACKAGES = []
 
@@ -73,6 +70,7 @@ install_requires = [
     'matplotlib>=1.4.3',
     'numpy>=1.9.2',
     'nltk>=3.0.2',
+    'nlup>=0.5',
     ]
 print('install_requires: {}'.format(install_requires))
 
