@@ -67,6 +67,7 @@ install_requires = [
     'fuzzywuzzy>=0.5.0',
     'python-Levenshtein>=0.12.0',
     'python-slugify>=0.1.0',
+    'seaborn>=0.5.1',
     'matplotlib>=1.4.3',
     'numpy>=1.9.2',
     'nltk>=3.0.2',

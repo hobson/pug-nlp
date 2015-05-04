@@ -1,7 +1,12 @@
-from matplotlib import pyplot as plt
+import seaborn as sb
 import pandas
 np = pandas.np
 import bisect
+
+from matplotlib import pyplot as plt
+
+
+# from pylab import figure, savefig, imshow, axes, axis, cm, show
 
 
 
@@ -9,9 +14,6 @@ import bisect
 #####################################################################################
 ######## Based on the statistics plotting wrapper from Udacity ST-101
 ######## https://www.udacity.com/wiki/plotting_graphs_with_python
-
-
-
 
 
 def scatterplot(x, y):
@@ -123,3 +125,50 @@ def regressionplot(x, y, fit=None):
     ax.grid(True)
     plt.draw()
     return poly
+
+
+class ColorMap(object):
+    def __init__(self, mat, **kwargs):
+        """Render a color map (image) of a matrix or sequence of Matrix objects
+
+        A color map is like a contour map except the "height" or "value" of each matrix element
+        is used to select a color from a continuous spectrum of colors (for heatmap white is max and red is medium)
+
+        Arguments:
+            mat (np.matrix or np.array or list of list): the matrix to be rendered as a color map
+
+        """
+        # try:
+        #     self.colormaps = [ColorMap(m, cmap=cmap, pixelspervalue=pixelspervalue, minvalue=minvalue, maxvalue=maxvalue) for m in mat]
+        # except:
+        #     pass
+        #     # raise ValueError("Don't know how to display ColorMaps for a sequence of type {}".format(type(mat)))
+
+        try:
+            mat = np.array(mat.values)
+        except:
+            try:
+                mat = np.array(mat)
+            except:
+                pass
+
+        if not isinstance(mat, np.ndarray):
+            raise ValueError("Don't know how to display a ColorMap for a matrix of type {}".format(type(mat)))
+
+        kwargs['vmin'] = kwargs.get('vmin', np.amin(mat))
+        kwargs['vmax'] = kwargs.get('vmax', np.amax(mat))
+        kwargs['cmap'] = kwargs.get('cmap', 'bone')  # 'hot', 'greens', 'blues'
+        kwargs['linewidths'] = kwargs.get('linewidths', 0.25)
+        kwargs['square'] = kwargs.get('square', True)
+        sb.heatmap(mat, **kwargs)
+
+    def show(self, block=False):
+        """ Display the last image drawn """
+        try:
+            plt.show(block=block)
+        except:
+            plt.show()
+
+    def save(self, filename):
+        """ save colormap to file"""
+        plt.savefig(filename, fig=self.fig, facecolor='black', edgecolor='black')
