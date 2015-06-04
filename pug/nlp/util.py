@@ -2122,20 +2122,6 @@ def make_real(list_of_lists):
 #     return np.cov(x, y, ddof=ddof)[1,0] / np.std(x, ddof=ddof) / np.std(y, ddof=ddof)
 
 
-# def best_correlation_offset(x, y, ddof=0):
-#     """Find the delay between x and y that maximizes the correlation between them
-#     A negative delay means a negative-correlation between x and y was maximized
-#     """
-#     def offset_correlation(offset, x=x, y=y):
-#         N = len(x)
-#         if offset < 0:
-#             y = [-1 * yi for yi in y]
-#             offset = -1 * offset 
-#         # TODO use interpolation to allow noninteger offsets
-#         return linear_correlation([x[(i - int(offset)) % N] for i in range(N)], y)
-#     return sci.minimize(offset_correlation, 0)
-
-
 def imported_modules():
     for name, val in globals().iteritems():
         if isinstance(val, types.ModuleType):
@@ -3543,6 +3529,28 @@ def find_dirs(*args, **kwargs):
     kwargs['files'] = kwargs.get('files', False)
     kwargs.update({'dirs': True})
     return find_files(*args, **kwargs)
+
+
+def mkdir_p(path):
+    """`mkdir -p` functionality (don't raise exception if path exists)
+
+    Arguments:
+      path (str): Full or relative path to a directory to be created with mkdir -p
+
+    Returns:
+      str: 'pre-existing' or 'new'
+
+    References:
+      http://stackoverflow.com/a/600612/623735
+    """
+    try:
+        os.makedirs(path)
+    except OSError as exception:
+        if exception.errno == errno.EEXIST and os.path.isdir(path):
+            return 'pre-existing'
+        else:
+            raise
+    return 'new'
 
 
 class PassageIter(object):
