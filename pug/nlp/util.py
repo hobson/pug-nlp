@@ -21,6 +21,7 @@
 '''
 
 import os
+import ioerr
 import stat
 import collections
 import itertools
