@@ -1383,7 +1383,8 @@ def update_file_ext(filename, ext='txt', sep='.'):
 
     if ext and ext[0] == sep:
         ext = ext[1:]
-    return os.path.join(path, sep.join(filename.split(sep)[:-1 if filename.count(sep) > 1 else 1] + [ext]))
+    return os.path.join(path, sep.join(filename.split(sep)[:-1 if filename.count(sep) > 1 else 1]
+                        + [ext]))
 
 
 def tryconvert(value, desired_types=SCALAR_TYPES, default=None, empty='', strip=True):
