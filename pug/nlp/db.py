@@ -195,7 +195,6 @@ def sort_prefix(sort):
         return ''
 
 
-
 def epoch_in_milliseconds(epoch):
     """
     >>> epoch_in_milliseconds(datetime_from_seconds(-12345678999.0001))
@@ -391,7 +390,6 @@ def datetime_from_seconds(x, tz=pytz.utc):
     return datetime.datetime.fromtimestamp(x, tz)
 
 
-
 def guess_epochs(dt1, dt2):
     """
     TODO: Be more clever and return epochs for both dates instead of just one, and allow searching of vectors
@@ -406,8 +404,7 @@ def guess_epochs(dt1, dt2):
 
 
 def resample_time_series(x, y, period=1):
-    """
-    Similar to `matplotlib.mlab.griddata(), but in 2D instead of 3D.`
+    """Similar to `matplotlib.mlab.griddata(), but in 2D instead of 3D.`
     """
     x = datetime_in_seconds(x)
     x0 = x[0]
@@ -447,8 +444,7 @@ def resample_time_series(x, y, period=1):
 
 
 def align_time_series(x1, y1, x2, y2, scale_factor=None, x1_epoch=None, x2_epoch=None, x1_monthly=None, x2_monthly=None):
-    """
-    Creates regularly daily sampled data for two irregularly sampled data_sets, filling the gaps with zeros.
+    """Creates regularly daily sampled data for two irregularly sampled data_sets, filling the gaps with zeros.
 
     x1 is considered the 'baseline' sample period. and x2 values not in x1 will have its associated data record ignored
 
@@ -482,13 +478,11 @@ def align_time_series(x1, y1, x2, y2, scale_factor=None, x1_epoch=None, x2_epoch
     for i, date in enumerate(x1):
         z1[i] = y1[i]
 
-
     return x1, z1, z2
 
 
 def interp_time_series(x1, y1, x2, y2, scale_factor=None, x1_epoch=None, x2_epoch=None, x1_monthly=None, x2_monthly=None):
-    """
-    Creates regularly daily sampled data for two irregularly sampled data_sets, filling the gaps with interpolated values.
+    """Creates regularly daily sampled data for two irregularly sampled data_sets, filling the gaps with interpolated values.
 
     x1 is considered the 'baseline' sample period. and x2 values not in x1 will have its associated data record ignored
 
@@ -531,8 +525,7 @@ def passthrough_shaper(x, t=None):
 
 
 def windowed_series(series, xmin=None, xmax=None, shaper=None):
-    """
-    Clip a set of time series (regularly sampled sequences registered to a time value)
+    """Clip a set of time series (regularly sampled sequences registered to a time value)
 
     TODO: Incorporate into the nlp.db.Columns class
     
@@ -566,11 +559,8 @@ def windowed_series(series, xmin=None, xmax=None, shaper=None):
     return ans
 
 
-
-
 def lagged_gen(seq, lag=1, pad=None, truncate=True):
-    """
-    Delay a sequence by inserting the specified padding (or deleting samples for a negative lag).
+    """Delay a sequence by inserting the specified padding (or deleting samples for a negative lag).
 
     if pad = None then wrap (mod) the sequence to maintain the same length
 
@@ -608,8 +598,7 @@ def lagged_seq(seq, lag=1, pad=None, truncate=True):
 
 
 def lagged_series(series, lags=1, pads=None):
-    """
-    Delay each time series in a set of time series by the lags (number of samples) indicated.
+    """Delay each time series in a set of time series by the lags (number of samples) indicated.
 
     Pad any gaps in the resulting series with the value of pads or clip, if None.
 
@@ -641,19 +630,19 @@ def lagged_series(series, lags=1, pads=None):
 
 
 def replace_nonascii(s, filler='', one_for_one=False):
-    '''Remove nonASCII characters from provided string
+    r'''Remove nonASCII characters from provided string
 
     Based on: http://stackoverflow.com/a/2743163/623735 
               by [Khelben](http://stackoverflow.com/users/205083/khelben)
           and
               http://stackoverflow.com/a/20078869/623735
               by [Martin Pieters](http://stackoverflow.com/users/100297/martijn-pieters)
-
-    >>> replace_nonascii(u'éáé123456tgreáé@€')
-    u'123456tgre@'
-    >>> replace_nonascii('\xFE\xFF\xEF\xBB\xBF\xFF\xFE\x00\x00\x81\x9F':)
-    ''
     '''
+    # >>> replace_nonascii(u'éáé123456tgreáé@€')
+    # u'123456tgre@'
+    # >>> replace_nonascii('\xFE\xFF\xEF\xBB\xBF\xFF\xFE\x00\x00\x81\x9F':)
+    # ''
+    # '''
     if one_for_one:
         return regex_patterns.nonascii.sub(filler, s)
     return regex_patterns.nonascii_sequence.sub(filler, s)
@@ -664,7 +653,7 @@ def strip_nonascii(s):
 
 
 def clean_utf8(byte_seq, carefully=False, encodings_to_try=('utf_8', 'iso8859_1', 'cp1252', 'shift_jis', 'shift_jis', 'shiftjis2004', 'iso8859_1', 'utf16'), verbosity=0):
-    r"""Delete any invalid symbols in a UTF-8 encoded string
+    r'''Delete any invalid symbols in a UTF-8 encoded string
 
     Returns:
       str: `byte_seq` encoded in UTF-8, e.g. `unicode(byte_seq).encode('utf-8')`
@@ -678,15 +667,16 @@ def clean_utf8(byte_seq, carefully=False, encodings_to_try=('utf_8', 'iso8859_1'
           'iso-8859-1' : MS SQL Server default encoding (before 2008)
           'iso-8859-2' : MS SQL Server default encoding (before 2012)
 
-    Examples:
-      >>> clean_utf8('`A\xff\xffBC\x7fD\tE\r\nF~G`')
-      '`A\xc3\xbf\xc3\xbfBC\x7fD\tE\r\nF~G`'
-      >>> clean_utf8('`A\xff\xffBC\x7fD\tE\r\nF~G`').decode('UTF8')
-      u'`A\xff\xffBC\x7fD\tE\r\nF~G`'
-      >>> clean_utf8('`A\xff\xffBC\x7fD\tE\r\nF~G`', carefully=True)
-      '`ABC\x7fD\tE\r\nF~G`'
-      >>> clean_utf8('U\xc2\xa0\xc2\xa0\xc2\xa0\xc2\xa0\xc2').decode('UTF8')
-    """
+    '''
+    # Examples:
+    #   >>> clean_utf8('`A\xff\xffBC\x7fD\tE\r\nF~G`')
+    #   '`A\xc3\xbf\xc3\xbfBC\x7fD\tE\r\nF~G`'
+    #   >>> clean_utf8('`A\xff\xffBC\x7fD\tE\r\nF~G`').decode('UTF8')
+    #   u'`A\xff\xffBC\x7fD\tE\r\nF~G`'
+    #   >>> clean_utf8('`A\xff\xffBC\x7fD\tE\r\nF~G`', carefully=True)
+    #   '`ABC\x7fD\tE\r\nF~G`'
+    #   >>> clean_utf8('U\xc2\xa0\xc2\xa0\xc2\xa0\xc2\xa0\xc2').decode('UTF8')
+    # '''
     #print 'cleaning: ' + repr(byte_seq)
     if not isinstance(byte_seq, basestring):
         return byte_seq
