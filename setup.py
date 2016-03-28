@@ -34,7 +34,7 @@ version = env.get('__version__', '0.0.1')
 package_docstring = env.get('__doc__', '`{}` python package'.format(project_name))
 description = package_docstring.split('\n')[0]
 long_description = package_docstring
-__url__ = env.get('__url__', 'http://github.com/hobson/')
+__url__ = env.get('__url__', 'http://github.com/totalgood/')
 __authors__ = env.get('__authors__', ('Hobson <hobson@totalgood.com>',))
 try:
     long_description = open('README.rst', 'r').read()
@@ -84,6 +84,7 @@ setup(
     version=version,
     description=description,
     long_description=long_description,
+    url=__url__,
     author=', '.join(__authors__),
     author_email=__authors__[0].split('<')[1].strip().strip('>'),
 
