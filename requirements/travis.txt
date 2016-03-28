@@ -3,12 +3,11 @@ setuptools>=3.6  # 14.3.1
 
 chardet>=2.3.0
 
-pyOpenSSL==0.14
-pytz==2014.10
+pytz>=2015.2
 python-dateutil>=2.4.1
 
 pandas>=0.15.2
-xlrd==0.9.3
+xlrd>=0.9.3
 
 #$ sudo yum install -y libjpeg-devel openjpeg-devel libpng libpng-devel
 Pillow==2.7
@@ -19,21 +18,3 @@ python-Levenshtein==0.12.0
 progressbar2==2.7.3
 
 python-slugify==0.1.0
-
-######################
-# pug-ann requirements
-
-# pybrain requires scipy which requires these, but doesn't install them when you do `pip install pybrain` (which fails due to failed imports)
-# numpy>=1.9.2
-pyparsing==2.0.3
-# scipy==0.15.1
-
-# pybrain>=0.3.3
-# pug-nlp
-
-######################
-# # dev requirements
-# #$ sudo yum install -y pandoc
-# pypandoc>=0.9.6
-# # alternative backend for matplotlib (like tkagg)
-# python-qt5==0.1.8 

@@ -55,7 +55,6 @@ print('Packages being installed: {}'.format(packages))
 install_requires = [
     'progressbar2>=2.7.3',
     'chardet>=2.3.0',
-    'pyOpenSSL>=0.14',
     'pytz>=2015.2',
     'python-dateutil>=2.4.1',
     'pandas>=0.15.2',
