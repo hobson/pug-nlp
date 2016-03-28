@@ -33,6 +33,7 @@ import re
 import string
 import csv
 import warnings
+import logging
 from collections import OrderedDict
 from traceback import print_exc
 from decimal import Decimal, InvalidOperation, InvalidContext
@@ -43,22 +44,20 @@ import copy
 import codecs
 
 import pandas as pd
-np = pd.np
 from dateutil.parser import parse as parse_date
 import progressbar
 from pytz import timezone
 from fuzzywuzzy import process as fuzzy
 from slugify import slugify
-
-import charlist
-import regex_patterns as RE
-
 import xlrd
+
+from pug.nlp import charlist
+from pug.nlp import regex_patterns as RE
 
 from .segmentation import generate_sentences
 
-import logging
-logger = logging.getLogger('pug.nlp.util')
+np = pd.np
+logger = logging.getLogger(__name__)
 
 
 def parse_time(timestr):
@@ -664,7 +663,7 @@ def list_set(seq):
     return type(seq)(new_list)
 
 
-def fuzzy_get(possible_keys, approximate_key, default=None, similarity=0.6, tuple_joiner='|', key_and_value=False, dict_keys=None, ):
+def fuzzy_get(possible_keys, approximate_key, default=None, similarity=0.6, tuple_joiner='|', key_and_value=False, dict_keys=None):
     r"""Find the closest matching key in a dictionary (or element in a list)
 
     For a dict, optionally retrieve the associated value associated with the closest key
@@ -678,7 +677,7 @@ def fuzzy_get(possible_keys, approximate_key, default=None, similarity=0.6, tupl
       possible_keys (dict): object to run the get method on using the key that is most similar to one within the dict
       approximate_key (str): key to look for a fuzzy match within the dict keys
       default (obj): the value to return if a similar key cannote be found in the `possible_keys`
-      similarity (str): fractional similiarity between the approximate_key and the dict key (0.9 means 90% of characters must be identical)
+      similarity (float): fractional similiarity between the approximate_key and the dict key (0.9 means 90% of characters must be identical)
       tuple_joiner (str): Character to use as delimitter/joiner between tuple elements.
         Used to create keys of any tuples to be able to use fuzzywuzzy string matching on it.
       key_and_value (bool): Whether to return both the key and its value (True) or just the value (False).
@@ -701,7 +700,8 @@ def fuzzy_get(possible_keys, approximate_key, default=None, similarity=0.6, tupl
       (None, None)
       >>> fuzzy_get({'word': tuple('word'), 'noun': tuple('noun')}, 'woh!', similarity=.9, default='darn :-()', key_and_value=True)
       (None, 'darn :-()')
-      >>> possible_keys = 'alerts astronomy conditions currenthurricane forecast forecast10day geolookup history hourly hourly10day planner rawtide satellite tide webcams yesterday'.split(' ')
+      >>> possible_keys = 'alerts astronomy conditions currenthurricane forecast forecast10day geolookup history ' +
+      ...                 'hourly hourly10day planner rawtide satellite tide webcams yesterday'.split(' ')
       >>> fuzzy_get(possible_keys, "cond")
       'conditions'
       >>> fuzzy_get(possible_keys, "Tron")
@@ -731,7 +731,7 @@ def fuzzy_get(possible_keys, approximate_key, default=None, similarity=0.6, tupl
                 dict_obj = dict((tuple_joiner.join(str(k2) for k2 in k), v) for (k, v) in dict_obj.iteritems())
                 if isinstance(approximate_key, (tuple, list)):
                     strkey = tuple_joiner.join(approximate_key)
-            # WARN: fuzzywuzzy requires that the second argument be a list (sets and tuples fail!)
+            # fuzzywuzzy requires that dict_keys be a list (sets and tuples fail!)
             dict_keys = list(set(dict_keys if dict_keys else dict_obj))
             if strkey in dict_keys:
                 fuzzy_key, value = strkey, dict_obj[strkey]
@@ -740,17 +740,12 @@ def fuzzy_get(possible_keys, approximate_key, default=None, similarity=0.6, tupl
                 if strkey in dict_keys:
                     fuzzy_key, value = strkey, dict_obj[strkey]
                 else:
-                    #print 'no exact match was found for {0} in {1} so checking with similarity cutoff of {2}'.format(strkey, dict_keys, similarity)
-                    # WARN: extractBests will return [] if dict_keys is anything other than a list (even sets and tuples fail!)
-                    fuzzy_key_scores = fuzzy.extractBests(strkey, dict_keys, score_cutoff=min(max(similarity*100.0 - 1, 0), 100), limit=6)
-                    #print strkey, fuzzy_key_scores
+                    fuzzy_key_scores = fuzzy.extractBests(strkey, dict_keys, score_cutoff=min(max(similarity * 100.0 - 1, 0), 100), limit=6)
                     if fuzzy_key_scores:
-                        # print fuzzy_key_scores
                         fuzzy_score_keys = []
                         # add length similarity as part of score
                         for (i, (k, score)) in enumerate(fuzzy_key_scores):
                             fuzzy_score_keys += [(score * math.sqrt(len(strkey)**2 / float((len(k)**2 + len(strkey)**2) or 1)), k)]
-                        # print fuzzy_score_keys
                         fuzzy_score, fuzzy_key = sorted(fuzzy_score_keys)[-1]
                         value = dict_obj[fuzzy_key]
     if key_and_value:
