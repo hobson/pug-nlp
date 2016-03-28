@@ -1,4 +1,9 @@
-# setup.py for PUG (PDX Python User Group) package
+"""setup.py for PUG-NLP (PDX Python User Group - Natural Language Processing) namespace package"""
+
+from setuptools import find_packages
+from distutils.core import setup
+import os
+
 # the parent name (perhaps a namespace package) you'd import
 __namespace_package__ = 'pug'
 # the subpackage that this installer is providing that you'd import like __import__(__namespace_package__ + '.' + '__subpackage__')
@@ -7,9 +12,6 @@ __subpackage__ = 'nlp'
 project_name = '{}'.format(__namespace_package__) + ('-' + __subpackage__ if __subpackage__ else '')
 package_name = '{}'.format(__namespace_package__) + ('.' + __subpackage__ if __subpackage__ else '')
 
-from setuptools import find_packages
-from distutils.core import setup
-import os
 
 # # If you want tests to work with django settings.py you need django-setuptest
 # from setuptest import test
@@ -17,7 +19,8 @@ import os
 # #    you need to say so in your setup(kwargs) below, like this:
 # # setup(cmdclass={'test': test},...
 
-print('Installing package named {} from the {} project, a sub-package/project of the namespace package {}. . .'.format(package_name, project_name, package_name))
+print('Installing package named {} from the {} project, a sub-package/project of the namespace package {}. . .'.format(
+      package_name, project_name, package_name))
 
 global_env, env = {}, {}
 package_info_path = os.path.join(__subpackage__, 'package_info.py')
@@ -40,7 +43,6 @@ except:  # (IOError, ImportError, OSError, RuntimeError):
 
 
 dependency_links = [
-    #'https://github.com/cslu-nlp/nlup.git@master#egg=nlup-0.5',
     'https://github.com/hobson/pybrain.git@master#egg=pybrain-0.3.3',
     ]
 EXCLUDE_FROM_PACKAGES = []
@@ -51,12 +53,7 @@ packages = list(set([package_name] + list(find_packages(exclude=EXCLUDE_FROM_PAC
 print('Packages being installed: {}'.format(packages))
 
 install_requires = [
-    'wsgiref>=0.1.2',
-    'six>=1.9.0',
     'progressbar2>=2.7.3',
-    'pyzmq>=14.5.0',
-    'Unidecode>=0.4.16',
-    'cffi>=0.9.2',
     'chardet>=2.3.0',
     'pyOpenSSL>=0.14',
     'pytz>=2015.2',
@@ -85,25 +82,16 @@ setup(
     include_package_data=True,
     install_requires=install_requires,
     dependency_links=dependency_links,
-    # scripts=['pug/bin/test_ann.py'],
-    # entry_points={'console_scripts': [
-    #     'test-ann = pug.ann.tests.run',
-    # ]},
     version=version,
     description=description,
     long_description=long_description,
     author=', '.join(__authors__),
     author_email=__authors__[0].split('<')[1].strip().strip('>'),
 
-    #tests_require=['django-setuptest', 'south'],
-    #test_suite='setuptest.setuptest.SetupTestSuite',
-    #cmdclass={'test': test},
-    # url=__url__,
-
-    # # Force setup.py to use the latest github master source files rather than the cheeseshop tarball:
-    # download_url="{}/tarball/master".format(__url__),
-
-    keywords=["nlp", "natural language processing", "text", "text processing", "bot", "ai", "agent", "data", "science", "data science", "math", "machine-learning", "statistics", "database"],
+    keywords=["nlp", "natural language processing", "text", "text processing",
+              "bot", "chatbot", "ai", "agent",
+              "data", "science", "data science", "math", "machine-learning",
+              "statistics", "database"],
     classifiers=[
         "Programming Language :: Python",
         "Programming Language :: Python :: 2.7",
