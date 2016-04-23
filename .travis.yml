@@ -1,19 +1,31 @@
+# Travis configuration file using the build matrix feature
+# Read more under http://docs.travis-ci.com/user/build-configuration/
+# THIS SCRIPT IS SUPPOSED TO BE AN EXAMPLE. MODIFY IT ACCORDING TO YOUR NEEDS!
+
+sudo: false
 language: python
-python:
-  - "2.7"
-before_install:
-  - wget http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh
-  - chmod +x miniconda.sh
-  - ./miniconda.sh -b
-  - export PATH=/home/travis/miniconda/bin:$PATH
-  - conda update --yes conda
-  - conda install --yes python=$TRAVIS_PYTHON_VERSION pyparsing atlas numpy scipy matplotlib dateutil Pillow statsmodels
+virtualenv:
+  system_site_packages: true
+env:
+  matrix:
+    - DISTRIB="ubuntu" PYTHON_VERSION="2.7" COVERAGE="true"
+    - DISTRIB="conda" PYTHON_VERSION="2.7" COVERAGE="false"
+    - DISTRIB="conda" PYTHON_VERSION="3.3" COVERAGE="false"
+    - DISTRIB="conda" PYTHON_VERSION="3.4" COVERAGE="false"
+addons:
+  apt:
+    packages:
+      - git
+      - python-pip
 install:
-  - pip install git+https://github.com/hobson/pybrain.git@master#egg=pybrain-master
-  - pip install .
-  - pip freeze
-script: 
-  - python pug/nlp/tests.py
-notifications:
-  email:
-    - admin@totalgood.com
+  - source tests/travis_install.sh
+  - pip install -r requirements.txt
+before_script:
+  - git config --global user.email "you@example.com"
+  - git config --global user.name "Your Name"
+script:
+  - python setup.py test
+after_success:
+  - if [[ "$COVERAGE" == "true" ]]; then coveralls || echo "failed"; fi
+cache:
+  - apt
