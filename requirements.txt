@@ -1,19 +1,26 @@
-pip>=6.0.7  # this is the version used by travis
+pip>=8.1.1
+# setuptools>=3.6  # 14.3.1
 
 chardet>=2.3.0
 
-pytz>=2015.2
-python-dateutil>=2.4.1
+#$ sudo apt-get install libpng12-dev libfreetype6-dev
+matplotlib>=1.5.1
+# these come with matplotlib
+# pytz>=2016.4
+# python-dateutil>=2.5.3
 
-pandas>=0.15.2
-xlrd>=0.9.3
+seaborn>=0.7.0
+# comes with seaborn
+# scipy>=0.17.0
 
 #$ sudo yum install libjpeg-devel openjpeg-devel
-Pillow>=2.7
-seaborn>=0.5.1
-matplotlib>=1.4.3
-fuzzywuzzy>=0.5.0
+#$ sudo apt-get install libjpeg-dev
+Pillow>=3.2.0
+
+pandas>=0.18.0
+xlrd>=0.9.4
+fuzzywuzzy>=0.10.0
 python-Levenshtein==0.12.0
-progressbar2>=2.7.3
-python-slugify>=0.1.0
+progressbar2>=3.6.2
+python-slugify>=1.2.0
 
