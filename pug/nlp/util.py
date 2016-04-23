@@ -21,6 +21,7 @@
 '''
 
 import os
+import errno
 import stat
 import collections
 import itertools
@@ -1378,7 +1379,8 @@ def update_file_ext(filename, ext='txt', sep='.'):
 
     if ext and ext[0] == sep:
         ext = ext[1:]
-    return os.path.join(path, sep.join(filename.split(sep)[:-1 if filename.count(sep) > 1 else 1] + [ext]))
+    return os.path.join(path, sep.join(filename.split(sep)[:-1 if filename.count(sep) > 1 else 1]
+                        + [ext]))
 
 
 def tryconvert(value, desired_types=SCALAR_TYPES, default=None, empty='', strip=True):
@@ -2117,20 +2119,6 @@ def make_real(list_of_lists):
 #     return np.cov(x, y, ddof=ddof)[1,0] / np.std(x, ddof=ddof) / np.std(y, ddof=ddof)
 
 
-# def best_correlation_offset(x, y, ddof=0):
-#     """Find the delay between x and y that maximizes the correlation between them
-#     A negative delay means a negative-correlation between x and y was maximized
-#     """
-#     def offset_correlation(offset, x=x, y=y):
-#         N = len(x)
-#         if offset < 0:
-#             y = [-1 * yi for yi in y]
-#             offset = -1 * offset 
-#         # TODO use interpolation to allow noninteger offsets
-#         return linear_correlation([x[(i - int(offset)) % N] for i in range(N)], y)
-#     return sci.minimize(offset_correlation, 0)
-
-
 def imported_modules():
     for name, val in globals().iteritems():
         if isinstance(val, types.ModuleType):
@@ -2430,7 +2418,7 @@ def intify(obj, str_fun=str, use_ord=True, use_hash=True, use_len=True):
     (110, 110, 110)
     >>> intify(None, use_ord=False, use_hash=False, use_len=False)
     >>> intify(None, use_ord=False, use_hash=False, str_fun=False)
-    >>> intify(None, use_hash=False, str_fun=False) 
+    >>> intify(None, use_hash=False, str_fun=False)
     """
     try:
         return int(obj)
@@ -2446,12 +2434,12 @@ def intify(obj, str_fun=str, use_ord=True, use_hash=True, use_len=True):
         pass
     if not str_fun:
         str_fun = lambda x:x
-    if use_ord:    
+    if use_ord:
         try:
             return ord(str_fun(obj)[0].lower())
         except:
             pass
-    if use_hash:  
+    if use_hash:
         try:
             return hash(str_fun(obj))
         except:
@@ -2767,7 +2755,7 @@ def kmer_set(seq, k=4):
     """Return the set of unique k-length substrings within a the sequence/string `seq`
 
     Implements formula:
-    C_k(s) = C(s) ∩ Σ^k 
+    C_k(s) = C(s) ∩ Σ^k
     from http://biorxiv.org/content/early/2014/08/01/007583
 
     >>> sorted(kmer_set('AGATAGATAGACACAGAAATGGGACCACAC'))
@@ -2786,7 +2774,7 @@ def kmer_set(seq, k=4):
 #     t = km
 #     S = seq_of_seq
 #     >>> kmer_frequency(['AGATAGATAG', 'ACACAGAAAT', 'GGGACCACAC'], km=4)
-    
+
 #     """
 #     if km and isinstance(km, basestring):
 #         return sum(km in counter for counter in kmer_counter(seq_of_seq, len(km)))
@@ -2848,7 +2836,7 @@ def count_duplicates(items):
 #     sentences = sentence_detector.tokenize(doc)
 #     tokens = nltk.tokenize.punkt.PunktWordTokenizer().tokenize(doc)
 #     vocabulary = collections.Counter(tokens)
-    
+
 #     return collections.OrderedDict([
 #         ('lines', sum([bool(l.strip().strip('-').strip()) for l in doc.split('\n')])),
 #         ('pages', sum([bool(l.strip().startswith('---')) for l in doc.split('\n')]) + 1),
@@ -2950,7 +2938,7 @@ def make_date(dt, date_parser=parse_date):
     """Coerce a datetime or string into datetime.date object
 
     Arguments:
-      dt (str or datetime.datetime or atetime.time or numpy.Timestamp): time or date 
+      dt (str or datetime.datetime or atetime.time or numpy.Timestamp): time or date
         to be coerced into a `datetime.date` object
 
     Returns:
@@ -2980,7 +2968,7 @@ def make_datetime(dt, date_parser=parse_date):
     """Coerce a datetime or string into datetime.datetime object
 
     Arguments:
-      dt (str or datetime.datetime or atetime.time or numpy.Timestamp): time or date 
+      dt (str or datetime.datetime or atetime.time or numpy.Timestamp): time or date
         to be coerced into a `datetime.date` object
 
     Returns:
@@ -3035,7 +3023,7 @@ def make_time(dt, date_parser=parse_date):
     """Ignore date information in a datetime string or object
 
     Arguments:
-      dt (str or datetime.datetime or atetime.time or numpy.Timestamp): time or date 
+      dt (str or datetime.datetime or atetime.time or numpy.Timestamp): time or date
         to be coerced into a `datetime.time` object
 
     Returns:
@@ -3067,7 +3055,7 @@ def make_time(dt, date_parser=parse_date):
 
 def quantize_datetime(dt, resolution=None):
     """Quantize a datetime to integer years, months, days, hours, minutes, seconds or microseconds
-    
+
     Also works with a `datetime.timetuple` or `time.struct_time` or a 1to9-tuple of ints or floats.
     Also works with a sequenece of struct_times, tuples, or datetimes
 
@@ -3130,10 +3118,10 @@ def ordinal_float(dt):
 def datetime_from_ordinal_float(days):
     """Inverse of `ordinal_float()`, converts a float number of days back to a `datetime` object
 
-    >>> dt = datetime.datetime(1970, 1, 1) 
+    >>> dt = datetime.datetime(1970, 1, 1)
     >>> datetime_from_ordinal_float(ordinal_float(dt)) == dt
     True
-    >>> dt = datetime.datetime(1, 2, 3, 4, 5, 6, 7) 
+    >>> dt = datetime.datetime(1, 2, 3, 4, 5, 6, 7)
     >>> datetime_from_ordinal_float(ordinal_float(dt)) == dt
     True
     """
@@ -3184,7 +3172,7 @@ def flatten_dataframe(df, date_parser=parse_date, verbosity=0):
     df = df[pd.notnull(df.index)]
 
     # Make sure columns and row labels are all times and dates respectively
-    # Ignores/clears any timezone information 
+    # Ignores/clears any timezone information
     if all(isinstance(i, int) for i in df.index):
         for label in df.columns:
             if 'date' in str(label).lower():
@@ -3208,7 +3196,7 @@ def flatten_dataframe(df, date_parser=parse_date, verbosity=0):
 
     df = df.drop(df.index[[(isinstance(d[1], (basestring, NoneType))) for d in df.index]])
 
-    # df.index is now a compound key (tuple) of the column labels (df.columns) and the row labels (df.index) 
+    # df.index is now a compound key (tuple) of the column labels (df.columns) and the row labels (df.index)
     # so lets combine them to be datetime values (pandas.Timestamp)
     dt = None
     t0 = df.index[0][1]
@@ -3327,7 +3315,7 @@ def walk_level(path, level=1):
 
     Args:
      path (str):  Root path to begin file tree traversal (walk)
-      level (int, optional): Depth of file tree to halt recursion at. 
+      level (int, optional): Depth of file tree to halt recursion at.
         None = full recursion to as deep as it goes
         0 = nonrecursive, just provide a list of files at the root level of the tree
         1 = one level of depth deeper in the tree
@@ -3472,7 +3460,7 @@ def generate_files(path='', ext='', level=None, dirs=False, files=True, verbosit
     Args:
       path (str):  Root/base path to search.
       ext (str):   File name extension. Only file paths that ".endswith()" this string will be returned
-      level (int, optional): Depth of file tree to halt recursion at. 
+      level (int, optional): Depth of file tree to halt recursion at.
         None = full recursion to as deep as it goes
         0 = nonrecursive, just provide a list of files at the root level of the tree
         1 = one level of depth deeper in the tree
@@ -3481,7 +3469,7 @@ def generate_files(path='', ext='', level=None, dirs=False, files=True, verbosit
       files (bool): Whether to yield file paths (default: True)
         `dirs=True`, `files=False` is equivalent to `ls -d`
 
-    Returns: 
+    Returns:
       list of dicts: dict keys are { 'path', 'name', 'bytes', 'created', 'modified', 'accessed', 'permissions' }
         path (str): Full, absolute paths to file beneath the indicated directory and ending with `ext`
         name (str): File name only (everythin after the last slash in the path)
@@ -3540,6 +3528,30 @@ def find_dirs(*args, **kwargs):
     return find_files(*args, **kwargs)
 
 
+def mkdir_p(path):
+    """`mkdir -p` functionality (don't raise exception if path exists)
+
+    Make containing directory and parent directories in `path`, if they don't exist.
+
+    Arguments:
+      path (str): Full or relative path to a directory to be created with mkdir -p
+
+    Returns:
+      str: 'pre-existing' or 'new'
+
+    References:
+      http://stackoverflow.com/a/600612/623735
+    """
+    try:
+        os.makedirs(path)
+    except OSError as exception:
+        if exception.errno == errno.EEXIST and os.path.isdir(path):
+            return 'pre-existing'
+        else:
+            raise
+    return 'new'
+
+
 class PassageIter(object):
     """Passage (document, sentence, line, phrase) generator for files at indicated path
 
@@ -3549,7 +3561,8 @@ class PassageIter(object):
     References:
       Radim's [word2vec tutorial](http://radimrehurek.com/2014/02/word2vec-tutorial/)
     """
-    def __init__(self, path='', ext='', level=None, dirs=False, files=True, sentence_segmenter=generate_sentences, word_segmenter=string.split, verbosity=0):
+    def __init__(self, path='', ext='', level=None, dirs=False, files=True,
+                 sentence_segmenter=generate_sentences, word_segmenter=string.split, verbosity=0):
         self.file_generator = generate_files(path=path, ext='', level=None, dirs=False, files=True, verbosity=0)
 
     def __iter__(self):
