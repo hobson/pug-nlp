@@ -22,6 +22,7 @@
 from __future__ import print_function, division
 
 import os
+import errno
 import stat
 import collections
 import itertools
@@ -313,7 +314,7 @@ def sort_strings(strings, sort_order=None, reverse=False, case_sensitive=False, 
             if a[:prefix_len] in sort_order:
                 if b[:prefix_len] in sort_order:
                     comparison = sort_order.index(a[:prefix_len]) - sort_order.index(b[:prefix_len])
-                    float(comparison) /= abs(float(comparison) or 1.)
+                    comparison = float(comparison) / abs(float(comparison) or 1.)
                     if comparison:
                         return comparison * (-2 * reverse + 1)
                 elif sort_order_first:
@@ -812,7 +813,8 @@ def sod_transposed(seq_of_dicts, align=True, fill=True, filler=None):
 
     >>> sorted(sod_transposed([{'c': 1, 'cm': u'P'}, {'c': 1, 'ct': 2, 'cm': 6, 'cn': u'MUS'}, {'c': 1, 'cm': u'Q', 'cn': u'ROM'}], filler=0).items())
     [('c', [1, 1, 1]), ('cm', [u'P', 6, u'Q']), ('cn', [0, u'MUS', u'ROM']), ('ct', [0, 2, 0])]
-    >>> sorted(sod_transposed(({'c': 1, 'cm': u'P'}, {'c': 1, 'ct': 2, 'cm': 6, 'cn': u'MUS'}, {'c': 1, 'cm': u'Q', 'cn': u'ROM'}), fill=0, align=0).items())
+    >>> sorted(sod_transposed(({'c': 1, 'cm': u'P'}, {'c': 1, 'ct': 2, 'cm': 6, 'cn': u'MUS'}, {'c': 1, 'cm': u'Q', 'cn': u'ROM'}),
+                              fill=0, align=0).items())
     [('c', [1, 1, 1]), ('cm', [u'P', 6, u'Q']), ('cn', [u'MUS', u'ROM']), ('ct', [2])]
     """
     result = {}
@@ -854,7 +856,8 @@ def consolidate_stats(dict_of_seqs, stats_key=None, sep=','):
 
     >>> consolidate_stats(dict([('c', [1, 1, 1]), ('cm', [u'P', 6, u'Q']), ('cn', [0, u'MUS', u'ROM']), ('ct', [0, 2, 0])]), stats_key='c')
     [{'P,0,0': 1}, {'6,MUS,2': 1}, {'Q,ROM,0': 1}]
-    >>> consolidate_stats([{'c': 1, 'cm': 'P', 'cn': 0, 'ct': 0}, {'c': 1, 'cm': 6, 'cn': 'MUS', 'ct': 2}, {'c': 1, 'cm': 'Q', 'cn': 'ROM', 'ct': 0}], stats_key='c')
+    >>> consolidate_stats([{'c': 1, 'cm': 'P', 'cn': 0, 'ct': 0}, {'c': 1, 'cm': 6, 'cn': 'MUS', 'ct': 2},
+    ...                    {'c': 1, 'cm': 'Q', 'cn': 'ROM', 'ct': 0}], stats_key='c')
     [{'P,0,0': 1}, {'6,MUS,2': 1}, {'Q,ROM,0': 1}]
     """
     if isinstance(dict_of_seqs, dict):
@@ -974,8 +977,6 @@ def transposed_matrix(matrix, filler=None, row_type=list, matrix_type=list, valu
     if not value_type or value_type is None:
         value_type = float
 
-    #print matrix_type, row_type, value_type
-
     # original matrix is NxM, new matrix will be MxN
     N = len(matrix)
     Ms = [len(row) for row in matrix]
@@ -1023,7 +1024,7 @@ def hist_from_counts(counts, normalize=False, cumulative=False, to_str=False, se
                 counts[c] = float(counts[c]) / N
         if cumulative:
             for i in xrange(min_bin, max_bin + 1):
-                histograms[-1][i] = counts.get(i, 0) + histograms[-1].get(i-1, 0)
+                histograms[-1][i] = counts.get(i, 0) + histograms[-1].get(i - 1, 0)
         else:
             for i in xrange(min_bin, max_bin + 1):
                 histograms[-1][i] = counts.get(i, 0)
@@ -1038,7 +1039,7 @@ def hist_from_counts(counts, normalize=False, cumulative=False, to_str=False, se
 
     if to_str:
         # FIXME: add header row
-        return str_from_table(aligned_histograms, sep=sep, max_rows=365*2+1)
+        return str_from_table(aligned_histograms, sep=sep, max_rows=365 * 2 + 1)
 
     return aligned_histograms
 
@@ -1062,10 +1063,12 @@ def hist_from_values_list(values_list, fillers=(None,), normalize=False, cumulat
         # ignore all fillers and convert all floats to ints when doing counting
         counters = [collections.Counter(int(value) for value in values_list if isinstance(value, (int, float)))]
     elif all(len(row) == 1 for row in values_list) and all(isinstance(row[0], value_types) for row in values_list):
-        return hist_from_values_list([values[0] for values in values_list], fillers=fillers, normalize=normalize, cumulative=cumulative, to_str=to_str, sep=sep, min_bin=min_bin, max_bin=max_bin)
+        return hist_from_values_list([values[0] for values in values_list], fillers=fillers, normalize=normalize, cumulative=cumulative,
+                                     to_str=to_str, sep=sep, min_bin=min_bin, max_bin=max_bin)
     else:  # assume it's a row-wise table (list of rows)
         return [
-            hist_from_values_list(col, fillers=fillers, normalize=normalize, cumulative=cumulative, to_str=to_str, sep=sep, min_bin=min_bin, max_bin=max_bin)
+            hist_from_values_list(col, fillers=fillers, normalize=normalize, cumulative=cumulative, to_str=to_str, sep=sep,
+                                  min_bin=min_bin, max_bin=max_bin)
             for col in transposed_matrix(values_list)
             ]
 
@@ -1097,7 +1100,7 @@ def hist_from_values_list(values_list, fillers=(None,), normalize=False, cumulat
                 counts[c] = float(counts[c]) / N
         if cumulative:
             for i in xrange(min_bin, max_bin + 1):
-                histograms[-1][i] = counts.get(i, 0) + histograms[-1].get(i-1, 0)
+                histograms[-1][i] = counts.get(i, 0) + histograms[-1].get(i - 1, 0)
         else:
             for i in xrange(min_bin, max_bin + 1):
                 histograms[-1][i] = counts.get(i, 0)
@@ -1112,7 +1115,7 @@ def hist_from_values_list(values_list, fillers=(None,), normalize=False, cumulat
 
     if to_str:
         # FIXME: add header row
-        return str_from_table(aligned_histograms, sep=sep, max_rows=365*2+1)
+        return str_from_table(aligned_histograms, sep=sep, max_rows=365 * 2 + 1)
 
     return aligned_histograms
 
@@ -1157,7 +1160,10 @@ def get_similar(obj, labels, default=None, min_similarity=0.5):
     """
     raise NotImplementedError("Unfinished implementation, needs to be incorporated into fuzzy_get where a list of scores and keywords is sorted.")
     labels = listify(labels)
-    not_found = lambda: 0
+
+    def not_found(*args, **kwargs):
+        return 0
+
     min_score = int(min_similarity * 100)
     for similarity_score in [100, 95, 90, 80, 70, 50, 30, 10, 5, 0]:
         if similarity_score <= min_score:
@@ -1170,10 +1176,10 @@ def get_similar(obj, labels, default=None, min_similarity=0.5):
                     result = obj.__getitem__(label)
                 except (IndexError, TypeError):
                     result = not_found
-            if not result is not_found:
+            if result is not not_found:
                 return result
         if similarity_score == min_score:
-            if not result is not_found:
+            if result is not not_found:
                 return result
 
 
@@ -1302,7 +1308,7 @@ def make_name(s, camel=None, lower=None, space='_', remove_prefix=None, language
         s = s.lower()
     # TODO: add language Regexes to filter characters appropriately for python or javascript
     space_escape = '\\' if space and space not in ' _' else ''
-    if not language in ecma_languages:
+    if language not in ecma_languages:
         invalid_char_regex = re.compile('[^a-zA-Z0-9' + space_escape + space + ']+')
     else:
         # FIXME: Unicode categories and properties only works in Perl Regexes!
@@ -1497,7 +1503,8 @@ def read_csv(csv_file, ext='.csv', format=None, delete_empty_keys=False,
         merge with `nlp.util.make_dataframe` function
 
     Handles unquoted and quoted strings, quoted commas, quoted newlines (EOLs), complex numbers, times, dates, datetimes,
-    >>> read_csv('"name\r\n",rank,"serial\nnumber",date <BR />\t\n"McCain, John","1","123456789",9/11/2001\nBob,big cheese,1-23,1/1/2001 12:00 GMT', format='header+values list', numbers=True)  # doctest: +NORMALIZE_WHITESPACE
+    >>> read_csv('"name\r\n",rank,"serial\nnumber",date <BR />\t\n"McCain, John","1","123456789",9/11/2001\n' +
+    ...          'Bob,big cheese,1-23,1/1/2001 12:00 GMT', format='header+values list', numbers=True)  # doctest: +NORMALIZE_WHITESPACE
     [['name', 'rank', 'serial\nnumber', 'date'],
      ['McCain, John', 1.0, 123456789.0, datetime.datetime(2001, 9, 11, 0, 0)],
      ['Bob',
@@ -1653,12 +1660,12 @@ def make_dataframe(prices, num_prices=1, columns=('portfolio',)):
             prices[i] = row[1:]
     # try to convert all strings to something numerical:
     elif any(any(isinstance(value, basestring) for value in row) for row in prices):
-        #print '-'*80
+        # print '-'*80
         for i, row in enumerate(prices):
-            #print i, row
+            # print i, row
             for j, value in enumerate(row):
                 s = unicode(value).strip().strip('"').strip("'")
-                #print i, j, s
+                # print i, j, s
                 try:
                     prices[i][j] = int(s)
                     # print prices[i][j]
@@ -1681,8 +1688,7 @@ def make_dataframe(prices, num_prices=1, columns=('portfolio',)):
         try:
             for i, row in enumerate(prices):
                 # print i, row
-                index += [datetime.datetime(*[int(i) for i in row[:datetime_width]])
-                          + datetime.timedelta(hours=16)]
+                index += [datetime.datetime(*[int(i) for i in row[:datetime_width]]) + datetime.timedelta(hours=16)]
                 new_prices += [row[datetime_width:]]
                 # print prices[-1]
         except:
@@ -1882,13 +1888,13 @@ def normalize_scientific_notation(s, ignore_commas=True, verbosity=1):
     """
     s = s.lstrip(charlist.not_digits_nor_sign)
     s = s.rstrip(charlist.not_digits)
-    #print s
+    # print s
     # TODO: substitute ** for ^ and just eval the expression rather than insisting on a base-10 representation
     num_strings = RE.scientific_notation_exponent.split(s, maxsplit=2)
-    #print num_strings
+    # print num_strings
     # get rid of commas
     s = RE.re.sub(r"[^.0-9-+" + "," * int(not ignore_commas) + r"]+", '', num_strings[0])
-    #print s
+    # print s
     # if this value gets so large that it requires an exponential notation, this will break the conversion
     if not s:
         return None
@@ -1896,13 +1902,13 @@ def normalize_scientific_notation(s, ignore_commas=True, verbosity=1):
         s = str(eval(s.strip().lstrip('0')))
     except:
         if verbosity > 1:
-            print 'Unable to evaluate %s' % repr(s)
+            print('Unable to evaluate %s' % repr(s))
         try:
             s = str(float(s))
         except:
-            print 'Unable to float %s' % repr(s)
+            print('Unable to float %s' % repr(s))
             s = ''
-    #print s
+    # print s
     if len(num_strings) > 1:
         if not s:
             s = '1'
@@ -1945,10 +1951,10 @@ def string_stats(strs, valid_chars='012346789', left_pad='0', right_pad='', stri
         for s in strs:
             if i < len(s):
                 counts[i] = counts.get(i, 0) + int(s[i] in valid_chars)
-                counts[-i-1] = counts.get(-i-1, 0) + int(s[-i-1] in valid_chars)
+                counts[-i - 1] = counts.get(-i - 1, 0) + int(s[-i - 1] in valid_chars)
         long_enough_strings = float(sum(c for l, c in lengths.items() if l >= i))
         counts[i] = counts[i] / long_enough_strings
-        counts[-i-1] = counts[-i-1] / long_enough_strings
+        counts[-i - 1] = counts[-i - 1] / long_enough_strings
 
     return counts
 
@@ -1980,7 +1986,8 @@ def normalize_serial_number(sn,
     20
     >>> normalize_serial_number('Unknown', blank=False)
     '00000000000000000000'
-    >>> normalize_serial_number(' \t1C\t-\t234567890 \x00\x7f', max_length=14, left_fill='0', valid_chars='0123456789ABC', invalid_chars=None, join=True)
+    >>> normalize_serial_number(' \t1C\t-\t234567890 \x00\x7f', max_length=14, left_fill='0',
+    ...                         valid_chars='0123456789ABC', invalid_chars=None, join=True)
     '0001C234567890'
 
     Notice how the max_length setting carries over from the previous test!
@@ -2058,9 +2065,9 @@ def normalize_serial_number(sn,
     if not sn and not (blank is False):
         return blank
     if left_fill:
-        sn = left_fill * (max_length - len(sn)/len(left_fill)) + sn
+        sn = left_fill * (max_length - len(sn) / len(left_fill)) + sn
     if right_fill:
-        sn = sn + right_fill * (max_length - len(sn)/len(right_fill))
+        sn = sn + right_fill * (max_length - len(sn) / len(right_fill))
     return sn
 normalize_serial_number.max_length = 10
 normalize_serial_number.left_fill = '0'
@@ -2123,20 +2130,6 @@ def make_real(list_of_lists):
 #     return np.cov(x, y, ddof=ddof)[1,0] / np.std(x, ddof=ddof) / np.std(y, ddof=ddof)
 
 
-# def best_correlation_offset(x, y, ddof=0):
-#     """Find the delay between x and y that maximizes the correlation between them
-#     A negative delay means a negative-correlation between x and y was maximized
-#     """
-#     def offset_correlation(offset, x=x, y=y):
-#         N = len(x)
-#         if offset < 0:
-#             y = [-1 * yi for yi in y]
-#             offset = -1 * offset 
-#         # TODO use interpolation to allow noninteger offsets
-#         return linear_correlation([x[(i - int(offset)) % N] for i in range(N)], y)
-#     return sci.minimize(offset_correlation, 0)
-
-
 def imported_modules():
     for name, val in globals().iteritems():
         if isinstance(val, types.ModuleType):
@@ -2154,7 +2147,8 @@ def make_tz_aware(dt, tz='UTC', is_dst=None):
     [datetime.datetime(1970, 10, 31, 0, 0, tzinfo=<DstTzInfo 'US/Central' CST-1 day, 18:00:00 STD>),
      datetime.datetime(1970, 12, 25, 0, 0, tzinfo=<DstTzInfo 'US/Central' CST-1 day, 18:00:00 STD>),
      datetime.datetime(1971,  7,  4, 0, 0, tzinfo=<DstTzInfo 'US/Central' CDT-1 day, 19:00:00 DST>)]
-    >>> make_tz_aware([None, float('nan'), float('inf'), 1980, 1979.25*365.25, '1970-10-31', '1970-12-25', '1971-07-04'], 'CDT')  # doctest: +NORMALIZE_WHITESPACE
+    >>> make_tz_aware([None, float('nan'), float('inf'), 1980, 1979.25*365.25, '1970-10-31', '1970-12-25', '1971-07-04'],
+    ...               'CDT')  # doctest: +NORMALIZE_WHITESPACE
     [None, nan, inf,
      datetime.datetime(6, 6, 3, 0, 0, tzinfo=<DstTzInfo 'US/Central' LMT-1 day, 18:09:00 STD>),
      datetime.datetime(1980, 4, 16, 1, 30, tzinfo=<DstTzInfo 'US/Central' CST-1 day, 18:00:00 STD>),
@@ -2262,7 +2256,8 @@ def clean_wiki_datetime(dt, squelch=True):
     except Exception as e:
         if squelch:
             from traceback import format_exc
-            print format_exc(e) + '\n^^^ Exception caught ^^^\nWARN: Failed to parse datetime string %r\n      from list of strings %r' % (' '.join(dt), dt)
+            print(format_exc(e) + '\n^^^ Exception caught ^^^\nWARN: Failed to parse datetime string %r\n      from list of strings %r' %
+                  (' '.join(dt), dt))
             return dt
         raise(e)
 
@@ -2316,7 +2311,8 @@ def get_sentences(s, regex=RE.sentence_sep):
 
 # this regex assumes "s' " is the end of a possessive word and not the end of an inner quotation, e.g. He said, "She called me 'Hoss'!"
 def get_words(s, splitter_regex=RE.word_sep_except_external_appostrophe,
-              preprocessor=strip_HTML, postprocessor=strip_edge_punc, min_len=None, max_len=None, blacklist=None, whitelist=None, lower=False, filter_fun=None, str_type=str):
+              preprocessor=strip_HTML, postprocessor=strip_edge_punc, min_len=None, max_len=None, blacklist=None, whitelist=None, lower=False,
+              filter_fun=None, str_type=str):
     r"""Segment words (tokens), returning a list of all tokens
 
     Does not return any separating whitespace or punctuation marks.
@@ -2410,7 +2406,7 @@ pluralize_field_names = pluralize_field_name
 def tabulate(lol, headers, eol='\n'):
     """Use the pypi tabulate package instead!"""
     yield '| %s |' % ' | '.join(headers) + eol
-    yield '| %s:|' % ':| '.join(['-'*len(w) for w in headers]) + eol
+    yield '| %s:|' % ':| '.join(['-' * len(w) for w in headers]) + eol
     for row in lol:
         yield '| %s |' % '  |  '.join(str(c) for c in row) + eol
 
@@ -2436,7 +2432,7 @@ def intify(obj, str_fun=str, use_ord=True, use_hash=True, use_len=True):
     (110, 110, 110)
     >>> intify(None, use_ord=False, use_hash=False, use_len=False)
     >>> intify(None, use_ord=False, use_hash=False, str_fun=False)
-    >>> intify(None, use_hash=False, str_fun=False) 
+    >>> intify(None, use_hash=False, str_fun=False)
     """
     try:
         return int(obj)
@@ -2451,13 +2447,14 @@ def intify(obj, str_fun=str, use_ord=True, use_hash=True, use_len=True):
     except:
         pass
     if not str_fun:
-        str_fun = lambda x:x
-    if use_ord:    
+        def str_fun(x):
+            return x
+    if use_ord:
         try:
             return ord(str_fun(obj)[0].lower())
         except:
             pass
-    if use_hash:  
+    if use_hash:
         try:
             return hash(str_fun(obj))
         except:
@@ -2472,7 +2469,6 @@ def intify(obj, str_fun=str, use_ord=True, use_hash=True, use_len=True):
         except:
             pass
     return None
-
 
 
 def listify(values, N=1, delim=None):
@@ -2594,7 +2590,7 @@ def strip_keys(d, nones=False, depth=0):
         warnings.warn(RuntimeWarning("Maximum recursion depth allowance (%r) exceeded." % strip_keys.MAX_DEPTH))
     for k, v in ans.iteritems():
         if isinstance(v, collections.Mapping):
-            ans[k] = strip_keys(v, nones=nones, depth=int(depth)-1)
+            ans[k] = strip_keys(v, nones=nones, depth=int(depth) - 1)
     return ans
 strip_keys.MAX_DEPTH = 1e6
 
@@ -2623,9 +2619,9 @@ def save_sheet(table, filename, ext='tsv', verbosity=0):
         sep = ','
     s = str_from_table(table, sep=sep)
     if verbosity > 2:
-        print s
+        print(s)
     if verbosity > 0:
-        print 'Saving ' + filename + '.' + ext
+        print('Saving ' + filename + '.' + ext)
     with open(filename + '.' + ext, 'w') as fpout:
         fpout.write(s)
 
@@ -2658,7 +2654,8 @@ def abbreviate(s):
     TODO: load a large dictionary of abbreviations from NLTK, etc
     """
     return abbreviate.words.get(s, s)
-abbreviate.words = {'account': 'acct', 'number': 'num', 'customer': 'cust', 'member': 'membr', 'building': 'bldg', 'serial number': 'SN', 'social security number': 'SSN'}
+abbreviate.words = {'account': 'acct', 'number': 'num', 'customer': 'cust', 'member': 'membr',
+                    'building': 'bldg', 'serial number': 'SN', 'social security number': 'SSN'}
 
 
 def remove_internal_vowels(s, space=''):
@@ -2708,7 +2705,7 @@ def generate_kmers(seq, k=4):
     """
     if isinstance(seq, basestring):
         for i in range(len(seq) - k + 1):
-           yield seq[i:i+k]
+            yield seq[i:i + k]
     elif isinstance(seq, (int, float, Decimal)):
         for s in generate_kmers(str(seq)):
             yield s
@@ -2762,7 +2759,9 @@ def kmer_counter(seq, k=4):
 
     Default k = 4 because that's the length of a gene base-pair?
 
-    >>> kmer_counter('AGATAGATAGACACAGAAATGGGACCACAC') == collections.Counter({'ACAC': 2, 'ATAG': 2, 'CACA': 2, 'TAGA': 2, 'AGAT': 2, 'GATA': 2, 'AGAC': 1, 'ACAG': 1, 'AGAA': 1, 'AAAT': 1, 'TGGG': 1, 'ATGG': 1, 'ACCA': 1, 'GGAC': 1, 'CCAC': 1, 'CAGA': 1, 'GAAA': 1, 'GGGA': 1, 'GACA': 1, 'GACC': 1, 'AATG': 1})
+    >>> kmer_counter('AGATAGATAGACACAGAAATGGGACCACAC') == collections.Counter({'ACAC': 2, 'ATAG': 2, 'CACA': 2,
+    ...     'TAGA': 2, 'AGAT': 2, 'GATA': 2, 'AGAC': 1, 'ACAG': 1, 'AGAA': 1, 'AAAT': 1, 'TGGG': 1, 'ATGG': 1,
+    ...     'ACCA': 1, 'GGAC': 1, 'CCAC': 1, 'CAGA': 1, 'GAAA': 1, 'GGGA': 1, 'GACA': 1, 'GACC': 1, 'AATG': 1})
     True
     """
     if isinstance(seq, basestring):
@@ -2773,11 +2772,11 @@ def kmer_set(seq, k=4):
     """Return the set of unique k-length substrings within a the sequence/string `seq`
 
     Implements formula:
-    C_k(s) = C(s) ∩ Σ^k 
+    C_k(s) = C(s) ∩ Σ^k
     from http://biorxiv.org/content/early/2014/08/01/007583
 
-    >>> sorted(kmer_set('AGATAGATAGACACAGAAATGGGACCACAC'))
-    ['AAAT', 'AATG', 'ACAC', 'ACAG', 'ACCA', 'AGAA', 'AGAC', 'AGAT', 'ATAG', 'ATGG', 'CACA', 'CAGA', 'CCAC', 'GAAA', 'GACA', 'GACC', 'GATA', 'GGAC', 'GGGA', 'TAGA', 'TGGG']
+    >>> sorted(kmer_set('AGATAGATAGACACAGAAATGGGACCACAC'))  # doctest: +NORMALIZE_WHITESPACE, +ELLIPSIS
+    ['AAAT', 'AATG', 'ACAC', 'ACAG', 'ACCA', 'AGAA', 'AGAC', 'AGAT', 'ATAG', 'ATGG', 'CACA', 'CAGA', 'CCAC', 'GAAA', ...
     """
     if isinstance(seq, basestring):
         return set(generate_kmers(seq, k))
@@ -2792,7 +2791,7 @@ def kmer_set(seq, k=4):
 #     t = km
 #     S = seq_of_seq
 #     >>> kmer_frequency(['AGATAGATAG', 'ACACAGAAAT', 'GGGACCACAC'], km=4)
-    
+
 #     """
 #     if km and isinstance(km, basestring):
 #         return sum(km in counter for counter in kmer_counter(seq_of_seq, len(km)))
@@ -2840,8 +2839,7 @@ def kmer_set(seq, k=4):
 def count_duplicates(items):
     """Return a dict of objects and thier counts (like a Counter), but only count > 1"""
     c = collections.Counter(items)
-    return dict((k, v) for (k,v) in c.iteritems() if v > 1)
-
+    return dict((k, v) for (k, v) in c.iteritems() if v > 1)
 
 
 # def markdown_stats(doc):
@@ -2854,7 +2852,7 @@ def count_duplicates(items):
 #     sentences = sentence_detector.tokenize(doc)
 #     tokens = nltk.tokenize.punkt.PunktWordTokenizer().tokenize(doc)
 #     vocabulary = collections.Counter(tokens)
-    
+
 #     return collections.OrderedDict([
 #         ('lines', sum([bool(l.strip().strip('-').strip()) for l in doc.split('\n')])),
 #         ('pages', sum([bool(l.strip().startswith('---')) for l in doc.split('\n')]) + 1),
@@ -2891,7 +2889,8 @@ def tfidf(corpus):
 
 def shakeness(doc):
     """Determine how similar a document's vocabulary is to Shakespeare's"""
-    raise NotImplementedError("Import a Shakespear corpus and compare the distribution of words there to the ones in the sample doc (vocabulary similarity)")
+    raise NotImplementedError("Import a Shakespear corpus and compare the distribution of words there " +
+                              "to the ones in the sample doc (vocabulary similarity)")
 
 
 def slash_product(string_or_seq, slash='/', space=' '):
@@ -2934,11 +2933,11 @@ def slash_product(string_or_seq, slash='/', space=' '):
             ans += slash_product(s)
         return slash_product(ans)
     # Another terminating case is a single string without any slashes
-    if not slash in string_or_seq:
+    if slash not in string_or_seq:
         return [string_or_seq]
     # The third case is a string with some slashes in it
     i = string_or_seq.index(slash)
-    head, tail = string_or_seq[:i].split(space), string_or_seq[i+1:].split(space)
+    head, tail = string_or_seq[:i].split(space), string_or_seq[i + 1:].split(space)
     alternatives = head[-1], tail[0]
     head, tail = space.join(head[:-1]), space.join(tail[1:])
     return slash_product([space.join([head, word, tail]).strip(space) for word in alternatives])
@@ -2956,7 +2955,7 @@ def make_date(dt, date_parser=parse_date):
     """Coerce a datetime or string into datetime.date object
 
     Arguments:
-      dt (str or datetime.datetime or atetime.time or numpy.Timestamp): time or date 
+      dt (str or datetime.datetime or atetime.time or numpy.Timestamp): time or date
         to be coerced into a `datetime.date` object
 
     Returns:
@@ -2986,7 +2985,7 @@ def make_datetime(dt, date_parser=parse_date):
     """Coerce a datetime or string into datetime.datetime object
 
     Arguments:
-      dt (str or datetime.datetime or atetime.time or numpy.Timestamp): time or date 
+      dt (str or datetime.datetime or atetime.time or numpy.Timestamp): time or date
         to be coerced into a `datetime.date` object
 
     Returns:
@@ -3003,8 +3002,8 @@ def make_datetime(dt, date_parser=parse_date):
     >>> make_datetime(['1970-10-31', '1970-12-25'])  # doctest: +NORMALIZE_WHITESPACE
     [datetime.datetime(1970, 10, 31, 0, 0), datetime.datetime(1970, 12, 25, 0, 0)]
     """
-    if (isinstance(dt, (datetime.datetime, datetime.date, datetime.time, pd.Timestamp, np.datetime64))
-            or dt in (float('nan'), float('inf'), float('-inf'), None, '')):
+    if (isinstance(dt, (datetime.datetime, datetime.date, datetime.time, pd.Timestamp, np.datetime64)) or
+            dt in (float('nan'), float('inf'), float('-inf'), None, '')):
         return dt
     if isinstance(dt, (float, int)):
         return datetime_from_ordinal_float(dt)
@@ -3041,7 +3040,7 @@ def make_time(dt, date_parser=parse_date):
     """Ignore date information in a datetime string or object
 
     Arguments:
-      dt (str or datetime.datetime or atetime.time or numpy.Timestamp): time or date 
+      dt (str or datetime.datetime or atetime.time or numpy.Timestamp): time or date
         to be coerced into a `datetime.time` object
 
     Returns:
@@ -3063,7 +3062,7 @@ def make_time(dt, date_parser=parse_date):
             dt = date_parser(dt)
         except:
             print_exc()
-            print 'Unable to parse {}'.format(repr(dt))
+            print('Unable to parse {}'.format(repr(dt)))
     try:
         dt = dt.timetuple()[3:6]
     except:
@@ -3073,7 +3072,7 @@ def make_time(dt, date_parser=parse_date):
 
 def quantize_datetime(dt, resolution=None):
     """Quantize a datetime to integer years, months, days, hours, minutes, seconds or microseconds
-    
+
     Also works with a `datetime.timetuple` or `time.struct_time` or a 1to9-tuple of ints or floats.
     Also works with a sequenece of struct_times, tuples, or datetimes
 
@@ -3097,7 +3096,7 @@ def quantize_datetime(dt, resolution=None):
         # struct_time has no microsecond, but accepts float seconds
         dt += [int((dt[5] - int(dt[5])) * 1000000)]
         dt[5] = int(dt[5])
-        return datetime.datetime(*(dt[:resolution] + [1] * max(3 - resolution , 0)))
+        return datetime.datetime(*(dt[:resolution] + [1] * max(3 - resolution, 0)))
 
     if isinstance(dt, tuple) and len(dt) <= 9 and all(isinstance(val, (float, int)) for val in dt):
         dt = list(dt) + [0] * (max(6 - len(dt), 0))
@@ -3136,10 +3135,10 @@ def ordinal_float(dt):
 def datetime_from_ordinal_float(days):
     """Inverse of `ordinal_float()`, converts a float number of days back to a `datetime` object
 
-    >>> dt = datetime.datetime(1970, 1, 1) 
+    >>> dt = datetime.datetime(1970, 1, 1)
     >>> datetime_from_ordinal_float(ordinal_float(dt)) == dt
     True
-    >>> dt = datetime.datetime(1, 2, 3, 4, 5, 6, 7) 
+    >>> dt = datetime.datetime(1, 2, 3, 4, 5, 6, 7)
     >>> datetime_from_ordinal_float(ordinal_float(dt)) == dt
     True
     """
@@ -3178,6 +3177,7 @@ timestamp_str = make_timestamp = make_timetag = timetag_str
 def days_since(dt, dt0=datetime.datetime(1970, 1, 1, 0, 0, 0)):
     return ordinal_float(dt) - ordinal_float(dt0)
 
+
 def flatten_dataframe(df, date_parser=parse_date, verbosity=0):
     """Creates 1-D timeseries (pandas.Series) coercing column labels into datetime.time objects
 
@@ -3190,7 +3190,7 @@ def flatten_dataframe(df, date_parser=parse_date, verbosity=0):
     df = df[pd.notnull(df.index)]
 
     # Make sure columns and row labels are all times and dates respectively
-    # Ignores/clears any timezone information 
+    # Ignores/clears any timezone information
     if all(isinstance(i, int) for i in df.index):
         for label in df.columns:
             if 'date' in str(label).lower():
@@ -3207,14 +3207,14 @@ def flatten_dataframe(df, date_parser=parse_date, verbosity=0):
         df.index = date_index
     df.columns = [make_time(str(c)) if (c and str(c) and str(c)[0] in '0123456789') else str(c) for c in df.columns]
     if verbosity > 2:
-        print 'Columns: {0}'.format(df.columns)
+        print('Columns: {0}'.format(df.columns))
 
     # flatten it
     df = df.transpose().unstack()
 
     df = df.drop(df.index[[(isinstance(d[1], (basestring, NoneType))) for d in df.index]])
 
-    # df.index is now a compound key (tuple) of the column labels (df.columns) and the row labels (df.index) 
+    # df.index is now a compound key (tuple) of the column labels (df.columns) and the row labels (df.index)
     # so lets combine them to be datetime values (pandas.Timestamp)
     dt = None
     t0 = df.index[0][1]
@@ -3228,7 +3228,7 @@ def flatten_dataframe(df, date_parser=parse_date, verbosity=0):
     for i, d in enumerate(df.index.values):
         dt = i
         if verbosity > 2:
-            print d
+            print(d)
         # # TODO: assert(not parser_date_exception)
         # if isinstance(d[0], basestring):
         #     d[0] = d[0]
@@ -3236,7 +3236,7 @@ def flatten_dataframe(df, date_parser=parse_date, verbosity=0):
             datetimeargs = list(d[0].timetuple()[:3]) + [d[1].hour, d[1].minute, d[1].second, d[1].microsecond]
             dt = datetime.datetime(*datetimeargs)
             if verbosity > 2:
-                print '{0} -> {1}'.format(d, dt)
+                print('{0} -> {1}'.format(d, dt))
         except TypeError:
             if verbosity > 1:
                 print_exc()
@@ -3307,7 +3307,7 @@ def flatten_excel(path='.', ext='xlsx', sheetname=0, skiprows=None, header=0, da
 
     date_parser = date_parser or (lambda x: x)
     dotted_ext, dotted_output_ext = None, None
-    if ext != None and output_ext != None:
+    if ext is not None and output_ext is not None:
         dotted_ext = ('' if ext.startswith('.') else '.') + ext
         dotted_output_ext = ('' if output_ext.startswith('.') else '.') + output_ext
     table = {}
@@ -3317,7 +3317,7 @@ def flatten_excel(path='.', ext='xlsx', sheetname=0, skiprows=None, header=0, da
             continue
         df = dataframe_from_excel(file_path, sheetname=sheetname, header=header, skiprows=skiprows)
         df = flatten_dataframe(df, verbosity=verbosity)
-        if dotted_ext != None and dotted_output_ext != None:
+        if dotted_ext is not None and dotted_output_ext is not None:
             df.to_csv(file_path[:-len(dotted_ext)] + dotted_output_ext + dotted_ext)
     return table
 
@@ -3333,7 +3333,7 @@ def walk_level(path, level=1):
 
     Args:
      path (str):  Root path to begin file tree traversal (walk)
-      level (int, optional): Depth of file tree to halt recursion at. 
+      level (int, optional): Depth of file tree to halt recursion at.
         None = full recursion to as deep as it goes
         0 = nonrecursive, just provide a list of files at the root level of the tree
         1 = one level of depth deeper in the tree
@@ -3378,13 +3378,13 @@ def path_status(path, filename='', status=None, verbosity=0):
         print(full_path)
     status['name'] = filename
     status['path'] = full_path
-    status['dir']  = dir_path
+    status['dir'] = dir_path
     status['type'] = []
     try:
-        status['size']     = os.path.getsize(full_path)
+        status['size'] = os.path.getsize(full_path)
         status['accessed'] = datetime.datetime.fromtimestamp(os.path.getatime(full_path))
         status['modified'] = datetime.datetime.fromtimestamp(os.path.getmtime(full_path))
-        status['created']  = datetime.datetime.fromtimestamp(os.path.getctime(full_path))
+        status['created'] = datetime.datetime.fromtimestamp(os.path.getctime(full_path))
         status['mode'] = os.stat(full_path).st_mode   # first 3 digits are User, Group, Other permissions: 1=execute,2=write,4=read
         if os.path.ismount(full_path):
             status['type'] += ['mount-point']
@@ -3455,7 +3455,8 @@ def find_files(path='', ext='', level=None, typ=list, dirs=False, files=True, ve
       And it should be at the top of the list.
       >>> sorted(d['name'] for d in find_files(os.path.dirname(__file__), ext='.py', level=0))[0]
       '__init__.py'
-      >>> all(d['type'] in ('file','dir','symlink->file','symlink->dir','mount-point->file','mount-point->dir','block-device','symlink->broken','pipe','special','socket','unknown') for d in find_files(level=1, files=True, dirs=True))
+      >>> all(d['type'] in ('file','dir','symlink->file','symlink->dir','mount-point->file','mount-point->dir','block-device',
+                            'symlink->broken','pipe','special','socket','unknown') for d in find_files(level=1, files=True, dirs=True))
       True
       >>> os.path.join(os.path.dirname(__file__), '__init__.py') in find_files(
       ... os.path.dirname(__file__), ext='.py', level=0, typ=dict)
@@ -3478,7 +3479,7 @@ def generate_files(path='', ext='', level=None, dirs=False, files=True, verbosit
     Args:
       path (str):  Root/base path to search.
       ext (str):   File name extension. Only file paths that ".endswith()" this string will be returned
-      level (int, optional): Depth of file tree to halt recursion at. 
+      level (int, optional): Depth of file tree to halt recursion at.
         None = full recursion to as deep as it goes
         0 = nonrecursive, just provide a list of files at the root level of the tree
         1 = one level of depth deeper in the tree
@@ -3487,7 +3488,7 @@ def generate_files(path='', ext='', level=None, dirs=False, files=True, verbosit
       files (bool): Whether to yield file paths (default: True)
         `dirs=True`, `files=False` is equivalent to `ls -d`
 
-    Returns: 
+    Returns:
       list of dicts: dict keys are { 'path', 'name', 'bytes', 'created', 'modified', 'accessed', 'permissions' }
         path (str): Full, absolute paths to file beneath the indicated directory and ending with `ext`
         name (str): File name only (everythin after the last slash in the path)
@@ -3513,7 +3514,8 @@ def generate_files(path='', ext='', level=None, dirs=False, files=True, verbosit
       '__init__.py'
       >>> sorted(list(generate_files())[0].keys())
       ['accessed', 'created', 'dir', 'mode', 'modified', 'name', 'path', 'size', 'type']
-      >>> all(d['type'] in ('file','dir','symlink->file','symlink->dir','mount-point->file','mount-point->dir','block-device','symlink->broken','pipe','special','socket','unknown')
+      >>> all(d['type'] in ('file','dir','symlink->file','symlink->dir','mount-point->file','mount-point->dir','block-device','symlink->broken',
+      ...                   'pipe','special','socket','unknown')
       ... for d in generate_files(level=1, files=True, dirs=True))
       True
     """
@@ -3546,6 +3548,30 @@ def find_dirs(*args, **kwargs):
     return find_files(*args, **kwargs)
 
 
+def mkdir_p(path):
+    """`mkdir -p` functionality (don't raise exception if path exists)
+
+    Make containing directory and parent directories in `path`, if they don't exist.
+
+    Arguments:
+      path (str): Full or relative path to a directory to be created with mkdir -p
+
+    Returns:
+      str: 'pre-existing' or 'new'
+
+    References:
+      http://stackoverflow.com/a/600612/623735
+    """
+    try:
+        os.makedirs(path)
+    except OSError as exception:
+        if exception.errno == errno.EEXIST and os.path.isdir(path):
+            return 'pre-existing'
+        else:
+            raise
+    return 'new'
+
+
 class PassageIter(object):
     """Passage (document, sentence, line, phrase) generator for files at indicated path
 
@@ -3555,8 +3581,8 @@ class PassageIter(object):
     References:
       Radim's [word2vec tutorial](http://radimrehurek.com/2014/02/word2vec-tutorial/)
     """
-    def __init__(self, path='', ext='', level=None, dirs=False, files=True, sentence_segmenter=generate_sentences,
-                 word_segmenter=string.split, verbosity=0):
+    def __init__(self, path='', ext='', level=None, dirs=False, files=True,
+                 sentence_segmenter=generate_sentences, word_segmenter=string.split, verbosity=0):
         self.file_generator = generate_files(path=path, ext='', level=None, dirs=False, files=True, verbosity=0)
 
     def __iter__(self):

@@ -1,3 +1,4 @@
+=======
 pug-nlp
 =======
 
@@ -10,7 +11,8 @@ This sub-package of the pug namespace package, provides natural language
 processing (NLP) and text processing utilities built by and for the PDX
 Python User Group (PUG).
 
---------------
+Description
+===========
 
 Installation
 ------------
