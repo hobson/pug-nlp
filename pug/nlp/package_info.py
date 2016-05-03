@@ -6,7 +6,7 @@ import os
 __namespace_package__ = 'pug'
 __subpackage__ = 'nlp'
 __url__ = "https://github.com/hobson/{}-{}".format(__namespace_package__, __subpackage__)
-__version__ = '0.1.0'
+__version__ = '0.1.1'
 __author__ = "Hobson <hobson@totalgood.com>"
 __authors__ = (
     "Hobson <hobson@totalgood.com>",

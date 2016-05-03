@@ -19,6 +19,7 @@
 * days_since    -- subract two date or datetime objects and return difference in days (float)
 
 '''
+from __future__ import print_function, division
 
 import os
 import stat
@@ -99,7 +100,8 @@ HIST_CONFIG = {
         # PMFs have discrete, exact values as bins rather than ranges (finite bin widths)
         #   but this histogram configuration doesn't distinguish between PMFs and PDFs,
         #   since mathematically they have all the same properties.
-        #    PDFs just have a range associated with each discrete value (which should be when integrating a PDF but not when summing a PMF where the "width" is uniformly 1)
+        #    PDFs just have a range associated with each discrete value
+        #    (which should be when integrating a PDF but not when summing a PMF where the "width" is uniformly 1)
         'name': 'Probability Mass Function',   # probability density function, probability distribution [function]
         'kwargs': {'normalize': True, 'cumulative': False, },
         'index': 1,
@@ -240,7 +242,8 @@ def force_hashable(obj, recursive=True):
         # looks like a Mapping if it has .get() and .items(), so should treat it like one
         if hasattr(obj, 'get') and hasattr(obj, 'items'):
             # FIXME: prevent infinite recursion:
-            #        tuples don't have 'items' method so this will recurse forever if elements within new tuple aren't hashable and recurse has not been set!
+            #        tuples don't have 'items' method so this will recurse forever
+            #        if elements within new tuple aren't hashable and recurse has not been set!
             return force_hashable(tuple(obj.items()))
         if recursive:
             return tuple(force_hashable(item) for item in obj)
@@ -310,7 +313,7 @@ def sort_strings(strings, sort_order=None, reverse=False, case_sensitive=False, 
             if a[:prefix_len] in sort_order:
                 if b[:prefix_len] in sort_order:
                     comparison = sort_order.index(a[:prefix_len]) - sort_order.index(b[:prefix_len])
-                    comparison /= abs(comparison or 1)
+                    float(comparison) /= abs(float(comparison) or 1.)
                     if comparison:
                         return comparison * (-2 * reverse + 1)
                 elif sort_order_first:
@@ -463,7 +466,8 @@ def quantify_field_dict(field_dict, precision=None, date_precision=None, cleaner
 
 
     FIXME: define a time zone for the datetime object
-    >>> sorted(quantify_field_dict({'_state': object(), 'x': 12345678911131517L, 'y': "\t  Wash Me! \n", 'z': datetime.datetime(1970, 10, 23, 23, 59, 59, 123456)}).iteritems())  # doctest: +NORMALIZE_WHITESPACE, +ELLIPSIS
+    >>> sorted(quantify_field_dict({'_state': object(), 'x': 12345678911131517L, 'y': "\t  Wash Me! \n",
+    ...     'z': datetime.datetime(1970, 10, 23, 23, 59, 59, 123456)}).iteritems())  # doctest: +NORMALIZE_WHITESPACE, +ELLIPSIS
     [('x', 12345678911131517L), ('y', u'Wash Me!'), ('z', 25...99.123456)]
     """
     if cleaner:
@@ -472,7 +476,8 @@ def quantify_field_dict(field_dict, precision=None, date_precision=None, cleaner
         if isinstance(d[k], datetime.datetime):
             # seconds since epoch = datetime.datetime(1969,12,31,18,0,0)
             try:
-                # around the year 2250, a float conversion of this string will lose 1 microsecond of precision, and around 22500 the loss of precision will be 10 microseconds
+                # around the year 2250, a float conversion of this string will lose 1 microsecond of precision,
+                # and around 22500 the loss of precision will be 10 microseconds
                 d[k] = float(d[k].strftime('%s.%f'))  # seconds since Jan 1, 1970
                 if date_precision is not None and isinstance(d[k], ROUNDABLE_NUMERIC_TYPES):
                     d[k] = round(d[k], date_precision)
@@ -591,7 +596,7 @@ def generate_slices(sliceable_set, batch_len=1, length=None, start_batch=0):
             length = len(sliceable_set)
     length = int(length)
 
-    for i in range(length / batch_len + 1):
+    for i in range(int(length / batch_len + 1)):
         if i < start_batch:
             continue
         start = i * batch_len
@@ -798,7 +803,8 @@ def fuzzy_get_value(obj, approximate_key, default=None, **kwargs):
 def fuzzy_get_tuple(dict_obj, approximate_key, dict_keys=None, key_and_value=False, similarity=0.6, default=None):
     """Find the closest matching key and/or value in a dictionary (must have all string keys!)"""
     return fuzzy_get(dict(('|'.join(str(k2) for k2 in k), v) for (k, v) in dict_obj.iteritems()),
-                     '|'.join(str(k) for k in approximate_key), dict_keys=dict_keys, key_and_value=key_and_value, similarity=similarity, default=default)
+                     '|'.join(str(k) for k in approximate_key), dict_keys=dict_keys,
+                     key_and_value=key_and_value, similarity=similarity, default=default)
 
 
 def sod_transposed(seq_of_dicts, align=True, fill=True, filler=None):
@@ -1599,7 +1605,7 @@ def read_csv(csv_file, ext='.csv', format=None, delete_empty_keys=False,
                     print([recs[field_name][-1] for field_name in row_dict])
             else:
                 recs += [row_dict]
-            if verbosity > 2 and not format in 'c':
+            if verbosity > 2 and format not in 'c':
                 print(recs[-1])
 
     if file_len > fpin.tell():
@@ -3549,7 +3555,8 @@ class PassageIter(object):
     References:
       Radim's [word2vec tutorial](http://radimrehurek.com/2014/02/word2vec-tutorial/)
     """
-    def __init__(self, path='', ext='', level=None, dirs=False, files=True, sentence_segmenter=generate_sentences, word_segmenter=string.split, verbosity=0):
+    def __init__(self, path='', ext='', level=None, dirs=False, files=True, sentence_segmenter=generate_sentences,
+                 word_segmenter=string.split, verbosity=0):
         self.file_generator = generate_files(path=path, ext='', level=None, dirs=False, files=True, verbosity=0)
 
     def __iter__(self):

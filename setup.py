@@ -30,7 +30,7 @@ if __namespace_package__:
 execfile(package_info_path, global_env, env)
 print('Found package info in {}: {}'.format(package_info_path, env))
 
-version = env.get('__version__', '0.0.1')
+version = env.get('__version__', '0.1.1')
 package_docstring = env.get('__doc__', '`{}` python package'.format(project_name))
 description = package_docstring.split('\n')[0]
 long_description = package_docstring

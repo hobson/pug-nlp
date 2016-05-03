@@ -10,23 +10,47 @@ Compiled Regular Expression Patterns
 [' x 10 ^']
 >>> scientific_notation_exponent.findall(' 1E10 and 1 x 10 ^23 ')
 ['E', ' x 10 ^']
->>> [bool(zero_pad_4_10_digit.match(an)) for an in ['0000123744', '0', '0000', '0000000000', '0000001000', '000001', '0000126473', '000102952', '0000107079']]
+>>> [bool(zero_pad_4_10_digit.match(an)) for an in
+...  ['0000123744', '0', '0000', '0000000000', '0000001000', '000001', '0000126473', '000102952', '0000107079']]
 [True, False, False, False, True, False, True, True, True]
 >>> re_ver.match("__version__ = '0.0.18'").groups()
 (None, '0', '0', '.18', '18', None, None)
 """
+import re
+
+TLD = {        # top 20 in Google searches per day
+    '.com': ('Commercial', 4860000000),
+    '.org': ('Noncomercial', 1950000000),
+    '.edu': ('US accredited postsecondary institutions', 1550000000),
+    '.gov': ('United States Government', 1060000000),
+    '.uk':  ('United Kingdom', 473000000),
+    '.net': ('Network services', 206000000),
+    '.ca': ('Canada', 165000000),
+    '.de': ('Germany', 145000000),
+    '.jp': ('Japan', 139000000),
+    '.fr': ('France', 96700000),
+    '.au': ('Australia', 91000000),
+    '.us': ('United States', 68300000),
+    '.ru': ('Russian Federation', 67900000),
+    '.ch': ('Switzerland', 62100000),
+    '.it': ('Italy', 55200000),
+    '.nl': ('Netherlands', 45700000),
+    '.se': ('Sweden', 39000000),
+    '.no': ('Norway', 32300000),
+    '.es': ('Spain', 31000000),
+    '.mil': ('US Military', 28400000)
+    }
 
 # try to make constant string variables all uppercase and regex patterns lowercase
 ASCII_CHARACTERS = ''.join([chr(i) for i in range(128)])
 
 # consider using "from re import *" and renaming this module re or RE
-import re
-
 list_bullet = re.compile(r'^\s*[! \t@#%.?(*+=-_]*[0-9.]*[#-_.)]*\s+')
 nondigit = re.compile(r"[^0-9]")
 nonphrase = re.compile(r"[^-\w\s/&']")
 parenthetical_time = re.compile(r'([^(]*)\(\s*(\d+)\s*(?:min)?\s*\)([^(]*)', re.IGNORECASE)
-
+# email = re.compile(r'^([\w-]+(?:\.[\w-]+)*)@((?:[\w-]+\.)*\w[\w-]{0,66})\.([a-z]{2,6}(?:\.[a-z]{2})?)')
+email = re.compile(r'[a-zA-Z0-9-.!#$%&*+-/=?^_`{|}~]+@[a-zA-Z0-9-.]+(' + '|'.join(TLD) + ')')
 nonword           = re.compile(r'[\W]')
 white_space       = re.compile(r'[\s]')
 
