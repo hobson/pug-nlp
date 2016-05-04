@@ -19,7 +19,7 @@
 * days_since    -- subract two date or datetime objects and return difference in days (float)
 
 '''
-from __future__ import print_function, division
+from __future__ import division, print_function, absolute_import
 
 import os
 import errno

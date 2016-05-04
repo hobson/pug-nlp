@@ -11,7 +11,7 @@ matplotlib==1.5.1
 
 seaborn>=0.7.0
 # comes with seaborn
-# scipy>=0.17.0
+# scipy==0.16.0
 
 #$ sudo yum install libjpeg-devel openjpeg-devel
 Pillow==3.0.0
