@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
 """
 Compiled Regular Expression Patterns
 
@@ -16,30 +17,38 @@ Compiled Regular Expression Patterns
 >>> re_ver.match("__version__ = '0.0.18'").groups()
 (None, '0', '0', '.18', '18', None, None)
 """
-import re
+from __future__ import division, print_function, absolute_import
 
-TLD = {        # top 20 in Google searches per day
-    '.com': ('Commercial', 4860000000),
-    '.org': ('Noncomercial', 1950000000),
-    '.edu': ('US accredited postsecondary institutions', 1550000000),
-    '.gov': ('United States Government', 1060000000),
-    '.uk':  ('United Kingdom', 473000000),
-    '.net': ('Network services', 206000000),
-    '.ca': ('Canada', 165000000),
-    '.de': ('Germany', 145000000),
-    '.jp': ('Japan', 139000000),
-    '.fr': ('France', 96700000),
-    '.au': ('Australia', 91000000),
-    '.us': ('United States', 68300000),
-    '.ru': ('Russian Federation', 67900000),
-    '.ch': ('Switzerland', 62100000),
-    '.it': ('Italy', 55200000),
-    '.nl': ('Netherlands', 45700000),
-    '.se': ('Sweden', 39000000),
-    '.no': ('Norway', 32300000),
-    '.es': ('Spain', 31000000),
-    '.mil': ('US Military', 28400000)
-    }
+import re
+from pandas import read_csv
+
+from pug.nlp.constant import DATA_PATH
+
+tld_iana = read_csv(os.path.join(DATA_PATH, 'tlds-from-iana.csv'))
+tld_iana = dict(zip(tld_iana.domain, [(sponsor, -1) for sponsor in tld_iana.sponsor]))
+
+tld_popular = {        # top 20 in Google searches per day
+    'com': ('Commercial', 4860000000),
+    'org': ('Noncommercial', 1950000000),
+    'edu': ('US accredited postsecondary institutions', 1550000000),
+    'gov': ('United States Government', 1060000000),
+    'uk':  ('United Kingdom', 473000000),
+    'net': ('Network services', 206000000),
+    'ca': ('Canada', 165000000),
+    'de': ('Germany', 145000000),
+    'jp': ('Japan', 139000000),
+    'fr': ('France', 96700000),
+    'au': ('Australia', 91000000),
+    'us': ('United States', 68300000),
+    'ru': ('Russian Federation', 67900000),
+    'ch': ('Switzerland', 62100000),
+    'it': ('Italy', 55200000),
+    'nl': ('Netherlands', 45700000),
+    'se': ('Sweden', 39000000),
+    'no': ('Norway', 32300000),
+    'es': ('Spain', 31000000),
+    'mil': ('US Military', 28400000)
+}
 
 # try to make constant string variables all uppercase and regex patterns lowercase
 ASCII_CHARACTERS = ''.join([chr(i) for i in range(128)])
@@ -50,9 +59,10 @@ nondigit = re.compile(r"[^0-9]")
 nonphrase = re.compile(r"[^-\w\s/&']")
 parenthetical_time = re.compile(r'([^(]*)\(\s*(\d+)\s*(?:min)?\s*\)([^(]*)', re.IGNORECASE)
 # email = re.compile(r'^([\w-]+(?:\.[\w-]+)*)@((?:[\w-]+\.)*\w[\w-]{0,66})\.([a-z]{2,6}(?:\.[a-z]{2})?)')
-email = re.compile(r'[a-zA-Z0-9-.!#$%&*+-/=?^_`{|}~]+@[a-zA-Z0-9-.]+(' + '|'.join(TLD) + ')')
-nonword           = re.compile(r'[\W]')
-white_space       = re.compile(r'[\s]')
+email = re.compile(r'[a-zA-Z0-9-.!#$%&*+-/=?^_`{|}~]+@[a-zA-Z0-9-.]+(' + '|'.join(iana_tld) + ')')
+email_popular = re.compile(r'[a-zA-Z0-9-.!#$%&*+-/=?^_`{|}~]+@[a-zA-Z0-9-.]+[.](' + '|'.join(iana_tld) + ')')
+nonword = re.compile(r'[\W]')
+white_space = re.compile(r'[\s]')
 
 
 # ASCII regexes from http://stackoverflow.com/a/20078869/623735
@@ -78,7 +88,7 @@ month_name = re.compile('(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[acbei
 
 
 # A permissive filter of javascript variable/function names
-#  Allows unicode and leading undercores and $ 
+#  Allows unicode and leading undercores and $
 #  From http://stackoverflow.com/a/2008444/623735
 js_name = re.compile(ur'^[_$a-zA-Z\xA0-\uFFFF][_$a-zA-Z0-9\xA0-\uFFFF]*$')
 
@@ -89,7 +99,7 @@ nones = re.compile(r'^Unk[n]?own|unk[n]?own|UNK|Unk|UNK[N]?OWN|[.]+|[-]+|[=]+|[_
 
 # Unary NOT operator and its operand returned in match.groups() 2-tuple
 not_symbol = re.compile(r'[Nn][Oo][Tt]|[\~\-\!\^]')
-notter = re.compile(r'(' + not_symbol.pattern +  r')?\s*(.*)\s*')
+notter = re.compile(r'(' + not_symbol.pattern + r')?\s*(.*)\s*')
 
 # A 4-10 digit numerical serial number or account number with zero padding
 #   * Allow any number of padding zeros to precede the 4-10 "significant" digits

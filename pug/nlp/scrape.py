@@ -1,26 +1,24 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+"""Crawlers and Scrapers for retrieving data/tables from URLs
+"""
+from __future__ import division, print_function, absolute_import
+
 import os
 import urllib2
+
 from bs4 import BeautifulSoup
 
+from pug.nlp.regex_patterns import email
 
-table(html=None):
-    html = html or "http://dofollow.netsons.org/table1.htm"
-    if isinstance(html, basestring)
-        if len(html) < 1024:
-            if os.path.isfile(html):
-                html = open(html, 'rU').read()
-            else:
-                html = urllib2.urlopen(html).read()
-    soup = BeautifulSoup(page)
-
-for i in soup.find_all('form'):
-    print i.attrs['class']
 
 
 def emails(html):
     """Extract email addresses from an html page or ASCII stream"""
-    if os.path.isinstance(html, )
-    for line in html:
+    if isinatnce(html, basestring):
+        if os.path.isfile(html):
+            html = open(html, 'r').read()
+        re.
 
 
 
