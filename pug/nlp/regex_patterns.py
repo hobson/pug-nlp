@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-"""
-Compiled Regular Expression Patterns
+"""Compiled Regular Expression Patterns.
 
 >>> scientific_notation_exponent.split(' 1 x 10 ** 23 ')
 [' 1', '23 ']
@@ -20,6 +19,8 @@ Compiled Regular Expression Patterns
 from __future__ import division, print_function, absolute_import
 
 import re
+import os
+
 from pandas import read_csv
 
 from pug.nlp.constant import DATA_PATH
@@ -59,8 +60,8 @@ nondigit = re.compile(r"[^0-9]")
 nonphrase = re.compile(r"[^-\w\s/&']")
 parenthetical_time = re.compile(r'([^(]*)\(\s*(\d+)\s*(?:min)?\s*\)([^(]*)', re.IGNORECASE)
 # email = re.compile(r'^([\w-]+(?:\.[\w-]+)*)@((?:[\w-]+\.)*\w[\w-]{0,66})\.([a-z]{2,6}(?:\.[a-z]{2})?)')
-email = re.compile(r'[a-zA-Z0-9-.!#$%&*+-/=?^_`{|}~]+@[a-zA-Z0-9-.]+(' + '|'.join(iana_tld) + ')')
-email_popular = re.compile(r'[a-zA-Z0-9-.!#$%&*+-/=?^_`{|}~]+@[a-zA-Z0-9-.]+[.](' + '|'.join(iana_tld) + ')')
+email = re.compile(r'[a-zA-Z0-9-.!#$%&*+-/=?^_`{|}~]+@[a-zA-Z0-9-.]+(' + '|'.join(tld_iana) + ')')
+email_popular = re.compile(r'[a-zA-Z0-9-.!#$%&*+-/=?^_`{|}~]+@[a-zA-Z0-9-.]+[.](' + '|'.join(tld_popular) + ')')
 nonword = re.compile(r'[\W]')
 white_space = re.compile(r'[\s]')
 
@@ -90,7 +91,7 @@ month_name = re.compile('(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[acbei
 # A permissive filter of javascript variable/function names
 #  Allows unicode and leading undercores and $
 #  From http://stackoverflow.com/a/2008444/623735
-js_name = re.compile(ur'^[_$a-zA-Z\xA0-\uFFFF][_$a-zA-Z0-9\xA0-\uFFFF]*$')
+js_name = re.compile(u'^[_$a-zA-Z\xA0-\uFFFF][_$a-zA-Z0-9\xA0-\uFFFF]*$')
 
 # avoids special wikipedia URLs like ambiguity resolution pages
 wikipedia_special = re.compile(r'.*wikipedia[.]org/wiki/[^:]+[:].*')
