@@ -26,7 +26,7 @@ from pandas import read_csv
 from pug.nlp.constant import DATA_PATH
 
 tld_iana = read_csv(os.path.join(DATA_PATH, 'tlds-from-iana.csv'))
-tld_iana = dict(zip(tld_iana.domain, [(sponsor, -1) for sponsor in tld_iana.sponsor]))
+tld_iana = dict(zip((tld.strip().lstrip('.') for tld in tld_iana.domain), [(sponsor.strip(), -1) for sponsor in tld_iana.sponsor]))
 
 tld_popular = {        # top 20 in Google searches per day
     'com': ('Commercial', 4860000000),
@@ -60,8 +60,8 @@ nondigit = re.compile(r"[^0-9]")
 nonphrase = re.compile(r"[^-\w\s/&']")
 parenthetical_time = re.compile(r'([^(]*)\(\s*(\d+)\s*(?:min)?\s*\)([^(]*)', re.IGNORECASE)
 # email = re.compile(r'^([\w-]+(?:\.[\w-]+)*)@((?:[\w-]+\.)*\w[\w-]{0,66})\.([a-z]{2,6}(?:\.[a-z]{2})?)')
-email = re.compile(r'[a-zA-Z0-9-.!#$%&*+-/=?^_`{|}~]+@[a-zA-Z0-9-.]+(' + '|'.join(tld_iana) + ')')
-email_popular = re.compile(r'[a-zA-Z0-9-.!#$%&*+-/=?^_`{|}~]+@[a-zA-Z0-9-.]+[.](' + '|'.join(tld_popular) + ')')
+email = re.compile(r'[a-zA-Z0-9-.!#$%&*+-/=?^_`{|}~]+@[a-zA-Z0-9-.]+(' + r'|'.join(tld_iana) + r')')
+email_popular = re.compile(r'\b([a-zA-Z0-9.+]+[@][a-zA-Z0-9-]+[.]' + r'(' + r'|'.join(tld_popular.keys()) + r'))\b')
 nonword = re.compile(r'[\W]')
 white_space = re.compile(r'[\s]')
 
