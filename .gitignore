@@ -46,3 +46,6 @@ MANIFEST
 nohup.out
 .ipynb_checkpoints/
 *.egg-info/
+*.csv
+*.json
+.~*
