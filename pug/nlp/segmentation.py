@@ -84,12 +84,12 @@ def str_lower(s):
 def to_ascii(s, filler='-'):
     if not s:
         return ''
-    if not isinstance(s, basestring):
+    if not isinstance(s, basestring):  # e.g. np.nan
         return to_ascii(repr(s))
     try:
         return s.encode('utf8')
     except:
-        ''.join(c if c < chr(128) else filler for c in s if c)
+        return ''.join(c if c < chr(128) else filler for c in s if c)
 
 
 def passthrough(s):
