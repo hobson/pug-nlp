@@ -84,6 +84,8 @@ def str_lower(s):
 def to_ascii(s, filler='-'):
     if not s:
         return ''
+    if not isinstance(s, basestring):
+        return to_ascii(repr(s))
     try:
         return s.encode('utf8')
     except:
