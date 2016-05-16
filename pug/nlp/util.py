@@ -20,6 +20,7 @@
 
 '''
 from __future__ import division, print_function, absolute_import
+from past.builtins import basestring
 
 import os
 import errno
@@ -56,8 +57,6 @@ import xlrd
 from pug.nlp import charlist
 from pug.nlp import regex_patterns as RE
 
-from .segmentation import generate_sentences
-
 np = pd.np
 logger = logging.getLogger(__name__)
 
@@ -88,7 +87,7 @@ HIST_NAME = {
     'pmf':  'pmf',  'pdf': 'pmf',   'pd': 'pmf',
     'cmf':  'cmf',  'cdf': 'cmf',
     'cfd':  'cfd',  'cff': 'cfd',   'cdf': 'cfd',
-    }
+}
 HIST_CONFIG = {
     'hist': {
         'name': 'Histogram',  # frequency distribution, frequency function, discrete ff/fd, grouped ff/fd, binned ff/fd
@@ -96,7 +95,7 @@ HIST_CONFIG = {
         'index': 0,
         'xlabel': 'Bin',
         'ylabel': 'Count',
-        },
+    },
     'pmf': {
         # PMFs have discrete, exact values as bins rather than ranges (finite bin widths)
         #   but this histogram configuration doesn't distinguish between PMFs and PDFs,
@@ -108,22 +107,22 @@ HIST_CONFIG = {
         'index': 1,
         'xlabel': 'Bin',
         'ylabel': 'Probability',
-        },
+    },
     'cmf': {
         'name': 'Cumulative Probability',
         'kwargs': {'normalize': True, 'cumulative': True, },
         'index': 2,
         'xlabel': 'Bin',
         'ylabel': 'Cumulative Probability',
-        },
+    },
     'cfd': {
         'name': 'Cumulative Frequency Distribution',
         'kwargs': {'normalize': False, 'cumulative': True, },
         'index': 3,
         'xlabel': 'Bin',
         'ylabel': 'Cumulative Count',
-        },
-    }
+    },
+}
 
 # MONTHS = ['january', 'february', 'march', 'april', 'may', 'june', 'july', 'august', 'september', 'october', 'november', 'december']
 # MONTH_PREFIXES = [m[:3] for m in MONTHS]
@@ -180,7 +179,7 @@ TZ_OFFSET_ABBREV = [
     [-3.5, 'HNT', 'NST', 'NT'],
     [-4.5, 'HLV', 'VET'],
     [-9.5, 'MART', 'MIT'],
-    ]
+]
 TZ_ABBREV_OFFSET = {}
 for row in TZ_OFFSET_ABBREV:
     for abbrev in row[1:]:
@@ -196,7 +195,7 @@ TZ_ABBREV_INFO = {
     'EST':  ('US/Eastern',  -5),  'EDT': ('US/Eastern',  -4),   'ET': ('US/Eastern',  -5),
     'AST':  ('US/Atlantic', -4),  'ADT': ('US/Atlantic', -3),   'AT': ('US/Atlantic', -4),
     'GMT':  ('UTC', 0),
-    }
+}
 TZ_ABBREV_OFFSET = dict(((abbrev, info[1]) for abbrev, info in TZ_ABBREV_INFO.iteritems()))
 TZ_ABBREV_NAME = dict(((abbrev, info[0]) for abbrev, info in TZ_ABBREV_INFO.iteritems()))
 
@@ -1070,7 +1069,7 @@ def hist_from_values_list(values_list, fillers=(None,), normalize=False, cumulat
             hist_from_values_list(col, fillers=fillers, normalize=normalize, cumulative=cumulative, to_str=to_str, sep=sep,
                                   min_bin=min_bin, max_bin=max_bin)
             for col in transposed_matrix(values_list)
-            ]
+        ]
 
     if not values_list:
         return []
@@ -1600,7 +1599,7 @@ def read_csv(csv_file, ext='.csv', format=None, delete_empty_keys=False,
                 ((field_name, field_value) for field_name, field_value in zip(
                     list(norm_names.values() if unique_names else norm_names)[:N], row[:N])
                     if (str(field_name).strip() or delete_empty_keys is False))
-                )
+            )
             if format in 'dj':  # django json format
                 recs += [{"pk": rownum, "model": model_name, "fields": row_dict}]
             elif format in 'vhl':  # list of lists of values, with header row (list of str)
@@ -1627,6 +1626,46 @@ def read_csv(csv_file, ext='.csv', format=None, delete_empty_keys=False,
 
 # date and datetime separators
 COLUMN_SEP = re.compile(r'[,/;]')
+
+
+class Object:
+    """If your dict is "flat", this is a simple way to create an object from a dict
+
+    >>> obj = Object()
+    >>> obj.__dict__ = d
+    >>> d.a
+    1
+    """
+    pass
+
+
+# For a nested dict, you need to recursively update __dict__
+def dict2obj(d):
+    """Convert a dict to an object or namespace
+
+
+    >>> d = {'a': 1, 'b': {'c': 2}, 'd': ["hi", {'foo': "bar"}]}
+    >>> obj = dict2obj(d)
+    >>> obj.b.c
+    2
+    >>> obj.d
+    ["hi", {'foo': "bar"}]
+    >>> d = {'a': 1, 'b': {'c': 2}, 'd': [("hi", {'foo': "bar"})]}
+    >>> obj = dict2obj(d)
+    >>> obj.d.hi.foo
+    "bar"
+    """
+    if isinstance(d, collections.Mapping):
+        try:
+            d = dict(d)
+        except (ValueError, TypeError):
+            return d
+    else:
+        return d
+    obj = Object()
+    for k, v in d.iteritems():
+        obj.__dict__[k] = dict2obj(v)
+    return obj
 
 
 def make_dataframe(prices, num_prices=1, columns=('portfolio',)):
@@ -3102,8 +3141,8 @@ def quantize_datetime(dt, resolution=None):
         dt = list(dt) + [0] * (max(6 - len(dt), 0))
         # if the 6th element of the tuple looks like a float set of seconds need to add microseconds
         if len(dt) == 6 and isinstance(dt[5], float):
-                dt = list(dt) + [1000000 * (dt[5] - int(dt[5]))]
-                dt[5] = int(dt[5])
+            dt = list(dt) + [1000000 * (dt[5] - int(dt[5]))]
+            dt[5] = int(dt[5])
         dt = tuple(int(val) for val in dt)
         return datetime.datetime(*(dt[:resolution] + [1] * max(resolution - 3, 0)))
 
@@ -3570,22 +3609,3 @@ def mkdir_p(path):
         else:
             raise
     return 'new'
-
-
-class PassageIter(object):
-    """Passage (document, sentence, line, phrase) generator for files at indicated path
-
-    Walks all the text files it finds in the indicated path,
-    segmenting sentences and yielding them one at a time
-
-    References:
-      Radim's [word2vec tutorial](http://radimrehurek.com/2014/02/word2vec-tutorial/)
-    """
-    def __init__(self, path='', ext='', level=None, dirs=False, files=True,
-                 sentence_segmenter=generate_sentences, word_segmenter=string.split, verbosity=0):
-        self.file_generator = generate_files(path=path, ext='', level=None, dirs=False, files=True, verbosity=0)
-
-    def __iter__(self):
-        for fname in os.listdir(self.file_generator):
-            for line in open(os.path.join(self.dirname, fname)):
-                yield line.split()
