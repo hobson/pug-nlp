@@ -19,6 +19,15 @@ spellings = {
   'OTL': 'out to lunch',
   'WTF': 'what the freak',
   'FUBAR': 'freaked out beyond recognition',
+  ':)': 'small-smile',
+  ':-)': 'smile',
+  ';)': 'wink-smile',
+  ';-)': 'wink-smile',
+  ':D': 'big-smile',
+  ':-D': 'big-smile',
+  ':P': 'tongue-out-smile',
+  ':-P': 'tongue-out-smile',
+  '<3': 'heart',
 }
 
 
