@@ -5,6 +5,7 @@ from __future__ import division, print_function, absolute_import
 from past.builtins import basestring
 
 import os
+from collections import OrderedDict
 # import urllib2
 
 # from bs4 import BeautifulSoup
@@ -25,39 +26,95 @@ def find_emails(html=os.path.join(DATA_PATH, 'Locations.html')):
     return [x[0] for x in html]
 
 
-uni_ascii = {
-    '\xc2\xa0': ' ',      # smaller nonbreaking space:     " "
-    '\xe2\x80\x91': '-',  # smaller dash shifted left:     "‑"
-    '\xe3\x81\xa3': '>',  # backward skewed subscripted C: "っ"
-    }
+uni_ascii = OrderedDict([
+    (u'\xc2\xa0', ' '),      # nonbreaking? space:     " "
+    (u'\xe2\x80\x91', '-'),  # smaller dash shifted left:     "‑"
+    (u'\xe3\x81\xa3', '>'),  # backward skewed subscripted C: "っ"
+    (u'\xc2\xa0', 'A'),     # Angstrom symbol
+    (u'\u2011', '-'),      # smaller dash shifted left:     "‑"
+    (u'\u3063', '>'),      # backward skewed subscripted C: "っ"
+    (u'\xa0', ' '),         # nonbreaking? space:     " "
+    ])
 
 
-def transcode_unicode(uni):
+spaced_uni_emoticons = OrderedDict([
+    # lenny
+    (u'( ͡° ͜ʖ ͡°)', '(^-_-^)'),
+    (u'( ͡°͜ ͡°)', '(^-_-^)'),
+    (u'(͡° ͜ʖ ͡°)', '(^-_-^)'),
+    (u'(͡°͜ ͡°)', '(^-_-^)'),
+    # kiss
+    (u"( '}{' )", "(_'}{'_)"),
+    # lenny
+    (u'( \xcd\xa1\xc2\xb0 \xcd\x9c\xca\x96 \xcd\xa1\xc2\xb0)', '(^-_-^)'),
+    (u'( \xcd\xa1\xc2\xb0\xcd\x9c \xcd\xa1\xc2\xb0)', '(^-_-^)'),
+    ])
+
+spaced_ascii_emoticons = OrderedDict([
+    (u"( '}{' )", "(_'}{'_)"),
+    (u'( \xcd\xa1\xc2\xb0 \xcd\x9c\xca\x96 \xcd\xa1\xc2\xb0)', '(^-_-^)'),  # Lenny
+    (u'( \xcd\xa1\xc2\xb0\xcd\x9c \xcd\xa1\xc2\xb0)', '(^-_-^)'),  # Lenny
+    ])
+
+
+def transcode_unicode(s):
+    print(s)
+    try:
+        s = unicode(s).encode('utf-8')
+    except:
+        pass
+    try:
+        s = str(s).decode('utf-8')
+    except:
+        pass
     for c, equivalent in uni_ascii.iteritems():
-        uni = uni.replace(c, equivalent)
+        print(c)
+        print(type(c))
+        uni = unicode(s).replace(c, equivalent)
     return strip_nonascii(uni)
 
 
-def clean_emoticon_table(html='https://en.wikipedia.org/wiki/List_of_emoticons', save='list_of_emoticons-wikipedia-cleaned.csv', **kwargs):
+def clean_emoticon_wiki_table(html='https://en.wikipedia.org/wiki/List_of_emoticons',
+                              save='list_of_emoticons-wikipedia-cleaned.csv',
+                              data_dir=DATA_PATH,
+                              table_num=1,
+                              **kwargs):
     wikitables = pd.read_html(html, header=0)
-    for wikidf in wikitables:
+    for i, wikidf in enumerate(wikitables):
         header = (' '.join(str(s).strip() for s in wikidf.columns)).lower()
-        if 'meaning' in header:
+        if table_num == i or (table_num is None and 'meaning' in header):
             break
     df = wikidf
     df.columns = [make_name(s, lower=True) for s in df.columns]
     table = []
     for icon, meaning in zip(df[df.columns[0]], df[df.columns[1]]):
         # kissing couple has space in it
-        icon = transcode_unicode(unicode(icon)).replace(r"( '}{' )", r"(_'}{'_)")
+        for ic, uni_ic in spaced_uni_emoticons.iteritems():
+            icon = icon.replace(ic, uni_ic)
+        for ic, asc_ic in spaced_ascii_emoticons.iteritems():
+            icon = icon.replace(ic, asc_ic)
+        icon = transcode_unicode(icon)
         icons = icon.split()
         for ic in icons:
             table += [[ic, meaning]]
-    df = pd.DataFrame(table, columns=['icon', 'meaning'])
+    df = pd.DataFrame(table, columns=['emoticon', 'meaning'])
     if save:
         save = save if isinstance(save, basestring) else 'cleaned-emoticons-from-wikipedia.csv'
-        df.to_csv(os.path.join(DATA_PATH, save), encoding='utf-8', quoting=pd.io.common.csv.QUOTE_ALL)
+        df.to_csv(os.path.join(data_dir, save), encoding='utf-8', quoting=pd.io.common.csv.QUOTE_ALL)
     return df
+
+
+def ascii_emoticon_table(html='http://git.emojione.com/demos/ascii-smileys.html',
+                         save='ascii-smileys-from-emojione.csv',
+                         data_dir=DATA_PATH,
+                         table_num=0,
+                         **kwargs):
+    df = pd.read_html(html, header=0)[table_num]
+    df = df[df.columns[:2]].copy()
+    df.columns = ['emoticon', 'shortname']
+    if save:
+        save = save if isinstance(save, basestring) else 'ascii-smileys-from-emojione.csv'
+        df.to_csv(os.path.join(data_dir, save), encoding='utf-8', quoting=pd.io.common.csv.QUOTE_ALL)
 
 
 # # modified code downloaded from:
