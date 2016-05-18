@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 """Crawlers and Scrapers for retrieving data/tables from URLs."""
 from __future__ import division, print_function, absolute_import
+from past.builtins import basestring
 
 import os
 # import urllib2
@@ -9,7 +10,9 @@ import os
 # from bs4 import BeautifulSoup
 
 from pug.nlp.regex_patterns import email_popular
+from pug.nlp.util import make_name, stringify
 from pug.nlp.constant import DATA_PATH
+import pandas as pd
 
 
 def find_emails(html=os.path.join(DATA_PATH, 'Locations.html')):
@@ -21,8 +24,40 @@ def find_emails(html=os.path.join(DATA_PATH, 'Locations.html')):
     return [x[0] for x in html]
 
 
-# #!/usr/local/bin/python
-# # coding: UTF-8
+uni_ascii = {
+    '\xc2\xa0': ' ',      # smaller nonbreaking space:     " "
+    '\xe2\x80\x91': '-',  # smaller dash shifted left:     "‑"
+    '\xe3\x81\xa3': '>',  # backward skewed subscripted C: "っ"
+    }
+
+
+def transcode_unicode(uni):
+    for c, equivalent in uni_ascii.iteritems():
+        uni = uni.replace(c, equivalent)
+    return stringify(uni)
+
+
+def clean_emoticon_table(html='https://en.wikipedia.org/wiki/List_of_emoticons', save='list_of_emoticons-wikipedia-cleaned.csv', **kwargs):
+    wikitables = pd.read_html(html, header=0)
+    for wikidf in wikitables:
+        header = (' '.join(str(s).strip() for s in wikidf.columns)).lower()
+        if 'meaning' in header:
+            break
+    df = wikidf
+    df.columns = [make_name(s, lower=True) for s in df.columns]
+    table = []
+    for icon, meaning in zip(df[df.columns[0]], df[df.columns[1]]):
+        icon = unicode(icon).replace(r"( '}{' )", r"(_'}{'_)")  # kissing couple has space in it
+        icons = icon.split()
+        for ic in icons:
+            table += [[ic, meaning]]
+    df = pd.DataFrame(table, columns=['icon', 'meaning'])
+    if save:
+        save = save if isinstance(save, basestring) else 'cleaned-emoticons-from-wikipedia.csv'
+        df.to_csv(os.path.join(DATA_PATH, save), encoding='utf-8', quoting=pd.io.common.csv.QUOTE_ALL)
+    return df
+
+
 # # modified code downloaded from:
 # # http://devwiki.beloblotskiy.com/index.php5/Generic_HTML_Table_parser_(python)
 # # mods by: Aquil H. Abdullah
