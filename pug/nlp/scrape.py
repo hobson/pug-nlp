@@ -10,8 +10,9 @@ import os
 # from bs4 import BeautifulSoup
 
 from pug.nlp.regex_patterns import email_popular
-from pug.nlp.util import make_name, stringify
+from pug.nlp.util import make_name
 from pug.nlp.constant import DATA_PATH
+from pug.nlp.db import strip_nonascii
 import pandas as pd
 
 
@@ -34,7 +35,7 @@ uni_ascii = {
 def transcode_unicode(uni):
     for c, equivalent in uni_ascii.iteritems():
         uni = uni.replace(c, equivalent)
-    return stringify(uni)
+    return strip_nonascii(uni)
 
 
 def clean_emoticon_table(html='https://en.wikipedia.org/wiki/List_of_emoticons', save='list_of_emoticons-wikipedia-cleaned.csv', **kwargs):
@@ -47,7 +48,8 @@ def clean_emoticon_table(html='https://en.wikipedia.org/wiki/List_of_emoticons',
     df.columns = [make_name(s, lower=True) for s in df.columns]
     table = []
     for icon, meaning in zip(df[df.columns[0]], df[df.columns[1]]):
-        icon = unicode(icon).replace(r"( '}{' )", r"(_'}{'_)")  # kissing couple has space in it
+        # kissing couple has space in it
+        icon = transcode_unicode(unicode(icon)).replace(r"( '}{' )", r"(_'}{'_)")
         icons = icon.split()
         for ic in icons:
             table += [[ic, meaning]]
