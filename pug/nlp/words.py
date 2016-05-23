@@ -16,6 +16,8 @@ spellings = {
   'IMO': "in my opinion",
   'BRB': 'be right back',
   'OOO': 'out of the office',
+  'OOTO': 'out of the office',
+  'OTO': 'out of the office',
   'OTL': 'out to lunch',
   'WTF': 'what the freak',
   'FUBAR': 'freaked out beyond recognition',
