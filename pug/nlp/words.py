@@ -33,7 +33,8 @@ spellings = {
     ':P': 'tongue-out-smile',
     ':-P': 'tongue-out-smile',
     '<3': 'heart',
-    '</3': 'borken-heart',
+    '</3': 'broken-heart',
+    'o%o': 'bike',
 }
 
 
