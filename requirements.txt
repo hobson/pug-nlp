@@ -16,7 +16,7 @@ nbformat==4.0.1
 #$ sudo apt-get install libpng12-dev libfreetype6-dev
 #$ sudo apt-get install tcl-dev tk-dev python-tk python3-tk
 #$ nano 
-matplotlib==1.5.0
+matplotlib==1.5.1
 
 # setuptools>=21.0.0
 
@@ -24,7 +24,7 @@ chardet>=2.3.0
 
 seaborn==0.7.0
 # comes with seaborn
-# scipy==0.16.0
+# scipy==0.16.0 or 0.17.1
 
 #$ sudo yum install libjpeg-devel openjpeg-devel
 Pillow==3.0.0
