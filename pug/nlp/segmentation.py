@@ -10,7 +10,8 @@ import nlup
 
 from pug.nlp.constant import DATA_PATH
 from pug.nlp.util import generate_files
-from pug.nlp.regex_patterns import CRE_TOKEN, RE_NONWORD
+# regex namespace only conflicts with regex kwarg in Tokenizer constructur
+from pug.nlp.regex import CRE_TOKEN, RE_NONWORD
 
 
 def list_ngrams(token_list, n=1, join=' '):

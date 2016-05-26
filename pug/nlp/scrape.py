@@ -5,16 +5,20 @@ from __future__ import division, print_function, absolute_import
 from past.builtins import basestring
 
 import os
+import datetime
+import logging
 from collections import OrderedDict
+
+import pandas as pd
+# from bs4 import BeautifulSoup
 # import urllib2
 
-# from bs4 import BeautifulSoup
-
-from pug.nlp.regex_patterns import email_popular
+from pug.nlp.regex import email_popular, cre_url
 from pug.nlp.util import make_name
 from pug.nlp.constant import DATA_PATH
 from pug.nlp.db import strip_nonascii
-import pandas as pd
+
+log = logging.getLogger(__name__)
 
 
 def find_emails(html=os.path.join(DATA_PATH, 'Locations.html')):
@@ -104,17 +108,48 @@ def clean_emoticon_wiki_table(html='https://en.wikipedia.org/wiki/List_of_emotic
     return df
 
 
-def ascii_emoticon_table(html='http://git.emojione.com/demos/ascii-smileys.html',
-                         save='ascii-smileys-from-emojione.csv',
-                         data_dir=DATA_PATH,
-                         table_num=0,
-                         **kwargs):
-    df = pd.read_html(html, header=0)[table_num]
+def clean_get_table(df):
+    """Default table cleaner for get_table()"""
+    return df
+
+
+def get_table(html,
+              save=None,
+              data_dir=DATA_PATH,
+              table_num=0,
+              header=0,
+              cleaner=clean_get_table,
+              **kwargs):
+    df = pd.read_html(html, header=header, **kwargs)[table_num]
+    df = cleaner(df)
+    if save:
+        if not isinstance(save, basestring):
+            if cre_url.match(html):
+                save = os.path.basename(html) + '.csv'
+            else:
+                try:
+                    save = cleaner.__name__ + '.csv'
+                except:
+                    today = datetime.datetime.today()
+                    save = 'table_from_{}__{}__get_table__on_{:04d}_{:02d}_{:02d}_at_{:02d}_{:02d}_{:02d}.csv'.format(
+                        __package__, __name__, today.year, today.month, today.day, today.hour, today.minute, today.second)
+        log.info('Saving table to {}'.format(os.path.join(data_dir, save)))
+        df.to_csv(os.path.join(data_dir, save), encoding='utf-8', quoting=pd.io.common.csv.QUOTE_ALL)
+    return df
+
+
+def get_uri_schemes(html='https://www.iana.org/assignments/uri-schemes/uri-schemes.xhtml'):
+    return get_table(html=html, save=True, index_col=0)
+
+
+def clean_ascii_emoticon_table(df):
     df = df[df.columns[:2]].copy()
     df.columns = ['emoticon', 'shortname']
-    if save:
-        save = save if isinstance(save, basestring) else 'ascii-smileys-from-emojione.csv'
-        df.to_csv(os.path.join(data_dir, save), encoding='utf-8', quoting=pd.io.common.csv.QUOTE_ALL)
+    return df
+
+
+def get_ascii_emoticon_table(html='http://git.emojione.com/demos/ascii-smileys.html'):
+    return get_table(html=html, cleaner=clean_ascii_emoticon_table, index_col=0)
 
 
 # # modified code downloaded from:

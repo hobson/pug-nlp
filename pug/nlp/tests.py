@@ -1,12 +1,12 @@
 #!/usr/bin/env python
 """
-Uses the unittest module to test this app with `manage.py test`.
+Uses the python unittest module to test this app with `python -m unittest pug.nlp`.
 """
 
 # from django.test import TestCase
 from unittest import TestCase, main
 import doctest
-from pug.nlp import util, http, regex_patterns, penn_treebank_tokenizer, detector_morse
+from pug.nlp import util, http, regex, penn_treebank_tokenizer, detector_morse
 
 
 class NLPDocTest(TestCase):
@@ -28,7 +28,7 @@ class NLPDocTest(TestCase):
         self.test_module(http)
 
     def test_regex_patterns(self):
-        self.test_module(regex_patterns)
+        self.test_module(regex)
 
     def test_penn_treebank_tokenizer(self):
         self.test_module(penn_treebank_tokenizer)

@@ -17,7 +17,43 @@ BASE_PATH = os.path.dirname(pug.nlp.__file__)
 DATA_PATH = os.path.join(BASE_PATH, 'data')
 
 tld_iana = pd.read_csv(os.path.join(DATA_PATH, 'tlds-from-iana.csv'))
-tld_iana = dict(zip((tld.strip().lstrip('.') for tld in tld_iana.domain), [(sponsor.strip(), -1) for sponsor in tld_iana.sponsor]))
+tld_iana = collections.OrderedDict(sorted(zip((tld.strip().lstrip('.') for tld in tld_iana.domain),
+                                              [(sponsor.strip(), -1) for sponsor in tld_iana.sponsor]),
+                                          key=lambda x: len(x[0]),
+                                          reverse=True))
+# top 20 in Google searches per day
+# sorted by longest first so .com matches before .om (Oman)
+tld_popular = collections.OrderedDict(sorted([
+    ('com', ('Commercial', 4860000000)),
+    ('org', ('Noncommercial', 1950000000)),
+    ('edu', ('US accredited postsecondary institutions', 1550000000)),
+    ('gov', ('United States Government', 1060000000)),
+    ('uk',  ('United Kingdom', 473000000)),
+    ('net', ('Network services', 206000000)),
+    ('ca', ('Canada', 165000000)),
+    ('de', ('Germany', 145000000)),
+    ('jp', ('Japan', 139000000)),
+    ('fr', ('France', 96700000)),
+    ('au', ('Australia', 91000000)),
+    ('us', ('United States', 68300000)),
+    ('ru', ('Russian Federation', 67900000)),
+    ('ch', ('Switzerland', 62100000)),
+    ('it', ('Italy', 55200000)),
+    ('nl', ('Netherlands', 45700000)),
+    ('se', ('Sweden', 39000000)),
+    ('no', ('Norway', 32300000)),
+    ('es', ('Spain', 31000000)),
+    ('mil', ('US Military', 28400000)),
+    ], key=lambda x: len(x[0]), reverse=True))
+
+uri_schemes_iana = sorted(pd.read_csv(os.path.join(DATA_PATH, 'uri-schemes.xhtml.csv'),
+                                      index_col=0).index.values,
+                          key=lambda x: len(str(x)), reverse=True)
+uri_schemes_popular = ['chrome-extension', 'example', 'content', 'bitcoin',
+                       'telnet', 'mailto',
+                       'https', 'gtalk',
+                       'http', 'smtp', 'feed',
+                       'udp', 'ftp', 'ssh', 'git', 'apt', 'svn', 'cvs']
 
 # these may not all be the sames isinstance types, depending on the env
 FLOAT_TYPES = (float, np.float16, np.float32, np.float64, np.float128)

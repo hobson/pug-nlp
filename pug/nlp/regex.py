@@ -93,8 +93,12 @@ RE_CAMEL_BASIC_B, RE_CAMEL_NORMAL_B, RE_CAMEL_LIBERAL_B
 [True, False, False, False, True, False, True, True, True]
 >>> re_ver.match("__version__ = '0.0.18'").groups()
 (None, '0', '0', '.18', '18', None, None)
->>> CRE_URL.findall("Play the [postiive sum game](http://totalgood.com) of life instead of us.gov.")
-['http://totalgood.com']
+>>> tweet = "Play the [postiive sum game](http://totalgood.com) of life instead of svn://us.gov."
+>>> cre_url.findall(tweet)
+[('http://totalgood.com', 'http://', 'http', 'totalgood.com', 'om'),
+ ('svn://us.gov', 'svn://', 'svn', 'us.gov', 'gov')]
+>>> list(match.groups()[0] for match in cre_url.finditer(tweet))
+['http://totalgood.com', 'svn://us.gov']
 """
 from __future__ import division, print_function, absolute_import
 from past.builtins import basestring
@@ -102,29 +106,8 @@ from past.builtins import basestring
 import re
 import string
 
-from pug.nlp.constant import tld_iana, APOSTROPHE_CHARS
-tld_popular = {        # top 20 in Google searches per day
-    'com': ('Commercial', 4860000000),
-    'org': ('Noncommercial', 1950000000),
-    'edu': ('US accredited postsecondary institutions', 1550000000),
-    'gov': ('United States Government', 1060000000),
-    'uk':  ('United Kingdom', 473000000),
-    'net': ('Network services', 206000000),
-    'ca': ('Canada', 165000000),
-    'de': ('Germany', 145000000),
-    'jp': ('Japan', 139000000),
-    'fr': ('France', 96700000),
-    'au': ('Australia', 91000000),
-    'us': ('United States', 68300000),
-    'ru': ('Russian Federation', 67900000),
-    'ch': ('Switzerland', 62100000),
-    'it': ('Italy', 55200000),
-    'nl': ('Netherlands', 45700000),
-    'se': ('Sweden', 39000000),
-    'no': ('Norway', 32300000),
-    'es': ('Spain', 31000000),
-    'mil': ('US Military', 28400000)
-}
+from pug.nlp.constant import APOSTROPHE_CHARS
+from pug.nlp import constant
 
 # try to make constant string variables all uppercase and regex patterns lowercase
 ASCII_CHARACTERS = ''.join([chr(i) for i in range(128)])
@@ -134,25 +117,23 @@ list_bullet = re.compile(r'^\s*[! \t@#%.?(*+=-_]*[0-9.]*[#-_.)]*\s+')
 nondigit = re.compile(r"[^0-9]")
 nonphrase = re.compile(r"[^-\w\s/&']")
 parenthetical_time = re.compile(r'([^(]*)\(\s*(\d+)\s*(?:min)?\s*\)([^(]*)', re.IGNORECASE)
+
 # email = re.compile(r'^([\w-]+(?:\.[\w-]+)*)@((?:[\w-]+\.)*\w[\w-]{0,66})\.([a-z]{2,6}(?:\.[a-z]{2})?)')
-fqdn = '[a-zA-Z0-9-.]+([.]' + r'|'.join(tld_iana) + r'\b)'
-fqdn_popular = '[a-zA-Z0-9-.]+([.]' + r'|'.join(tld_popular) + r'\b)'
+fqdn = r'(\b[a-zA-Z0-9-.]+([.]' + r'|'.join(constant.tld_iana) + r')\b)'
+fqdn_popular = r'(\b[a-zA-Z0-9-.]+\b([.]' + r'|'.join(constant.tld_popular) + r'\b)\b)'
 username = r'(\b[a-zA-Z0-9-.!#$%&*+-/=?^_`{|}~]+\b)'
-fqdn_popular = r'(' + r'|'.join(tld_popular.keys()) + r'\b)'
-email = re.compile(username + '@' + fqdn + r')')
-email_popular = re.compile(username + '@' + fqdn_popular + r')\b')
+email = re.compile(r'(\b' + username + '@' + fqdn + r'\b)')
+email_popular = re.compile(r'(\b' + username + '@' + fqdn_popular + r'\b)')
+url_path = r'(\b.+\b)'
+url_scheme = r'(\b(' + '|'.join(constant.uri_schemes_iana) + r')[:][/]{2})'
+url_scheme_popular = r'(\b(' + '|'.join(constant.uri_schemes_popular) + r')[:][/]{2})'
+url = r'(\b' + url_scheme + fqdn + r'\b)'
+url_popular = r'(\b' + url_scheme + fqdn_popular + r'\b)'
+cre_url = re.compile(url)
+cre_url_popular = re.compile(url_popular)
+
 nonword = re.compile(r'[\W]')
 white_space = re.compile(r'[\s]')
-
-url_path = r'(\b.+\b)'
-url_scheme = r'(\bhttp[s]?|svn|git|ftp[:][/]{2})'
-url = url_scheme + fqdn
-url_popular = url_scheme + fqdn_popular
-
-CRE_URL_SCHEME = re.compile(url_scheme)
-CRE_URL = re.compile(url)
-
-
 # ASCII regexes from http://stackoverflow.com/a/20078869/623735
 # To replace sequences of nonASCII characters with a single "?" use `nonascii_sequence.sub("?", s)`
 nonascii_sequence = re.compile(r'[^\x00-\x7F]+')

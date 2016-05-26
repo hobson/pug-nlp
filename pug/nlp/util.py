@@ -55,7 +55,7 @@ from slugify import slugify
 import xlrd
 
 from pug.nlp import charlist
-from pug.nlp import regex_patterns as RE
+from pug.nlp import regex as RE
 
 np = pd.np
 logger = logging.getLogger(__name__)
