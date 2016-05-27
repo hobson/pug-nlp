@@ -93,12 +93,13 @@ RE_CAMEL_BASIC_B, RE_CAMEL_NORMAL_B, RE_CAMEL_LIBERAL_B
 [True, False, False, False, True, False, True, True, True]
 >>> re_ver.match("__version__ = '0.0.18'").groups()
 (None, '0', '0', '.18', '18', None, None)
->>> tweet = "Play the [postiive sum game](http://totalgood.com) of life instead of svn://us.gov."
+>>> tweet = "Play the [postiive sum game](http://totalgood.com/a/b?c=42) of life instead of svn://us.gov."
 >>> cre_url.findall(tweet)
-[('http://totalgood.com', 'http://', 'http', 'totalgood.com', 'om'),
+[('http://totalgood.com/a/b?c=42', 'http://', 'http', 'totalgood.com', 'om'),
  ('svn://us.gov', 'svn://', 'svn', 'us.gov', 'gov')]
 >>> list(match.groups()[0] for match in cre_url.finditer(tweet))
 ['http://totalgood.com', 'svn://us.gov']
+>>> list(match.groups()[0] for match in cre_url.finditer(tweet))
 """
 from __future__ import division, print_function, absolute_import
 from past.builtins import basestring
@@ -127,8 +128,8 @@ email_popular = re.compile(r'(\b' + username + '@' + fqdn_popular + r'\b)')
 url_path = r'(\b.+\b)'
 url_scheme = r'(\b(' + '|'.join(constant.uri_schemes_iana) + r')[:][/]{2})'
 url_scheme_popular = r'(\b(' + '|'.join(constant.uri_schemes_popular) + r')[:][/]{2})'
-url = r'(\b' + url_scheme + fqdn + r'\b)'
-url_popular = r'(\b' + url_scheme + fqdn_popular + r'\b)'
+url = r'(\b' + url_scheme + fqdn + url_path + r'\b)'
+url_popular = r'(\b' + url_scheme + fqdn_popular + url_path + r'\b)'
 cre_url = re.compile(url)
 cre_url_popular = re.compile(url_popular)
 
