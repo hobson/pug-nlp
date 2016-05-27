@@ -95,11 +95,30 @@ RE_CAMEL_BASIC_B, RE_CAMEL_NORMAL_B, RE_CAMEL_LIBERAL_B
 (None, '0', '0', '.18', '18', None, None)
 >>> tweet = "Play the [postiive sum game](http://totalgood.com/a/b?c=42) of life instead of svn://us.gov."
 >>> cre_url.findall(tweet)
-[('http://totalgood.com/a/b?c=42', 'http://', 'http', 'totalgood.com', 'om'),
- ('svn://us.gov', 'svn://', 'svn', 'us.gov', 'gov')]
+[('http://totalgood.com/a/b?c=42', 'http://', 'http', 'totalgood.com', 'om', '/a/b?c=42'),
+ ('svn://us.gov', 'svn://', 'svn', 'us.gov', 'gov', '')]
 >>> list(match.groups()[0] for match in cre_url.finditer(tweet))
-['http://totalgood.com', 'svn://us.gov']
->>> list(match.groups()[0] for match in cre_url.finditer(tweet))
+['http://totalgood.com/a/b?c=42', 'svn://us.gov']
+>>> list(match.groups()[0] for match in re.finditer(url_popular, tweet))
+['http://totalgood.com/a/b?c=42', 'svn://us.gov']
+>>> tweet = "Reach out to sombody.me (at) python.org if you like email@addresses.easy.com."
+>>> list(match.groups()[0] for match in re.finditer(email_popular_obfuscated, tweet))
+['sombody.me (at) python.org', 'email@addresses.easy.com']
+>>> tweet = "What about dots in my {dot} name at python [dot] org?"
+>>> list(match.groups()[0] for match in re.finditer(email_popular_obfuscated, tweet))
+['my {dot} name at python [dot] org']
+>>> re.match(at, r'  {at]  ').groups()[0]
+'  {at]  '
+>>> re.match(dot, ' \t(dot_').groups()[0]
+' \t(dot_'
+>>> re.match(at, r'@').groups()[0]
+'@'
+>>> re.match(dot, r'.').groups()[0]
+'.'
+>>> re.match(at, r'.')
+>>> re.match(dot, r'@')
+>>> re.match(username_obfuscated, 'hobson _.DOT._ lane hello world').groups()[0]
+'hobson _.DOT._ lane'
 """
 from __future__ import division, print_function, absolute_import
 from past.builtins import basestring
@@ -123,13 +142,25 @@ parenthetical_time = re.compile(r'([^(]*)\(\s*(\d+)\s*(?:min)?\s*\)([^(]*)', re.
 fqdn = r'(\b[a-zA-Z0-9-.]+([.]' + r'|'.join(constant.tld_iana) + r')\b)'
 fqdn_popular = r'(\b[a-zA-Z0-9-.]+\b([.]' + r'|'.join(constant.tld_popular) + r'\b)\b)'
 username = r'(\b[a-zA-Z0-9-.!#$%&*+-/=?^_`{|}~]+\b)'
-email = re.compile(r'(\b' + username + '@' + fqdn + r'\b)')
-email_popular = re.compile(r'(\b' + username + '@' + fqdn_popular + r'\b)')
-url_path = r'(\b.+\b)'
+
+email = re.compile(r'(\b' + username + r'\b@\b' + fqdn + r'\b)')
+email_popular = re.compile(r'(\b' + username + r'\b@\b' + fqdn_popular + r'\b)')
+
+# TODO: unmatched surrounding symbols are accepted/consumed, likewise for multiple dots/ats
+at = r'(([-@="_(\[{\|\s]+(at|At|AT)[-@="_)\]\}\|\s]+)|[@])'
+dot = r'(([-.="_(\[{\|\s]+(dot|dt|Dot|DOT)[-.="_)\]\}\|\s]+)|[.])'
+fqdn_obfuscated = r'(\b(([a-zA-Z0-9-]+' + dot + r'){1,7})(' + r'|'.join(constant.tld_iana) + r')\b)'
+fqdn_popular_obfuscated = r'(\b(([a-zA-Z0-9-]+' + dot + r'){1,7})(' + r'|'.join(constant.tld_popular) + r')\b)'
+username_obfuscated = r'(([a-zA-Z0-9!#$%&*+/?^`~]+' + dot + r'?){1,7})'
+email_obfuscated = re.compile(r'(\b' + username_obfuscated + at + fqdn_obfuscated + r'\b)')
+email_popular_obfuscated = re.compile(r'(\b' + username_obfuscated + at + fqdn_popular_obfuscated + r'\b)')
+
+url_path = r'(\b[^\s]+)'
 url_scheme = r'(\b(' + '|'.join(constant.uri_schemes_iana) + r')[:][/]{2})'
 url_scheme_popular = r'(\b(' + '|'.join(constant.uri_schemes_popular) + r')[:][/]{2})'
-url = r'(\b' + url_scheme + fqdn + url_path + r'\b)'
-url_popular = r'(\b' + url_scheme + fqdn_popular + url_path + r'\b)'
+url = r'(\b' + url_scheme + fqdn + url_path + r'?\b)'
+url_popular = r'(\b' + url_scheme + fqdn_popular + url_path + r'?\b)'
+
 cre_url = re.compile(url)
 cre_url_popular = re.compile(url_popular)
 
