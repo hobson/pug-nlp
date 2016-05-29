@@ -45,6 +45,10 @@ from types import NoneType
 from StringIO import StringIO
 import copy
 import codecs
+import json
+from threading import _get_ident
+from time import mktime
+from traceback import format_exc
 
 import pandas as pd
 from dateutil.parser import parse as parse_date
@@ -55,6 +59,8 @@ from slugify import slugify
 import xlrd
 
 from pug.nlp import charlist
+from pug.nlp.constant import DATETIME_TYPES, MAX_DATETIME, MIN_DATETIME, MAX_TIMESTAMP, MIN_TIMESTAMP
+from pug.nlp.constant import FLOAT_TYPES, NAT, MAX_CHR
 from pug.nlp import regex as RE
 
 np = pd.np
@@ -1668,80 +1674,160 @@ def dict2obj(d):
     return obj
 
 
-def make_dataframe(prices, num_prices=1, columns=('portfolio',)):
-    """Convert a file, list of strings, or list of tuples into a Pandas DataFrame
-
-    Arguments:
-      num_prices (int): if not null, the number of columns (from right) that contain numeric values
+def any_generated(gen):
+    """like `any` but returns False for empty generators
+    >>> any_generated((v for v in (0,object())))
+    True
+    >>> any_generated((v for v in (0,False)))
+    False
+    >>> any_generated((v for v in ()))
+    False
     """
-    if isinstance(prices, pd.Series):
-        return pd.DataFrame(prices)
-    if isinstance(prices, pd.DataFrame):
-        return prices
-    if isinstance(prices, basestring) and os.path.isfile(prices):
-        prices = open(prices, 'rU')
-    if isinstance(prices, file):
-        values = []
-        # FIXME: what if it's not a CSV but a TSV or PSV
-        csvreader = csv.reader(prices, dialect='excel', quoting=csv.QUOTE_MINIMAL)
-        for row in csvreader:
-            # print row
-            values += [row]
-        prices.close()
-        prices = values
-    if any(isinstance(row, basestring) for row in prices):
-        prices = [COLUMN_SEP.split(row) for row in prices]
-    # print prices
-    index = []
-    if isinstance(prices[0][0], (datetime.date, datetime.datetime, datetime.time)):
-        index = [prices[0] for row in prices]
-        for i, row in prices:
-            prices[i] = row[1:]
-    # try to convert all strings to something numerical:
-    elif any(any(isinstance(value, basestring) for value in row) for row in prices):
-        # print '-'*80
-        for i, row in enumerate(prices):
-            # print i, row
-            for j, value in enumerate(row):
-                s = unicode(value).strip().strip('"').strip("'")
-                # print i, j, s
-                try:
-                    prices[i][j] = int(s)
-                    # print prices[i][j]
-                except:
-                    try:
-                        prices[i][j] = float(s)
-                    except:
-                        # print 'FAIL'
-                        try:
-                            # this is a probably a bit too forceful
-                            prices[i][j] = parse_date(s)
-                        except:
-                            pass
-    # print prices
-    width = max(len(row) for row in prices)
-    datetime_width = width - num_prices
-    if not index and isinstance(prices[0], (tuple, list)) and num_prices:
-        # print '~'*80
-        new_prices = []
+    for v in gen:
+        if bool(v):
+            return True
+    return False
+
+
+def make_series(x, *args, **kwargs):
+    """Coerce a provided array/sequence/generator into a pandas.Series object
+    FIXME: Deal with CSR, COO, DOK and other sparse matrices like this:
+       pd.Series(csr.toarray()[:,0])
+         or, if csr.shape[1] == 2
+       pd.Series(csr.toarray()[:,1], index=csr.toarray()[:,0])
+    >>> make_series(range(1, 4))
+    0    1
+    1    2
+    2    3
+    dtype: int64
+    >>> make_series(xrange(1, 4))
+    0    1
+    1    2
+    2    3
+    dtype: int64
+    >>> make_series(list('ABC'))
+    0    A
+    1    B
+    2    C
+    dtype: object
+    >>> make_series({'a': .8, 'be': .6}, name=None)
+    a     0.8
+    be    0.6
+    dtype: float64
+    """
+    if isinstance(x, pd.Series):
+        return x
+    try:
+        if len(args) == 1 and 'pk' not in args:
+            # args is a tuple, so needs to be turned into a list to prepend pk for Series index
+            args = ['pk'] + list(args)
+        df = pd.DataFrame.from_records(getattr(x, 'objects', x).values(*args))
+        if len(df.columns) == 1:
+            return df[df.columns[0]]
+        elif len(df.columns) >= 2:
+            return df.set_index(df.columns[0], drop=False)[df.columns[1]]
+        logger.warn('Unable to coerce {} into a pd.Series using args {} and kwargs {}.'.format(x, args, kwargs))
+        return pd.Series()
+    except (AttributeError, TypeError):
+        kwargs['name'] = getattr(x, 'name', None) if 'name' not in kwargs else kwargs['name']
+        if 'index' in kwargs:
+            x = list(x)
         try:
-            for i, row in enumerate(prices):
-                # print i, row
-                index += [datetime.datetime(*[int(i) for i in row[:datetime_width]]) + datetime.timedelta(hours=16)]
-                new_prices += [row[datetime_width:]]
-                # print prices[-1]
+            return pd.Series(x, **kwargs)
         except:
-            for i, row in enumerate(prices):
-                index += [row[0]]
-                new_prices += [row[1:]]
-        prices = new_prices or prices
-    # print index
-    # TODO: label the columns somehow (if first row is a bunch of strings/header)
-    if len(index) == len(prices):
-        df = pd.DataFrame(prices, index=index, columns=columns)
-    else:
-        df = pd.DataFrame(prices)
-    return df
+            logger.debug(format_exc())
+            try:
+                return pd.Series(np.array(x), **kwargs)
+            except:
+                logger.debug(format_exc())
+                return pd.Series(x, **kwargs)
+
+
+def encode(obj):
+    r"""Encode all unicode/str objects in a dataframe in the encoding indicated (as a fun attribute)
+    similar to to_ascii, but doesn't return a None, even when it fails.
+    >>> encode(u'Is 2013 a year or a code point in the NeoMatch strings "\u2013"?')
+    'Is 2013 a year or a code point in the NeoMatch strings "\xe2\x80\x93"?'
+    """
+    try:
+        return obj.encode(encode.encoding)
+    except AttributeError:
+        pass
+    except UnicodeDecodeError:
+        logger.warning('Problem with byte sequence of type {}.'.format(type(obj)))
+        # TODO: Check PG for the proper encoding and fix Django ORM settings so that unicode can be UTF-8 encoded!
+        return ''.join([c for c in obj if c < MAX_CHR])
+    # TODO: encode sequences of strings and dataframes of strings
+    return obj
+encode.encoding = 'utf-8'
+
+
+def clean_series(series, *args, **kwargs):
+    """Ensure all datetimes are valid Timestamp objects and dtype is np.datetime64[ns]
+    >>> from datetime import timedelta
+    >>> clean_series(pd.Series([datetime.datetime(1, 1, 1), 9, '1942', datetime.datetime(1970, 10, 23)]))
+    0    1677-09-22 00:12:44+00:00
+    1                            9
+    2                         1942
+    3    1970-10-23 00:00:00+00:00
+    dtype: object
+    >>> clean_series(pd.Series([datetime.datetime(1, 1, 1), datetime.datetime(3000, 10, 23)]))
+    0             1677-09-22 00:12:44+00:00
+    1   2262-04-11 23:47:16.854775807+00:00
+    dtype: datetime64[ns, UTC]
+    """
+    if not series.dtype == np.dtype('O'):
+        return series
+    if any_generated((isinstance(v, datetime.datetime) for v in series)):
+        series = series.apply(clip_datetime)
+    if any_generated((isinstance(v, basestring) for v in series)):
+        series = series.apply(encode)
+    return series
+
+
+def make_dataframe(table, clean=True, verbose=False, **kwargs):
+    """Coerce a provided table (QuerySet, list of lists, list of Series)
+    >>> dt = datetime.datetime
+    >>> make_dataframe([[1,2,3],[4,5,6]])
+       0  1  2
+    0  1  2  3
+    1  4  5  6
+    >>> make_dataframe([])
+    Empty DataFrame
+    Columns: []
+    Index: []
+    >>> make_dataframe([{'a': 2, 'b': 3}, PrettyDict([('a', 4), ('b', 5)])])
+       a  b
+    0  2  3
+    1  4  5
+    >>> make_dataframe([[dt(2700, 1, 1), dt(2015, 11, 2)], [(2700 - 2015) * 365.25 + 60, 1]]).T
+                                         0       1
+    0  2262-04-11 23:47:16.854775807+00:00  250256
+    1            2015-11-02 00:00:00+00:00       1
+    """
+    if hasattr(table, 'objects') and not callable(table.objects):
+        table = table.objects
+    if hasattr(table, 'filter') and callable(table.values):
+        table = pd.DataFrame.from_records(table.values().all())
+    elif isinstance(table, basestring) and os.path.isfile(table):
+        table = pd.DataFrame.from_csv(table)
+    # elif isinstance(table, ValuesQuerySet) or (isinstance(table, (list, tuple)) and
+    #                                            len(table) and all(isinstance(v, Mapping) for v in table)):
+    #     table = pd.DataFrame.from_records(table)
+    try:
+        table = pd.DataFrame(table, **kwargs)
+    except:
+        table = pd.DataFrame(table)
+    if clean and len(table) and isinstance(table, pd.DataFrame):
+        if verbose:
+            print('Cleaning up OutOfBoundsDatetime values...')
+        for col in table.columns:
+            if any_generated((isinstance(v, DATETIME_TYPES) for v in table[col])):
+                table[col] = clean_series(table[col])
+        table = table.dropna(how='all')
+    return table
+    # # in case the args and kwargs are intended for pd.DataFrame constructor rather than make_dataframe
+    # return pd.DataFrame(table, **kwargs)
 
 
 def column_name_to_date(name):
@@ -3609,3 +3695,126 @@ def mkdir_p(path):
         else:
             raise
     return 'new'
+
+
+def roundf(x, precision=0):
+    """Like round but works with large exponents in floats and high precision
+    Based on http://stackoverflow.com/a/6539677/623735
+    >>> 234042163./(2**24)
+    13.94999998807...
+    >>> roundf(234042163./(2**24), 5)
+    13.95
+    >>> roundf(1234.1234e-123, 5)
+    1.2341e-120
+    >>> roundf(1234.1234e-123, 3)
+    1.23e-120
+    >>> roundf(1234123.1234, 5)
+    1234100.0
+    >>> roundf(1234123.1234, 3)
+    1230000.0
+    """
+    if precision > 0:
+        return float("{:.{}e}".format(x, precision - 1))
+    return x
+
+
+def clip_datetime(dt, tz='utc', is_dst=None):
+    """Limit a datetime to a valid range for datetime, datetime64, and Timestamp objects
+    >>> from datetime import timedelta
+    >>> from clayton.constant import MAX_DATETIME64, MAX_DATETIME, MAX_TIMESTAMP
+    >>> clip_datetime(MAX_DATETIME + timedelta(100)) == pd.Timestamp(MAX_DATETIME64, tz='utc') == MAX_TIMESTAMP
+    True
+    >>> MAX_TIMESTAMP
+    Timestamp('2262-04-11 23:47:16.854775807+0000', tz='UTC')
+    """
+    if isinstance(dt, datetime.datetime):
+        # TODO: this gives up a day of datetime range due to assumptions about timezone
+        #       make MIN/MAX naive and replace dt.replace(tz=None) before comparison
+        #       set it back when done
+        dt = make_tz_aware(dt, tz=tz, is_dst=is_dst)
+        try:
+            return pd.tslib.Timestamp(dt)
+        except:
+            pass
+        if dt > MAX_DATETIME:
+            return MAX_TIMESTAMP
+        elif dt < MIN_DATETIME:
+            return MIN_TIMESTAMP
+        return NAT
+    return dt
+
+
+class DatetimeEncoder(json.JSONEncoder):
+
+    # def __init__(self, skipkeys=False, ensure_ascii=True,
+    #              check_circular=True, allow_nan=True, sort_keys=False,
+    #              indent=None, separators=None, encoding='utf-8', default=None):
+    # def __init__(self, *args, **kwargs):  # , **kwargs):
+    #     super(DatetimeEncoder, self).__init__(self, *args, **kwargs)
+    #     # self.clip = False
+
+    def default(self, obj):
+        if isinstance(obj, tuple(list(DATETIME_TYPES) + [pd.tslib.Timestamp])):
+            if getattr(self, 'clip', False):
+                return int(mktime(clip_datetime(obj).timetuple()))
+            else:
+                return int(mktime(obj.timetuple()))
+        return json.JSONEncoder.default(self, obj)
+
+
+class PrettyDict(OrderedDict):
+    """Improved repr() for an OrderedDict, looks like dict but consistently ordered and prettier ;)
+    Arguments:
+      clip (bool): Whether to clip dates to a valid pd.tslib.Timestamp range
+      indent (int or None): Whether and how deep to insert LF + spaces to prettify string
+                            Passed directly through to json.dumps which interprets it like this:
+                              `None`: minify the json (no line breaks or indentation whitespace
+                              `False` or `0`: line breaks between dict entries, but no indentation
+                              `1`+: number of spaces at begginning of each line for each level dict nesting
+      precision (int or None): precision of serialized floats
+    >>> PrettyDict([('scif', datetime.datetime(3015, 10, 21)), ('btfd', pd.tslib.Timestamp(datetime.datetime(2015, 10, 21)))])
+    {
+      "scif": 33002319600,
+      "btfd": 1445410800
+    }
+    >>> PrettyDict([('scif', datetime.datetime(3015, 10, 21)), ('same', datetime.datetime(4015, 10, 21))], clip=True, indent=0)
+    {
+    "scif": 9223400836,
+    "same": 9223400836
+    }
+    >>> PrettyDict([('scif', datetime.datetime(3015, 10, 23)), ('same', datetime.datetime(4015, 10, 23))], clip=True, indent=None)
+    {"scif": 9223400836, "same": 9223400836}
+    """
+
+    def __init__(self, *args, **kwargs):
+        clip = kwargs.pop('clip', kwargs.pop('clip_datetime', False))
+        encoder = DatetimeEncoder
+        # self.encoder.clip = self.clip
+        indent = kwargs.pop('indent', 2)
+        precision = kwargs.pop('precision', kwargs.pop('digits', 15))
+        super(PrettyDict, self).__init__(*args, **kwargs)
+        self.indent, self.precision, self.clip, self.encoder = indent, precision, clip, encoder
+
+    def __repr__(self, _repr_running={}):
+        'hod.__repr__() <==> repr(hod)'
+        call_key = id(self), _get_ident()
+        if call_key in _repr_running:
+            return '...'
+        _repr_running[call_key] = 1
+        try:
+            if not self:
+                return '{}'
+            # WARN: creates a duplicate PrettyDict temporarily doubling memory consumption!
+            # WARN: Fails on encoder.__init__ in dumps with `sort_keys=sort_keys, **kw).encode(obj)`
+            #       due to duplicate `skipkeys` arg (must be positional **and** kwarg in dumps to cause this)
+            #       dumps(obj, skipkeys=False, ensure_ascii=True, check_circular=True,
+            #                  allow_nan=True, cls=None, indent=None, separators=None,
+            #                  encoding='utf-8', default=None, sort_keys=False, **kw)
+            self.encoder.clip = self.clip
+            # FIXME: will fail on unserializable objects like django.db.models.base.ModelState
+            #        so need to optionally ignore '_state' keys in django models __dict__ attr
+            return json.dumps(PrettyDict([(k, float(roundf(v, self.precision)) if (self.precision and isinstance(v, FLOAT_TYPES)) else v)
+                              for k, v in self.iteritems()]), indent=self.indent, cls=self.encoder)
+        finally:
+            del _repr_running[call_key]
+PrettyOD = PrettyOrderedDict = HiddenOrderedDict = HiddenOD = PrettyDict
