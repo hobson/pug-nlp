@@ -24,7 +24,7 @@ You really want to contribute, right?
 
 ::
 
-    git clone https://github.com/hobson/pug-nlp.git
+    git clone https://github.com/totalgood/pug-nlp.git
 
 If you're a user and not a developer, and have an up-to-date posix OS
 with the postgres, xml2, and xlst development packages installed, then
@@ -53,7 +53,7 @@ most broken code
 
 ::
 
-    pip install git+git://github.com/hobsonlane/pug.git@master
+    pip install git+git://github.com/totalgoodlane/pug.git@master
 
 Warning
 ~~~~~~~
@@ -69,13 +69,14 @@ I love merging PRs and adding contributors to the ``__authors__`` list:
 
 ::
 
-    git clone https://github.com/hobson/pug-nlp.git
+    git clone https://github.com/totalgood/pug-nlp.git
 
-.. |Build Status| image:: https://travis-ci.org/hobson/pug-nlp.svg?branch=master
-   :target: https://travis-ci.org/hobson/pug-nlp
-.. |Coverage Status| image:: https://coveralls.io/repos/hobson/pug-nlp/badge.png
-   :target: https://coveralls.io/r/hobson/pug-nlp
+.. |Build Status| image:: https://travis-ci.org/totalgood/pug-nlp.svg?branch=master
+   :target: https://travis-ci.org/totalgood/pug-nlp
+.. |Coverage Status| image:: https://coveralls.io/repos/totalgood/pug-nlp/badge.png
+   :target: https://coveralls.io/r/totalgood/pug-nlp
 .. |Version Status| image:: https://pypip.in/v/pug-nlp/badge.png
    :target: https://pypi.python.org/pypi/pug-nlp/
 .. |Downloads| image:: https://pypip.in/d/pug-nlp/badge.png
    :target: https://pypi.python.org/pypi/pug-nlp/
+
