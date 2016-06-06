@@ -1510,12 +1510,7 @@ def read_csv(csv_file, ext='.csv', format=None, delete_empty_keys=False,
     Handles unquoted and quoted strings, quoted commas, quoted newlines (EOLs), complex numbers, times, dates, datetimes,
     >>> read_csv('"name\r\n",rank,"serial\nnumber",date <BR />\t\n"McCain, John","1","123456789",9/11/2001\n' +
     ...          'Bob,big cheese,1-23,1/1/2001 12:00 GMT', format='header+values list', numbers=True)  # doctest: +NORMALIZE_WHITESPACE
-    [['name', 'rank', 'serial\nnumber', 'date'],
-     ['McCain, John', 1.0, 123456789.0, datetime.datetime(2001, 9, 11, 0, 0)],
-     ['Bob',
-      'big cheese',
-      datetime.datetime(2015, 1, 23, 0, 0),
-      datetime.datetime(2001, 1, 1, 12, 0, tzinfo=tzutc())]]
+    [['name', 'rank', 'serial\nnumber', 'date'], ['McCain, John', 1.0, 123456789.0, datetime.datetime(2001, 9, 11, 0, 0)], ['Bob', 'big cheese', datetime.datetime(2016, 1, 23, 0, 0), datetime.datetime(2001, 1, 1, 12, 0, tzinfo=tzutc())]]
     """
     if not csv_file:
         return
@@ -2190,7 +2185,7 @@ def normalize_serial_number(sn,
     if not sn and not (blank is False):
         return blank
     if left_fill:
-        sn = left_fill * (max_length - len(sn) / len(left_fill)) + sn
+        sn = left_fill * int(max_length - len(sn) / len(left_fill)) + sn
     if right_fill:
         sn = sn + right_fill * (max_length - len(sn) / len(right_fill))
     return sn
