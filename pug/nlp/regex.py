@@ -4,71 +4,82 @@
 r"""Compiled regular expressions for tokenization and parsing
 >>> list(m.group() for m in CRE_TOKEN.finditer("I'm sure \"Smiths'\" and \".net\" are easies; you?"))
 ["I'm", 'sure', '"', 'Smiths', '\'"', 'and', '"', '.', 'net', '"', 'are', 'easies', ';', 'you', '?']
- RE_YEAR
-  >>> re.compile(RE_YEAR).findall("In '1970' and 2000, or 2015 '27 78 1886 with $1980 in my pocket")
-  ['1970', '2000', '2015', '27', '78', '1980']
-  >>> doc = r"In '1970-2000\1', 2015/16, and 27, many not-so-wealthy people's banks had $1980 more than Gates' or Jobs'."
-  >>> [((s, LIST_RE_TOKEN_NAMED[i].lower()[3:]) for i, s in enumerate(groups) if s).next() for groups in re.compile(RE_TOKEN_NAMED).findall(doc)]
-  [('In', 'unhyphenated_contracted_alpha'), ("'", 'nonword'), ('1970', 'year'), ('-', 'nonword'), ('2000', 'year'), ('\\', 'nonword'),
+
+RE_YEAR
+>>> re.compile(RE_YEAR).findall("In '1970' and 2000, or 2015 '27 78 1886 with $1980 in my pocket")
+['1970', '2000', '2015', '27', '78', '1980']
+>>> doc = r"In '1970-2000\1', 2015/16, and 27, many not-so-wealthy people's banks had $1980 more than Gates' or Jobs'."
+>>> [((s, LIST_RE_TOKEN_NAMED[i].lower()[3:]) for i, s in enumerate(groups) if s).next() for groups in re.compile(RE_TOKEN_NAMED).findall(doc)]
+   [('In', 'unhyphenated_contracted_alpha'), ("'", 'nonword'), ('1970', 'year'), ('-', 'nonword'), ('2000', 'year'), ('\\', 'nonword'),
    ('1', 'float'), ("',", 'nonword'), ('2015', 'year'), ('/', 'nonword'), ('16', 'year'), (',', 'nonword'), ('and', 'unhyphenated_contracted_alpha'),
    ('27', 'year'), (',', 'nonword'), ('many', 'unhyphenated_contracted_alpha'), ('not-so', 'hyphenated_alpha'), ('-', 'nonword'),
    ('wealthy', 'unhyphenated_contracted_alpha'), ("people's", 'unhyphenated_contracted_alpha'), ('banks', 'unhyphenated_contracted_alpha'),
    ('had', 'unhyphenated_contracted_alpha'), ('$1980', 'usd'), ('more', 'unhyphenated_contracted_alpha'), ('than', 'unhyphenated_contracted_alpha'),
    ('Gates', 'unhyphenated_contracted_alpha'), ("'", 'nonword'), ('or', 'unhyphenated_contracted_alpha'), ('Jobs', 'unhyphenated_contracted_alpha'),
    ("'.", 'nonword')]
+
 RE_WORD_BASIC
   Disallows underscores,  hyphens, leading numerals, and leading punctuation (except dot e.g. ".Net").
   Trailing digits and mixed case accepted. Word break (\b) not required.
   >>> tough_words = "1on1 2_on_2\r19+2-1=4^2+2**2\tTitle9\n.Net SuperCalaFragalisticExpiAladozious Titles and a I"
   >>> ' '.join(m.group() for m in re.finditer(RE_WORD_BASIC, tough_words))
   'on1 on Title9 .Net SuperCalaFragalisticExpiAladozious Titles and a I'
+
 RE_WORD_LIBERAL
   Allows underscores, hyphens, digits anywhere (trailing or leading).
   >>> ' '.join(iter_finds(RE_WORD_LIBERAL, tough_words))
   '1on1 2_on_2 19 2-1 4 2 2 2 Title9 .Net SuperCalaFragalisticExpiAladozious Titles and a I'
+
 RE_WORD_ALGEBRA
   Underscores, hyphens, digits, and math operators allowed anywhere, but no whitespace
   >>> ' '.join(iter_finds(RE_WORD_ALGEBRA, tough_words))
   '1on1 2_on_2 19+2-1=4^2+2**2 Title9 .Net SuperCalaFragalisticExpiAladozious Titles and a I'
+
 RE_WORD_UNDERSCORED
   2 to 3 "words" joined by internal underscores is an underscored word
   If external_underscores aren't matched by some preceding regex
   >>> compound_words = "Not-so-crazy words _underscored_externally_ and_internally and-very-long-up-to-64"
   >>> ' '.join(iter_finds(RE_WORD_UNDERSCORED, compound_words))
   'underscored_externally and_internally'
+
 RE_PHRASE_UNDERSCORED
   4 to 64 "words" joined by internal underscores is a "PHRASE", like the title of a book or file
   >>> ' '.join(iter_finds(RE_PHRASE_UNDERSCORED, compound_words))
   ''
+
 Only CAMEL_LIBERAL can start or end with an ACRONymn
 But RE_ACRONYM only allows 5-char long acronyms, max. But the 6th can be the start of a title-case word.
 RE_CAMEL_NORMAL
-  >>> [re.match(RE_CAMEL_NORMAL, s).group() for s in ['redRising', 'GoldenChildMorningStar']]
-  ['redRising', 'GoldenChildMorningStar']
-  >>> list(re.finditer(RE_CAMEL, 'Morning5star Investing'))
-  []
-  >>> list(m.group() for m in re.finditer(RE_CAMEL_NORMAL, 'EPR: AlbertEinstein BorisPodolsky And NathanRosen'))
-  ['AlbertEinstein', 'BorisPodolsky', 'NathanRosen']
+>>> [re.match(RE_CAMEL_NORMAL, s).group() for s in ['redRising', 'GoldenChildMorningStar']]
+['redRising', 'GoldenChildMorningStar']
+>>> list(re.finditer(RE_CAMEL, 'Morning5star Investing'))
+[]
+>>> list(m.group() for m in re.finditer(RE_CAMEL_NORMAL, 'EPR: AlbertEinstein BorisPodolsky And NathanRosen'))
+['AlbertEinstein', 'BorisPodolsky', 'NathanRosen']
+
 RE_CAMEL_LIBERAL, RE_CAMEL_LIBERAL_B
-  >>> list(m.group() for m in re.finditer(RE_CAMEL_LIBERAL, 'EinsteinPR: Einstein bPodolskyNRA NOTNRAPodolsky'))
-  ['EinsteinPR', 'bPodolskyNRA', 'NOTNRAPodolsky']
-  >>> list(m.group() for m in re.finditer(RE_CAMEL_LIBERAL_B, 'EinsteinPR: Einstein bPodolskyNRA NOTNRAPodolsky'))
-  ['EinsteinPR', 'bPodolskyNRA', 'NOTNRAPodolsky']
-  >>> [groups[0] for groups in re.findall(RE_CAMEL_LIBERAL_B, 'EinsteinPR: Einstein bPodolskyNRA NOTNRAPodolsky')]
-  ['EinsteinPR', 'bPodolskyNRA', 'NOTNRAPodolsky']
+>>> list(m.group() for m in re.finditer(RE_CAMEL_LIBERAL, 'EinsteinPR: Einstein bPodolskyNRA NOTNRAPodolsky'))
+['EinsteinPR', 'bPodolskyNRA', 'NOTNRAPodolsky']
+>>> list(m.group() for m in re.finditer(RE_CAMEL_LIBERAL_B, 'EinsteinPR: Einstein bPodolskyNRA NOTNRAPodolsky'))
+['EinsteinPR', 'bPodolskyNRA', 'NOTNRAPodolsky']
+>>> [groups[0] for groups in re.findall(RE_CAMEL_LIBERAL_B, 'EinsteinPR: Einstein bPodolskyNRA NOTNRAPodolsky')]
+['EinsteinPR', 'bPodolskyNRA', 'NOTNRAPodolsky']
+
 FIXME: too narrow! probably because of all the \b checks
 RE_DOTTED_ACRONYM_B
-  >>> list((m.group() if m else None) for m in re.finditer(RE_DOTTED_ACRONYM_B, 'U.S., U.S.A., A., and B.'))
-  ['U.', 'U.S.']
+>>> list((m.group() if m else None) for m in re.finditer(RE_DOTTED_ACRONYM_B, 'U.S., U.S.A., A., and B.'))
+['U.', 'U.S.']
+
 RE_ACRONYM, RE_ACRONYM_B
-  >>> re.findall(RE_ACRONYM, 'Hello ACRNYM cANDid ATe')
-  ['ACRNYM', 'AND', 'AT']
-  >>> re.findall(RE_ACRONYM_B, 'Hello ACRNYM cANDid ATe')
-  ['ACRNYM']
+>>> re.findall(RE_ACRONYM, 'Hello ACRNYM cANDid ATe')
+['ACRNYM', 'AND', 'AT']
+>>> re.findall(RE_ACRONYM_B, 'Hello ACRNYM cANDid ATe')
+['ACRNYM']
+
 RE_CAMEL_BASIC_B, RE_CAMEL_NORMAL_B, RE_CAMEL_LIBERAL_B
-  >>> [getattr(try_next(re.finditer(s, "Hello CamelACRONYM cANDid ATe")), 'group', bool)()
-  ...  for s in (RE_CAMEL_BASIC_B, RE_CAMEL_NORMAL_B, RE_CAMEL_LIBERAL_B)]
-  [False, False, 'CamelACRONYM']
+>>> [getattr(try_next(re.finditer(s, "Hello CamelACRONYM cANDid ATe")), 'group', bool)()
+...  for s in (RE_CAMEL_BASIC_B, RE_CAMEL_NORMAL_B, RE_CAMEL_LIBERAL_B)]
+[False, False, 'CamelACRONYM']
 >>> scientific_notation_exponent.split(' 1 x 10 ** 23 ')
 [' 1', '23 ']
 >>> scientific_notation_exponent.split(' 1E10 and 1 x 10 ^23 ')
@@ -82,6 +93,32 @@ RE_CAMEL_BASIC_B, RE_CAMEL_NORMAL_B, RE_CAMEL_LIBERAL_B
 [True, False, False, False, True, False, True, True, True]
 >>> re_ver.match("__version__ = '0.0.18'").groups()
 (None, '0', '0', '.18', '18', None, None)
+>>> tweet = "Play the [postiive sum game](http://totalgood.com/a/b?c=42) of life instead of svn://us.gov."
+>>> cre_url.findall(tweet)
+[('http://totalgood.com/a/b?c=42', 'http://', 'http', 'totalgood.com', 'om', '/a/b?c=42'),
+ ('svn://us.gov', 'svn://', 'svn', 'us.gov', 'gov', '')]
+>>> list(match.groups()[0] for match in cre_url.finditer(tweet))
+['http://totalgood.com/a/b?c=42', 'svn://us.gov']
+>>> list(match.groups()[0] for match in re.finditer(url_popular, tweet))
+['http://totalgood.com/a/b?c=42', 'svn://us.gov']
+>>> tweet = "Reach out to sombody.me (at) python.org if you like email@addresses.easy.com."
+>>> list(match.groups()[0] for match in re.finditer(email_popular_obfuscated, tweet))
+['sombody.me (at) python.org', 'email@addresses.easy.com']
+>>> tweet = "What about dots in my {dot} name at python [dot] org?"
+>>> list(match.groups()[0] for match in re.finditer(email_popular_obfuscated, tweet))
+['my {dot} name at python [dot] org']
+>>> re.match(at, r'  {at]  ').groups()[0]
+'  {at]  '
+>>> re.match(dot, ' \t(dot_').groups()[0]
+' \t(dot_'
+>>> re.match(at, r'@').groups()[0]
+'@'
+>>> re.match(dot, r'.').groups()[0]
+'.'
+>>> re.match(at, r'.')
+>>> re.match(dot, r'@')
+>>> re.match(username_obfuscated, 'hobson _.DOT._ lane hello world').groups()[0]
+'hobson _.DOT._ lane'
 """
 from __future__ import division, print_function, absolute_import
 from past.builtins import basestring
@@ -89,31 +126,8 @@ from past.builtins import basestring
 import re
 import string
 
-from pug.nlp.constant import tld_iana, APOSTROPHE_CHARS, uri_schemes_popular, uri_schemes_iana
-
-
-tld_popular = {        # top 20 in Google searches per day
-    'com': ('Commercial', 4860000000),
-    'org': ('Noncommercial', 1950000000),
-    'edu': ('US accredited postsecondary institutions', 1550000000),
-    'gov': ('United States Government', 1060000000),
-    'uk':  ('United Kingdom', 473000000),
-    'net': ('Network services', 206000000),
-    'ca': ('Canada', 165000000),
-    'de': ('Germany', 145000000),
-    'jp': ('Japan', 139000000),
-    'fr': ('France', 96700000),
-    'au': ('Australia', 91000000),
-    'us': ('United States', 68300000),
-    'ru': ('Russian Federation', 67900000),
-    'ch': ('Switzerland', 62100000),
-    'it': ('Italy', 55200000),
-    'nl': ('Netherlands', 45700000),
-    'se': ('Sweden', 39000000),
-    'no': ('Norway', 32300000),
-    'es': ('Spain', 31000000),
-    'mil': ('US Military', 28400000)
-}
+from pug.nlp.constant import APOSTROPHE_CHARS
+from pug.nlp import constant
 
 # try to make constant string variables all uppercase and regex patterns lowercase
 ASCII_CHARACTERS = ''.join([chr(i) for i in range(128)])
@@ -122,24 +136,34 @@ list_bullet = re.compile(r'^\s*[! \t@#%.?(*+=-_]*[0-9.]*[#-_.)]*\s+')
 nondigit = re.compile(r"[^0-9]")
 nonphrase = re.compile(r"[^-\w\s/&']")
 parenthetical_time = re.compile(r'([^(]*)\(\s*(\d+)\s*(?:min)?\s*\)([^(]*)', re.IGNORECASE)
-# email = re.compile(r'^([\w-]+(?:\.[\w-]+)*)@((?:[\w-]+\.)*\w[\w-]{0,66})\.([a-z]{2,6}(?:\.[a-z]{2})?)')
-email = re.compile(r'[a-zA-Z0-9-.!#$%&*+-/=?^_`{|}~]+@[a-zA-Z0-9-.]+(' + r'|'.join(tld_iana) + r')')
-email_popular = re.compile(r'\b([a-zA-Z0-9.+]+[@][a-zA-Z0-9-]+[.]' + r'(' + r'|'.join(tld_popular.keys()) + r'))\b')
-# uri_schemes_popular = ['chrome', 'https', 'http', ...]
-url_scheme_popular = r'(\b(' + '|'.join(uri_schemes_popular) + r')[:][/]{2})'
-url_scheme_iana = r'(\b(' + '|'.join(uri_schemes_iana) + r')[:][/]{2})'
-fqdn_popular = r'(\b[a-zA-Z0-9-.]+\b([.]' + r'|'.join(tld_popular) + r'\b)\b)'
-url_path = r'(\b[\w/?=+#-_&%~\'"\\.,]*\b)'
 
+fqdn = r'(\b[a-zA-Z0-9-.]+([.]' + r'|'.join(constant.tld_iana) + r')\b)'
+fqdn_popular = r'(\b[a-zA-Z0-9-.]+\b([.]' + r'|'.join(constant.tld_popular) + r'\b)\b)'
+username = r'(\b[a-zA-Z0-9-.!#$%&*+-/=?^_`{|}~]+\b)'
 
-# In[28]:
+email = re.compile(r'(\b' + username + r'\b@\b' + fqdn + r'\b)')
+email_popular = re.compile(r'(\b' + username + r'\b@\b' + fqdn_popular + r'\b)')
 
-url_popular = r'(\b' + r'(http|https|svn|git|apt)[:]//' + fqdn_popular + url_path + r'\b)'
+# TODO: unmatched surrounding symbols are accepted/consumed, likewise for multiple dots/ats
+at = r'(([-@="_(\[{\|\s]+(at|At|AT)[-@="_)\]\}\|\s]+)|[@])'
+dot = r'(([-.="_(\[{\|\s]+(dot|dt|Dot|DOT)[-.="_)\]\}\|\s]+)|[.])'
+fqdn_obfuscated = r'(\b(([a-zA-Z0-9-]+' + dot + r'){1,7})(' + r'|'.join(constant.tld_iana) + r')\b)'
+fqdn_popular_obfuscated = r'(\b(([a-zA-Z0-9-]+' + dot + r'){1,7})(' + r'|'.join(constant.tld_popular) + r')\b)'
+username_obfuscated = r'(([a-zA-Z0-9!#$%&*+/?^`~]+' + dot + r'?){1,7})'
+email_obfuscated = re.compile(r'(\b' + username_obfuscated + at + fqdn_obfuscated + r'\b)')
+email_popular_obfuscated = re.compile(r'(\b' + username_obfuscated + at + fqdn_popular_obfuscated + r'\b)')
+
+url_path = r'(\b[^\s]+)'
+url_scheme = r'(\b(' + '|'.join(constant.uri_schemes_iana) + r')[:][/]{2})'
+url_scheme_popular = r'(\b(' + '|'.join(constant.uri_schemes_popular) + r')[:][/]{2})'
+url = r'(\b' + url_scheme + fqdn + url_path + r'?\b)'
+url_popular = r'(\b' + url_scheme + fqdn_popular + url_path + r'?\b)'
+
+cre_url = re.compile(url)
+cre_url_popular = re.compile(url_popular)
 
 nonword = re.compile(r'[\W]')
 white_space = re.compile(r'[\s]')
-
-
 # ASCII regexes from http://stackoverflow.com/a/20078869/623735
 # To replace sequences of nonASCII characters with a single "?" use `nonascii_sequence.sub("?", s)`
 nonascii_sequence = re.compile(r'[^\x00-\x7F]+')

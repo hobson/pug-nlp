@@ -25,7 +25,7 @@ from dateutil import parser as dateutil_parser
 import logging
 
 from pug.nlp import util  # import transposed_lists, sod_transposed, listify, intify
-from pug.nlp import regex_patterns
+from pug.nlp import regex
 
 logger = logging.getLogger(__name__)
 
@@ -652,8 +652,8 @@ def replace_nonascii(s, filler='', one_for_one=False):
     # ''
     # '''
     if one_for_one:
-        return regex_patterns.nonascii.sub(filler, s)
-    return regex_patterns.nonascii_sequence.sub(filler, s)
+        return regex.nonascii.sub(filler, s)
+    return regex.nonascii_sequence.sub(filler, s)
 
 
 def strip_nonascii(s):
