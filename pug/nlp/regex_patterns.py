@@ -89,7 +89,9 @@ from past.builtins import basestring
 import re
 import string
 
-from pug.nlp.constant import tld_iana, APOSTROPHE_CHARS
+from pug.nlp.constant import tld_iana, APOSTROPHE_CHARS, uri_schemes_popular, uri_schemes_iana
+
+
 tld_popular = {        # top 20 in Google searches per day
     'com': ('Commercial', 4860000000),
     'org': ('Noncommercial', 1950000000),
@@ -116,7 +118,6 @@ tld_popular = {        # top 20 in Google searches per day
 # try to make constant string variables all uppercase and regex patterns lowercase
 ASCII_CHARACTERS = ''.join([chr(i) for i in range(128)])
 
-# consider using "from re import *" and renaming this module re or RE
 list_bullet = re.compile(r'^\s*[! \t@#%.?(*+=-_]*[0-9.]*[#-_.)]*\s+')
 nondigit = re.compile(r"[^0-9]")
 nonphrase = re.compile(r"[^-\w\s/&']")
@@ -124,6 +125,17 @@ parenthetical_time = re.compile(r'([^(]*)\(\s*(\d+)\s*(?:min)?\s*\)([^(]*)', re.
 # email = re.compile(r'^([\w-]+(?:\.[\w-]+)*)@((?:[\w-]+\.)*\w[\w-]{0,66})\.([a-z]{2,6}(?:\.[a-z]{2})?)')
 email = re.compile(r'[a-zA-Z0-9-.!#$%&*+-/=?^_`{|}~]+@[a-zA-Z0-9-.]+(' + r'|'.join(tld_iana) + r')')
 email_popular = re.compile(r'\b([a-zA-Z0-9.+]+[@][a-zA-Z0-9-]+[.]' + r'(' + r'|'.join(tld_popular.keys()) + r'))\b')
+# uri_schemes_popular = ['chrome', 'https', 'http', ...]
+url_scheme_popular = r'(\b(' + '|'.join(uri_schemes_popular) + r')[:][/]{2})'
+url_scheme_iana = r'(\b(' + '|'.join(uri_schemes_iana) + r')[:][/]{2})'
+fqdn_popular = r'(\b[a-zA-Z0-9-.]+\b([.]' + r'|'.join(tld_popular) + r'\b)\b)'
+url_path = r'(\b[\w/?=+#-_&%~\'"\\.,]*\b)'
+
+
+# In[28]:
+
+url_popular = r'(\b' + r'(http|https|svn|git|apt)[:]//' + fqdn_popular + url_path + r'\b)'
+
 nonword = re.compile(r'[\W]')
 white_space = re.compile(r'[\s]')
 

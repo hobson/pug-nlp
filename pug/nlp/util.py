@@ -37,7 +37,8 @@ import string
 import csv
 import warnings
 import logging
-from collections import OrderedDict
+from collections import OrderedDict, Mapping
+from itertools import islice
 from traceback import print_exc
 from decimal import Decimal, InvalidOperation, InvalidContext
 import math
@@ -45,6 +46,7 @@ from types import NoneType
 from StringIO import StringIO
 import copy
 import codecs
+from six import iteritems
 
 import pandas as pd
 from dateutil.parser import parse as parse_date
@@ -83,7 +85,7 @@ PUNC = unicode(string.punctuation)
 COUNT_NAMES = ['count', 'cnt', 'number', 'num', '#', 'frequency', 'probability', 'prob', 'occurences']
 # 4 types of "histograms" and their canonical name/label
 HIST_NAME = {
-    'hist': 'hist', 'ff':  'hist',  'fd': 'hist', 'dff':  'hist', 'dfd': 'hist', 'gfd': 'hist', 'gff': 'hist', 'bfd': 'hist', 'bff': 'hist',
+    'hist': 'hist',  'ff': 'hist',  'fd': 'hist', 'dff':  'hist', 'dfd': 'hist', 'gfd': 'hist', 'gff': 'hist', 'bfd': 'hist', 'bff': 'hist',
     'pmf':  'pmf',  'pdf': 'pmf',   'pd': 'pmf',
     'cmf':  'cmf',  'cdf': 'cmf',
     'cfd':  'cfd',  'cff': 'cfd',   'cdf': 'cfd',
@@ -2695,6 +2697,27 @@ def abbreviate(s):
     return abbreviate.words.get(s, s)
 abbreviate.words = {'account': 'acct', 'number': 'num', 'customer': 'cust', 'member': 'membr',
                     'building': 'bldg', 'serial number': 'SN', 'social security number': 'SSN'}
+
+
+def truncate(s, max_len=20, ellipsis='...'):
+    """Return string at most `max_len` characters or sequence elments appended with the `ellipsis` characters
+
+    >>> truncate(dict(zip(list('ABCDEFGH'), range(8)), 1)
+    "{'A': 0...'
+    >>> truncate(arange(5), 3)
+    '[0, 1, 2...'
+    >>> truncate('Too verbose for its own good.', 11)
+    'Too verbose...'
+    """
+    if s is None:
+        return None
+    elif isinstance(s, basestring):
+        return s[:min(len(s), max_len)] + ellipsis if len(s) > max_len else ''
+    elif isinstance(s, Mapping):
+        truncated_str = str(dict(islice(iteritems(s), max_len)))
+    else:
+        truncated_str = str(list(islice(s, max_len)))
+    return truncated_str[:-1] + '...' if len(s) > max_len else truncated_str
 
 
 def remove_internal_vowels(s, space=''):
