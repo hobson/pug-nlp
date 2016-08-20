@@ -96,7 +96,7 @@ string.unprintable = UNPRINTABLE  # monkey patch so import string from this modu
 
 NULL_VALUES = set(['0', 'None', 'null', "'"] + ['0.' + z for z in ['0' * i for i in range(10)]])
 # if datetime's are 'repr'ed before being checked for null values sometime 1899-12-30 will come up
-NULL_REPR_VALUES = set(['datetime.datetime(1899, 12, 30'])
+NULL_REPR_VALUES = set(['datetime.datetime(1899, 12, 30)'])
 # to allow NULL checks to strip off hour/min/sec from string repr when checking for equality
 MAX_NULL_REPR_LEN = max(len(s) for s in NULL_REPR_VALUES)
 

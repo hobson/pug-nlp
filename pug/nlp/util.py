@@ -25,6 +25,7 @@ try:
     from itertools import izip as zip
 except ImportError:  # will be 3.x series
     pass
+from future.utils import viewitems
 
 import os
 import errno
@@ -41,7 +42,8 @@ import string
 import csv
 import warnings
 import logging
-from collections import OrderedDict
+from collections import OrderedDict, Mapping
+from itertools import islice
 from traceback import print_exc
 from decimal import Decimal, InvalidOperation, InvalidContext
 import math
@@ -93,7 +95,7 @@ PUNC = unicode(string.punctuation)
 COUNT_NAMES = ['count', 'cnt', 'number', 'num', '#', 'frequency', 'probability', 'prob', 'occurences']
 # 4 types of "histograms" and their canonical name/label
 HIST_NAME = {
-    'hist': 'hist', 'ff':  'hist',  'fd': 'hist', 'dff':  'hist', 'dfd': 'hist', 'gfd': 'hist', 'gff': 'hist', 'bfd': 'hist', 'bff': 'hist',
+    'hist': 'hist',  'ff': 'hist',  'fd': 'hist', 'dff':  'hist', 'dfd': 'hist', 'gfd': 'hist', 'gff': 'hist', 'bfd': 'hist', 'bff': 'hist',
     'pmf':  'pmf',  'pdf': 'pmf',   'pd': 'pmf',
     'cmf':  'cmf',  'cdf': 'cmf',
     'cfd':  'cfd',  'cff': 'cfd',   'cdf': 'cfd',
@@ -206,8 +208,8 @@ TZ_ABBREV_INFO = {
     'AST':  ('US/Atlantic', -4),  'ADT': ('US/Atlantic', -3),   'AT': ('US/Atlantic', -4),
     'GMT':  ('UTC', 0),
 }
-TZ_ABBREV_OFFSET = dict(((abbrev, info[1]) for abbrev, info in TZ_ABBREV_INFO.iteritems()))
-TZ_ABBREV_NAME = dict(((abbrev, info[0]) for abbrev, info in TZ_ABBREV_INFO.iteritems()))
+TZ_ABBREV_OFFSET = dict(((abbrev, info[1]) for abbrev, info in viewitems(TZ_ABBREV_INFO)))
+TZ_ABBREV_NAME = dict(((abbrev, info[0]) for abbrev, info in viewitems(TZ_ABBREV_INFO)))
 
 
 def qs_to_table(qs, excluded_fields=['id']):
@@ -268,7 +270,7 @@ def inverted_dict(d):
     >>> inverted_dict({0: ('a', 'b'), 1: 'cd'}) == {'cd': 1, ('a', 'b'): 0}
     True
     """
-    return dict((force_hashable(v), k) for (k, v) in dict(d).iteritems())
+    return dict((force_hashable(v), k) for (k, v) in viewitems(dict(d)))
 
 
 def inverted_dict_of_lists(d):
@@ -278,7 +280,7 @@ def inverted_dict_of_lists(d):
     True
     """
     new_dict = {}
-    for (old_key, old_value_list) in dict(d).iteritems():
+    for (old_key, old_value_list) in viewitems(dict(d)):
         for new_key in listify(old_value_list):
             new_dict[new_key] = old_key
     return new_dict
@@ -345,7 +347,7 @@ def clean_field_dict(field_dict, cleaner=unicode.strip, time_zone=None):
     d = {}
     if time_zone is None:
         tz = DEFAULT_TZ
-    for k, v in field_dict.iteritems():
+    for k, v in viewitems(field_dict):
         if k == '_state':
             continue
         if isinstance(v, basestring):
@@ -476,13 +478,13 @@ def quantify_field_dict(field_dict, precision=None, date_precision=None, cleaner
 
 
     FIXME: define a time zone for the datetime object
-    >>> sorted(quantify_field_dict({'_state': object(), 'x': 12345678911131517L, 'y': "\t  Wash Me! \n",
-    ...     'z': datetime.datetime(1970, 10, 23, 23, 59, 59, 123456)}).iteritems())  # doctest: +NORMALIZE_WHITESPACE, +ELLIPSIS
+    >>> sorted(viewitems(quantify_field_dict({'_state': object(), 'x': 12345678911131517L, 'y': "\t  Wash Me! \n",
+    ...     'z': datetime.datetime(1970, 10, 23, 23, 59, 59, 123456)})))  # doctest: +NORMALIZE_WHITESPACE, +ELLIPSIS
     [('x', 12345678911131517L), ('y', u'Wash Me!'), ('z', 25...99.123456)]
     """
     if cleaner:
         d = clean_field_dict(field_dict, cleaner=cleaner)
-    for k, v in d.iteritems():
+    for k, v in viewitems(d):
         if isinstance(d[k], datetime.datetime):
             # seconds since epoch = datetime.datetime(1969,12,31,18,0,0)
             try:
@@ -647,7 +649,7 @@ def get_key_for_value(dict_obj, value, default=None):
     >>> get_key_for_value({0: 'what', '': 'ever', 'you': 'want', 'to find': None, 'you': 'too', ' ': 'want'}, 'want')
     ' '
     """
-    for k, v in dict_obj.iteritems():
+    for k, v in viewitems(dict_obj):
         if v == value:
             return k
     return default
@@ -743,7 +745,7 @@ def fuzzy_get(possible_keys, approximate_key, default=None, similarity=0.6, tupl
         if approximate_key and strkey and strkey.strip():
             # print 'no exact match was found for {0} in {1} so preprocessing keys'.format(approximate_key, dict_obj.keys())
             if any(isinstance(k, (tuple, list)) for k in dict_obj):
-                dict_obj = dict((tuple_joiner.join(str(k2) for k2 in k), v) for (k, v) in dict_obj.iteritems())
+                dict_obj = dict((tuple_joiner.join(str(k2) for k2 in k), v) for (k, v) in viewitems(dict_obj))
                 if isinstance(approximate_key, (tuple, list)):
                     strkey = tuple_joiner.join(approximate_key)
             # fuzzywuzzy requires that dict_keys be a list (sets and tuples fail!)
@@ -812,7 +814,7 @@ def fuzzy_get_value(obj, approximate_key, default=None, **kwargs):
 
 def fuzzy_get_tuple(dict_obj, approximate_key, dict_keys=None, key_and_value=False, similarity=0.6, default=None):
     """Find the closest matching key and/or value in a dictionary (must have all string keys!)"""
-    return fuzzy_get(dict(('|'.join(str(k2) for k2 in k), v) for (k, v) in dict_obj.iteritems()),
+    return fuzzy_get(dict(('|'.join(str(k2) for k2 in k), v) for (k, v) in viewitems(dict_obj)),
                      '|'.join(str(k) for k in approximate_key), dict_keys=dict_keys,
                      key_and_value=key_and_value, similarity=similarity, default=default)
 
@@ -966,7 +968,6 @@ def transposed_matrix(matrix, filler=None, row_type=list, matrix_type=list, valu
     >>> transposed_matrix([[1,2],[1],[1,2,3]])
     [[1, 1, 1], [2, None, 2], [None, None, 3]]
     """
-
     matrix_type = matrix_type or type(matrix)
 
     try:
@@ -1004,12 +1005,7 @@ def transposed_matrix(matrix, filler=None, row_type=list, matrix_type=list, valu
             except TypeError:
                 ans[j][i] = filler
 
-    try:
-        if isinstance(ans[0], row_type):
-            return matrix_type(ans)
-    except:
-        pass
-    return matrix_type([row_type(row) for row in ans])
+    return matrix_type(ans) if isinstance(ans[0], row_type) else matrix_type([row_type(row) for row in ans])
 
 
 def hist_from_counts(counts, normalize=False, cumulative=False, to_str=False, sep=',', min_bin=None, max_bin=None):
@@ -1233,7 +1229,7 @@ def update_dict(d, u=None, depth=-1, take_new=True, default_mapping_type=dict, p
         dictish = default_mapping_type
     if copy:
         d = dictish(d)
-    for k, v in u.iteritems():
+    for k, v in viewitems(u):
         if isinstance(d, collections.Mapping):
             if isinstance(v, collections.Mapping) and not depth == 0:
                 r = update_dict(d.get(k, dictish()), v, depth=max(depth - 1, -1), copy=copy)
@@ -1608,7 +1604,7 @@ def read_csv(csv_file, ext='.csv', format=None, delete_empty_keys=False,
             if format in 'dj':  # django json format
                 recs += [{"pk": rownum, "model": model_name, "fields": row_dict}]
             elif format in 'vhl':  # list of lists of values, with header row (list of str)
-                recs += [[value for field_name, value in row_dict.iteritems() if (field_name.strip() or delete_empty_keys is False)]]
+                recs += [[value for field_name, value in viewitems(row_dict) if (field_name.strip() or delete_empty_keys is False)]]
             elif format in 'c':  # columnwise dict of lists
                 for field_name in row_dict:
                     recs[field_name] += [row_dict[field_name]]
@@ -1668,7 +1664,7 @@ def dict2obj(d):
     else:
         return d
     obj = Object()
-    for k, v in d.iteritems():
+    for k, v in viewitems(d):
         obj.__dict__[k] = dict2obj(v)
     return obj
 
@@ -2255,7 +2251,7 @@ def make_real(list_of_lists):
 
 
 def imported_modules():
-    for name, val in globals().iteritems():
+    for name, val in viewitems(globals()):
         if isinstance(val, types.ModuleType):
             yield val
 
@@ -2707,12 +2703,12 @@ def strip_keys(d, nones=False, depth=0):
     >>> strip_keys({' a': ' a', ' b\t c ': {'d e  ': 'd e  '}}, depth=100) == {'a': ' a', 'b\t c': {'d e': 'd e  '}}
     True
     """
-    ans = type(d)((str(k).strip(), v) for (k, v) in OrderedDict(d).iteritems() if (not nones or (str(k).strip() and str(k).strip() != 'None')))
+    ans = type(d)((str(k).strip(), v) for (k, v) in viewitems(OrderedDict(d)) if (not nones or (str(k).strip() and str(k).strip() != 'None')))
     if int(depth) < 1:
         return ans
     if int(depth) > strip_keys.MAX_DEPTH:
         warnings.warn(RuntimeWarning("Maximum recursion depth allowance (%r) exceeded." % strip_keys.MAX_DEPTH))
-    for k, v in ans.iteritems():
+    for k, v in viewitems(ans):
         if isinstance(v, collections.Mapping):
             ans[k] = strip_keys(v, nones=nones, depth=int(depth) - 1)
     return ans
@@ -2780,6 +2776,27 @@ def abbreviate(s):
     return abbreviate.words.get(s, s)
 abbreviate.words = {'account': 'acct', 'number': 'num', 'customer': 'cust', 'member': 'membr',
                     'building': 'bldg', 'serial number': 'SN', 'social security number': 'SSN'}
+
+
+def truncate(s, max_len=20, ellipsis='...'):
+    """Return string at most `max_len` characters or sequence elments appended with the `ellipsis` characters
+
+    >>> truncate(dict(zip(list('ABCDEFGH'), range(8)), 1)
+    "{'A': 0...'
+    >>> truncate(arange(5), 3)
+    '[0, 1, 2...'
+    >>> truncate('Too verbose for its own good.', 11)
+    'Too verbose...'
+    """
+    if s is None:
+        return None
+    elif isinstance(s, basestring):
+        return s[:min(len(s), max_len)] + ellipsis if len(s) > max_len else ''
+    elif isinstance(s, Mapping):
+        truncated_str = str(dict(islice(viewitems(s), max_len)))
+    else:
+        truncated_str = str(list(islice(s, max_len)))
+    return truncated_str[:-1] + '...' if len(s) > max_len else truncated_str
 
 
 def remove_internal_vowels(s, space=''):
@@ -2963,7 +2980,7 @@ def kmer_set(seq, k=4):
 def count_duplicates(items):
     """Return a dict of objects and thier counts (like a Counter), but only count > 1"""
     c = collections.Counter(items)
-    return dict((k, v) for (k, v) in c.iteritems() if v > 1)
+    return dict((k, v) for (k, v) in viewitems(c) if v > 1)
 
 
 # def markdown_stats(doc):
@@ -3813,7 +3830,7 @@ class PrettyDict(OrderedDict):
             # FIXME: will fail on unserializable objects like django.db.models.base.ModelState
             #        so need to optionally ignore '_state' keys in django models __dict__ attr
             return json.dumps(PrettyDict([(k, float(roundf(v, self.precision)) if (self.precision and isinstance(v, FLOAT_TYPES)) else v)
-                              for k, v in self.iteritems()]), indent=self.indent, cls=self.encoder)
+                              for k, v in viewitems(self)]), indent=self.indent, cls=self.encoder)
         finally:
             del _repr_running[call_key]
 PrettyOD = PrettyOrderedDict = HiddenOrderedDict = HiddenOD = PrettyDict
