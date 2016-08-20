@@ -21,6 +21,10 @@
 '''
 from __future__ import division, print_function, absolute_import
 from past.builtins import basestring
+try:
+    from itertools import izip as zip
+except ImportError:  # will be 3.x series
+    pass
 
 import os
 import errno

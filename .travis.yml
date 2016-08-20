@@ -9,9 +9,9 @@ before_install:
   - ./miniconda.sh -b
   - export PATH=/home/travis/miniconda2/bin:$PATH
   - conda update --yes conda
+  - pip install --update pip
 install:
   - conda create --yes -n pug-nlp-test python=$TRAVIS_PYTHON_VERSION pip atlas pyzmq numpy scipy matplotlib scikit-learn
   - source activate pug-nlp-test
-  - pip install -r requirements-test.txt
-  - python setup.py install
+  - python setup.py install  # pip install -r requirements-test.txt
 script: python setup.py test
