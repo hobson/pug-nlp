@@ -7,13 +7,20 @@ import os
 import string
 import datetime
 import collections
+from pytz import timezone
 
 import pandas as pd
 
-import pug.nlp
+# TZ constants
+try:
+    from django.conf import settings
+    DEFAULT_TZ = timezone(settings.TIME_ZONE)
+except:
+    DEFAULT_TZ = timezone('UTC')
+
 
 np = pd.np
-BASE_PATH = os.path.dirname(pug.nlp.__file__)
+BASE_PATH = os.path.dirname(__file__)
 DATA_PATH = os.path.join(BASE_PATH, 'data')
 
 tld_iana = pd.read_csv(os.path.join(DATA_PATH, 'tlds-from-iana.csv'))
@@ -103,3 +110,8 @@ MAX_NULL_REPR_LEN = max(len(s) for s in NULL_REPR_VALUES)
 PERCENT_SYMBOLS = ('percent', 'pct', 'pcnt', 'pt', r'%')
 FINANCIAL_WHITESPACE = ('Flat', 'flat', ' ', ',', '"', "'", '\t', '\n', '\r', '$')
 FINANCIAL_MAPPING = (('k', '000'), ('M', '000000'))
+
+# MONTHS = ['january', 'february', 'march', 'april', 'may', 'june', 'july', 'august', 'september', 'october', 'november', 'december']
+# MONTH_PREFIXES = [m[:3] for m in MONTHS]
+# MONTH_SUFFIXES = [m[3:] for m in MONTHS]
+# SUFFIX_LETTERS = ''.join(set(''.join(MONTH_SUFFIXES)))

@@ -22,6 +22,9 @@ from dateutil.parser import parse as parse_date
 
 import pytz
 
+from .constant import DEFAULT_TZ
+
+
 np = pd.np
 
 
@@ -384,3 +387,4 @@ def clean_wiki_datetime(dt, squelch=True):
                   (' '.join(dt), dt))
             return dt
         raise(e)
+
