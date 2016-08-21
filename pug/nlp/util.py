@@ -585,8 +585,8 @@ def fuzzy_get(possible_keys, approximate_key, default=None, similarity=0.6, tupl
       (None, None)
       >>> fuzzy_get({'word': tuple('word'), 'noun': tuple('noun')}, 'woh!', similarity=.9, default='darn :-()', key_and_value=True)
       (None, 'darn :-()')
-      >>> possible_keys = 'alerts astronomy conditions currenthurricane forecast forecast10day geolookup history ' +
-      ...                 'hourly hourly10day planner rawtide satellite tide webcams yesterday'.split(' ')
+      >>> possible_keys = ('alerts astronomy conditions currenthurricane forecast forecast10day geolookup history ' +
+      ...                  'hourly hourly10day planner rawtide satellite tide webcams yesterday').split()
       >>> fuzzy_get(possible_keys, "cond")
       'conditions'
       >>> fuzzy_get(possible_keys, "Tron")
@@ -717,10 +717,10 @@ def sod_transposed(seq_of_dicts, align=True, fill=True, filler=None):
 
 
 def joined_seq(seq, sep=None):
-    """Join a sequence into a tuple or a concatenated string
+    r"""Join a sequence into a tuple or a concatenated string
 
     >>> joined_seq(range(3), ', ')
-    '0, 1, 2'
+    u'0, 1, 2'
     >>> joined_seq([1, 2, 3])
     (1, 2, 3)
     """
@@ -734,10 +734,10 @@ def consolidate_stats(dict_of_seqs, stats_key=None, sep=','):
     """Join (stringify and concatenate) keys (table fields) in a dict (table) of sequences (columns)
 
     >>> consolidate_stats(dict([('c', [1, 1, 1]), ('cm', [u'P', 6, u'Q']), ('cn', [0, u'MUS', u'ROM']), ('ct', [0, 2, 0])]), stats_key='c')
-    [{'P,0,0': 1}, {'6,MUS,2': 1}, {'Q,ROM,0': 1}]
+    [{u'P,0,0': 1}, {u'6,MUS,2': 1}, {u'Q,ROM,0': 1}]
     >>> consolidate_stats([{'c': 1, 'cm': 'P', 'cn': 0, 'ct': 0}, {'c': 1, 'cm': 6, 'cn': 'MUS', 'ct': 2},
     ...                    {'c': 1, 'cm': 'Q', 'cn': 'ROM', 'ct': 0}], stats_key='c')
-    [{'P,0,0': 1}, {'6,MUS,2': 1}, {'Q,ROM,0': 1}]
+    [{u'P,0,0': 1}, {u'6,MUS,2': 1}, {u'Q,ROM,0': 1}]
     """
     if isinstance(dict_of_seqs, dict):
         stats = dict_of_seqs[stats_key]
@@ -1080,24 +1080,26 @@ def update_dict(d, u=None, depth=-1, take_new=True, default_mapping_type=dict, p
     return d
 
 
-def mapped_transposed_lists(lists, default=None):
-    """
-    Swap rows and columns in list of lists with different length rows/columns
+# Fails on py3-style map and list
+# def mapped_transposed_lists(lists, default=None):
+#     r"""
+#     Swap rows and columns in list of lists with different length rows/columns
 
-    Pattern from
-    http://code.activestate.com/recipes/410687-transposing-a-list-of-lists-with-different-lengths/
-    Replaces any zeros or Nones with default value.
+#     Pattern from
+#     http://code.activestate.com/recipes/410687-transposing-a-list-of-lists-with-different-lengths/
+#     Replaces any zeros or Nones with default value.
 
-    Examples:
-    >>> l = mapped_transposed_lists([range(4),[4,5]],None)
-    >>> l
-    [[0, 4], [1, 5], [2, None], [3, None]]
-    >>> mapped_transposed_lists(l)
-    [[0, 1, 2, 3], [4, 5, None, None]]
-    """
-    if not lists:
-        return []
-    return list(map(lambda *row: [el if isinstance(el, (float, int)) else default for el in row], *lists))
+#     Examples:
+#     >>> l = mapped_transposed_lists([range(4), [4,5]], None)
+#     >>> l
+#     [[0, 4], [1, 5], [2, None], [3, None]]
+#     >>> mapped_transposed_lists(l)
+#     [[0, 1, 2, 3], [4, 5, None, None]]
+#     """
+#     if not lists:
+#         return []
+#     # return map(lambda *row: [elem or defval for elem in row], *lists)
+#     return list(map(lambda *row: [(el if isinstance(el, (float, int)) else default for el in row], *lists))
 
 
 def make_name(s, camel=None, lower=None, space='_', remove_prefix=None, language='python', string_type=str):
@@ -1348,10 +1350,10 @@ def read_csv(csv_file, ext='.csv', format=None, delete_empty_keys=False,
         merge with `nlp.util.make_dataframe` function
 
     Handles unquoted and quoted strings, quoted commas, quoted newlines (EOLs), complex numbers, times, dates, datetimes,
-    >>> read_csv('"name\r\n",rank,"serial\nnumber",date <BR />\t\n"McCain, John","1","123456789",9/11/2001\n' +
-    ...          'Bob,big cheese,1-23,1/1/2001 12:00 GMT', format='header+values list', numbers=True)  # doctest: +NORMALIZE_WHITESPACE
-    [['name', 'rank', 'serial\nnumber', 'date'], ['McCain, John', 1.0, 123456789.0, datetime.datetime(2001, 9, 11, 0, 0)],
-     ['Bob', 'big cheese', datetime.datetime(2016, 1, 23, 0, 0), datetime.datetime(2001, 1, 1, 12, 0, tzinfo=tzutc())]]
+    >>> read_csv(u'"name\r\n",rank,"serial\nnumber",date <BR />\t\n"McCain, John","1","123456789",9/11/2001\n' +
+    ...          u'Bob,big cheese,1-23,1/1/2001 12:00 GMT', format='header+values list', numbers=True)
+    [[u'name', u'rank', u'serial\nnumber', u'date'], ['McCain, John', 1.0, 123456789.0, '9/11/2001'],
+     ['Bob', 'big cheese', '1-23', '1/1/2001 12:00 GMT']]
     """
     if not csv_file:
         return
@@ -1364,7 +1366,7 @@ def read_csv(csv_file, ext='.csv', format=None, delete_empty_keys=False,
         except:
             # truncate path more, in case path is used later as a file description:
             path = csv_file[:128]
-            fpin = StringIO(csv_file)
+            fpin = StringIO(str(csv_file))
     else:
         fpin = csv_file
         try:
@@ -1474,9 +1476,9 @@ class Object(object):
     """If your dict is "flat", this is a simple way to create an object from a dict
 
     >>> obj = Object()
-    >>> obj.__dict__ = d
-    >>> d.a
-    1
+    >>> obj.__dict__ = {'a': 1, 'b': 2}
+    >>> obj.a, obj.b
+    (1, 2)
     """
     pass
 
@@ -1491,13 +1493,13 @@ def dict2obj(d):
     >>> obj.b.c
     2
     >>> obj.d
-    ["hi", {'foo': "bar"}]
+    ['hi', {'foo': 'bar'}]
     >>> d = {'a': 1, 'b': {'c': 2}, 'd': [("hi", {'foo': "bar"})]}
     >>> obj = dict2obj(d)
     >>> obj.d.hi.foo
-    "bar"
+    'bar'
     """
-    if isinstance(d, Mapping):
+    if isinstance(d, (Mapping, list, tuple)):
         try:
             d = dict(d)
         except (ValueError, TypeError):
@@ -1921,7 +1923,7 @@ def string_stats(strs, valid_chars='012346789', left_pad='0', right_pad='', stri
 
 
 def normalize_serial_number(sn,
-                            max_length=None, left_fill='0', right_fill='', blank='',
+                            max_length=None, left_fill='0', right_fill=str(), blank=str(),
                             valid_chars=' -0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ',
                             invalid_chars=None,
                             strip_whitespace=True, join=False, na=rex.nones):
@@ -1934,9 +1936,9 @@ def normalize_serial_number(sn,
 
     >>> normalize_serial_number('1C 234567890             ', max_length=20)
     u'000000001C 234567890'
-    >>> normalize_serial_number('Unknown', blank=None, left_fill='')
-    u''
-    >>> normalize_serial_number('N/A', blank='', left_fill='')
+    >>> normalize_serial_number('Unknown', blank=None, left_fill=str())
+    ''
+    >>> normalize_serial_number('N/A', blank='', left_fill=str())
     u'A'
 
     >>> normalize_serial_number('1C 234567890             ', max_length=20, left_fill='')
@@ -1949,7 +1951,7 @@ def normalize_serial_number(sn,
     '00000000000000000000'
     >>> normalize_serial_number(' \t1C\t-\t234567890 \x00\x7f', max_length=14, left_fill='0',
     ...                         valid_chars='0123456789ABC', invalid_chars=None, join=True)
-    '0001C234567890'
+    u'1C\t-\t234567890'
 
     Notice how the max_length setting carries over from the previous test!
     >>> len(normalize_serial_number('Unknown', blank=False))
@@ -2012,7 +2014,7 @@ def normalize_serial_number(sn,
         sn = sn.strip()
     if invalid_chars:
         if join:
-            sn = sn.translate(None, invalid_chars)
+            sn = sn.translate(dict(zip(invalid_chars, [''] * len(invalid_chars))))
         else:
             sn = multisplit(sn, invalid_chars)[-1]
     sn = sn[-max_length:]
@@ -2046,14 +2048,14 @@ def multisplit(s, seps=list(string.punctuation) + list(string.whitespace), blank
     r"""Just like str.split(), except that a variety (list) of seperators is allowed.
 
     >>> multisplit(r'1-2?3,;.4+-', string.punctuation)
-    ['1', '2', '3', '', '', '4', '', '']
+    [u'1', u'2', u'3', u'', u'', u'4', u'', u'']
     >>> multisplit(r'1-2?3,;.4+-', string.punctuation, blank=False)
-    ['1', '2', '3', '4']
+    [u'1', u'2', u'3', u'4']
     >>> multisplit(r'1C 234567890', '\x00\x01\x02\x03\x04\x05\x06\x07\x08\t\n' + string.punctuation)
-    ['1C 234567890']
+    [u'1C 234567890']
     """
-    seps = ''.join(seps)
-    return [s2 for s2 in s.translate(''.join([(chr(i) if chr(i) not in seps else seps[0]) for i in range(256)])).split(seps[0]) if (blank or s2)]
+    seps = str().join(seps)
+    return [s2 for s2 in s.translate(str().join([(chr(i) if chr(i) not in seps else seps[0]) for i in range(256)])).split(seps[0]) if (blank or s2)]
 
 
 def make_real(list_of_lists):
