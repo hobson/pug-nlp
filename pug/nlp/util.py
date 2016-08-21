@@ -2854,11 +2854,12 @@ class PrettyDict(OrderedDict):
       precision (int or None): precision of serialized floats
 
     DatetimeEncoder behaves differently on travis (Time Zone?)
-    >> PrettyDict([('scif', datetime.datetime(3015, 10, 21, tzinfo=tzinfo('utc'))), ('btfd', pd.tslib.Timestamp(datetime.datetime(2015, 10, 21)))])
+    >>> PrettyDict([('scif', datetime.datetime(3015, 10, 21, tzinfo=tzinfo('utc'))), ('btfd', pd.tslib.Timestamp(datetime.datetime(2015, 10, 21)))])
     {
       "scif": 33002319600,
       "btfd": 1445410800
     }
+
     >> PrettyDict([('scif', datetime.datetime(3015, 10, 21, tzinfo=tzinfo('utc'))), ('same', datetime.datetime(4015, 10, 21))], clip=True, indent=0)
     {
     "scif": 9223400836,
