@@ -3,8 +3,9 @@
 r"""table utils"""
 from __future__ import division, print_function, absolute_import
 from builtins import str  # , unicode  # noqa
-# from future.utils import viewitems  # noqa
+from future.utils import viewitems  # noqa
 from past.builtins import basestring
+import re
 # try:  # python 3.5+
 #    from io import StringIO
 #    from ConfigParser import ConfigParser
@@ -23,9 +24,81 @@ from dateutil.parser import parse as parse_date
 import pytz
 
 from .constant import DEFAULT_TZ
+from .constant import MAX_DATETIME, MIN_DATETIME, MAX_TIMESTAMP, MIN_TIMESTAMP, NAT
+import pug.nlp.regex as rex
+
+
+# pytz.timezone offsets for str abbreviation.
+# WARNING: many abbreviations are ambiguous!
+# munged table from @NasBanov: http://stackoverflow.com/a/4766400/623735
+TZ_OFFSET_ABBREV = [
+    [-12, 'Y'],
+    [-11, 'X', 'NUT', 'SST'],
+    [-10, 'W', 'CKT', 'HAST', 'HST', 'TAHT', 'TKT'],
+    [-9, 'V', 'AKST', 'GAMT', 'GIT', 'HADT', 'HNY'],
+    [-8, 'U', 'AKDT', 'CIST', 'HAY', 'HNP', 'PST', 'PT'],
+    [-7, 'T', 'HAP', 'HNR', 'MST', 'PDT'],
+    [-6, 'S', 'CST', 'EAST', 'GALT', 'HAR', 'HNC', 'MDT'],
+    [-5, 'R', 'CDT', 'COT', 'EASST', 'ECT', 'EST', 'ET', 'HAC', 'HNE', 'PET'],
+    [-4, 'Q', 'AST', 'BOT', 'CLT', 'COST', 'EDT', 'FKT', 'GYT', 'HAE', 'HNA', 'PYT'],
+    [-3, 'P', 'ADT', 'ART', 'BRT', 'CLST', 'FKST', 'GFT', 'HAA', 'PMST', 'PYST', 'SRT', 'UYT', 'WGT'],
+    [-2, 'O', 'BRST', 'FNT', 'PMDT', 'UYST', 'WGST'],
+    [-1, 'N', 'AZOT', 'CVT', 'EGT'],
+    [0, 'Z', 'EGST', 'GMT', 'UTC', 'WET', 'WT'],
+    [1, 'A', 'CET', 'DFT', 'WAT', 'WEDT', 'WEST'],
+    [2, 'B', 'CAT', 'CEDT', 'CEST', 'EET', 'SAST', 'WAST'],
+    [3, 'C', 'EAT', 'EEDT', 'EEST', 'IDT', 'MSK'],
+    [4, 'D', 'AMT', 'AZT', 'GET', 'GST', 'KUYT', 'MSD', 'MUT', 'RET', 'SAMT', 'SCT'],
+    [5, 'E', 'AMST', 'AQTT', 'AZST', 'HMT', 'MAWT', 'MVT', 'PKT', 'TFT', 'TJT', 'TMT', 'UZT', 'YEKT'],
+    [6, 'F', 'ALMT', 'BIOT', 'BTT', 'IOT', 'KGT', 'NOVT', 'OMST', 'YEKST'],
+    [7, 'G', 'CXT', 'DAVT', 'HOVT', 'ICT', 'KRAT', 'NOVST', 'OMSST', 'THA', 'WIB'],
+    [8, 'H', 'ACT', 'AWST', 'BDT', 'BNT', 'CAST', 'HKT', 'IRKT', 'KRAST', 'MYT', 'PHT', 'SGT', 'ULAT', 'WITA', 'WST'],
+    [9, 'I', 'AWDT', 'IRKST', 'JST', 'KST', 'PWT', 'TLT', 'WDT', 'WIT', 'YAKT'],
+    [10, 'K', 'AEST', 'ChST', 'PGT', 'VLAT', 'YAKST', 'YAPT'],
+    [11, 'L', 'AEDT', 'LHDT', 'MAGT', 'NCT', 'PONT', 'SBT', 'VLAST', 'VUT'],
+    [12, 'M', 'ANAST', 'ANAT', 'FJT', 'GILT', 'MAGST', 'MHT', 'NZST', 'PETST', 'PETT', 'TVT', 'WFT'],
+    [13, 'FJST', 'NZDT'],
+    [11.5, 'NFT'],
+    [10.5, 'ACDT', 'LHST'],
+    [9.5, 'ACST'],
+    [6.5, 'CCT', 'MMT'],
+    [5.75, 'NPT'],
+    [5.5, 'SLT'],
+    [4.5, 'AFT', 'IRDT'],
+    [3.5, 'IRST'],
+    [-2.5, 'HAT', 'NDT'],
+    [-3.5, 'HNT', 'NST', 'NT'],
+    [-4.5, 'HLV', 'VET'],
+    [-9.5, 'MART', 'MIT'],
+]
+TZ_ABBREV_OFFSET = {}
+for row in TZ_OFFSET_ABBREV:
+    for abbrev in row[1:]:
+        TZ_ABBREV_OFFSET[abbrev.strip().upper()] = float(row[0])
+# FIXME: autogenerate this from pytz.timezone(iso_tz_name).tzname(datetime.datetime())
+#         or [pytz.timezone(tz)._tzinfos.keys() for tz in pytz.all_timezones if hasattr(pytz.timezone(tz), '_tzinfos')]
+TZ_ABBREV_INFO = {
+    'AKST': ('US/Alaska',  -10), 'AKDT': ('US/Alaska',   -9),  'AKT': ('US/Alaska',  -10),
+    'HAST': ('US/Hawaii',   -9), 'HADT': ('US/Hawaii',   -8),  'HAT': ('US/Hawaii',   -9),
+    'PST':  ('US/Pacific',  -8),  'PDT': ('US/Pacific',  -7),   'PT': ('US/Pacific',  -8),
+    'MST':  ('US/Mountain', -7),  'MDT': ('US/Mountain', -6),   'MT': ('US/Mountain', -7),
+    'CST':  ('US/Central',  -6),  'CDT': ('US/Central',  -5),   'CT': ('US/Central',  -6),
+    'EST':  ('US/Eastern',  -5),  'EDT': ('US/Eastern',  -4),   'ET': ('US/Eastern',  -5),
+    'AST':  ('US/Atlantic', -4),  'ADT': ('US/Atlantic', -3),   'AT': ('US/Atlantic', -4),
+    'GMT':  ('UTC', 0),
+}
+TZ_ABBREV_OFFSET = dict(((abbrev, info[1]) for abbrev, info in viewitems(TZ_ABBREV_INFO)))
+TZ_ABBREV_NAME = dict(((abbrev, info[0]) for abbrev, info in viewitems(TZ_ABBREV_INFO)))
 
 
 np = pd.np
+
+
+def parse_time(timestr):
+    dt = parse_date(timestr)
+    if dt.date() == datetime.datetime.today().date() and re.match('^\s*\d+\:\d+.*', timestr):
+        return dt.time()
+    raise ValueError('Unknown string format.')
 
 
 def make_date(dt, date_parser=parse_date):
@@ -353,7 +426,7 @@ def clean_wiki_datetime(dt, squelch=True):
     elif not isinstance(dt, basestring):
         dt = ' '.join(dt)
     try:
-        return make_tz_aware(dateutil.parser.parse(dt))
+        return make_tz_aware(parse_date(dt))
     except:
         if not squelch:
             print("Failed to parse %r as a date" % dt)
@@ -388,3 +461,28 @@ def clean_wiki_datetime(dt, squelch=True):
             return dt
         raise(e)
 
+
+def clip_datetime(dt, tz=DEFAULT_TZ, is_dst=None):
+    """Limit a datetime to a valid range for datetime, datetime64, and Timestamp objects
+    >>> from datetime import timedelta
+    >>> from clayton.constant import MAX_DATETIME64, MAX_DATETIME, MAX_TIMESTAMP
+    >>> clip_datetime(MAX_DATETIME + timedelta(100)) == pd.Timestamp(MAX_DATETIME64, tz='utc') == MAX_TIMESTAMP
+    True
+    >>> MAX_TIMESTAMP
+    Timestamp('2262-04-11 23:47:16.854775807+0000', tz='UTC')
+    """
+    if isinstance(dt, datetime.datetime):
+        # TODO: this gives up a day of datetime range due to assumptions about timezone
+        #       make MIN/MAX naive and replace dt.replace(tz=None) before comparison
+        #       set it back when done
+        dt = make_tz_aware(dt, tz=tz, is_dst=is_dst)
+        try:
+            return pd.tslib.Timestamp(dt)
+        except:
+            pass
+        if dt > MAX_DATETIME:
+            return MAX_TIMESTAMP
+        elif dt < MIN_DATETIME:
+            return MIN_TIMESTAMP
+        return NAT
+    return dt

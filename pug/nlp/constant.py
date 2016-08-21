@@ -11,6 +11,8 @@ from pytz import timezone
 
 import pandas as pd
 
+from decimal import Decimal
+
 # TZ constants
 try:
     from django.conf import settings
@@ -18,6 +20,61 @@ try:
 except:
     DEFAULT_TZ = timezone('UTC')
 
+ROUNDABLE_NUMERIC_TYPES = (float, long, int, Decimal, bool)
+FLOATABLE_NUMERIC_TYPES = (float, long, int, Decimal, bool)
+BASIC_NUMERIC_TYPES = (float, long, int)
+NUMERIC_TYPES = (float, long, int, Decimal, complex, str)  # datetime.datetime, datetime.date
+NUMBERS_AND_DATETIMES = (float, long, int, Decimal, complex, parse_time, parse_date, str)
+SCALAR_TYPES = (float, long, int, Decimal, bool, complex, basestring, str, unicode)  # datetime.datetime, datetime.date
+# numpy types are derived from these so no need to include numpy.float64, numpy.int64 etc
+DICTABLE_TYPES = (Mapping, tuple, list)  # convertable to a dictionary (inherits Mapping or is a list of key/value pairs)
+VECTOR_TYPES = (list, tuple)
+PUNC = unicode(string.punctuation)
+
+# synonyms for "count"
+COUNT_NAMES = ['count', 'cnt', 'number', 'num', '#', 'frequency', 'probability', 'prob', 'occurences']
+# 4 types of "histograms" and their canonical name/label
+HIST_NAME = {
+    'hist': 'hist',  'ff': 'hist',  'fd': 'hist', 'dff':  'hist', 'dfd': 'hist', 'gfd': 'hist', 'gff': 'hist', 'bfd': 'hist', 'bff': 'hist',
+    'pmf':  'pmf',  'pdf': 'pmf',   'pd': 'pmf',
+    'cmf':  'cmf',  'cdf': 'cmf',
+    'cfd':  'cfd',  'cff': 'cfd',   'cdf': 'cfd',
+}
+HIST_CONFIG = {
+    'hist': {
+        'name': 'Histogram',  # frequency distribution, frequency function, discrete ff/fd, grouped ff/fd, binned ff/fd
+        'kwargs': {'normalize': False, 'cumulative': False, },
+        'index': 0,
+        'xlabel': 'Bin',
+        'ylabel': 'Count',
+    },
+    'pmf': {
+        # PMFs have discrete, exact values as bins rather than ranges (finite bin widths)
+        #   but this histogram configuration doesn't distinguish between PMFs and PDFs,
+        #   since mathematically they have all the same properties.
+        #    PDFs just have a range associated with each discrete value
+        #    (which should be when integrating a PDF but not when summing a PMF where the "width" is uniformly 1)
+        'name': 'Probability Mass Function',   # probability density function, probability distribution [function]
+        'kwargs': {'normalize': True, 'cumulative': False, },
+        'index': 1,
+        'xlabel': 'Bin',
+        'ylabel': 'Probability',
+    },
+    'cmf': {
+        'name': 'Cumulative Probability',
+        'kwargs': {'normalize': True, 'cumulative': True, },
+        'index': 2,
+        'xlabel': 'Bin',
+        'ylabel': 'Cumulative Probability',
+    },
+    'cfd': {
+        'name': 'Cumulative Frequency Distribution',
+        'kwargs': {'normalize': False, 'cumulative': True, },
+        'index': 3,
+        'xlabel': 'Bin',
+        'ylabel': 'Cumulative Count',
+    },
+}
 
 np = pd.np
 BASE_PATH = os.path.dirname(__file__)

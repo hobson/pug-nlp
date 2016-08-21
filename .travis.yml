@@ -63,5 +63,5 @@ notifications:
   email: false
   slack: totalgood:Fsy4rZmIWs8NnzhCM7HeTvWh#random
   on_success: change
+  on_failure: change
   on_start: never
-  on_failure: always
