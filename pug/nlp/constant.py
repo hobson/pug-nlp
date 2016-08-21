@@ -2,12 +2,21 @@
 # -*- coding: utf-8 -*-
 """Constants and discovered values, like path to current installation of pug-nlp."""
 from __future__ import division, print_function, absolute_import
-
+from builtins import (
+         int, list, range, str,
+         chr,
+         zip)
+# from builtins import (
+#          bytes, dict, int, list, object, range, str,
+#          ascii, chr, hex, input, next, oct, open,
+#          pow, round, super,
+#          filter, map, zip)
+# import re
 import os
 import string
 import datetime
-import collections
 from pytz import timezone
+from collections import Mapping, OrderedDict
 
 import pandas as pd
 
@@ -24,7 +33,7 @@ ROUNDABLE_NUMERIC_TYPES = (float, long, int, Decimal, bool)
 FLOATABLE_NUMERIC_TYPES = (float, long, int, Decimal, bool)
 BASIC_NUMERIC_TYPES = (float, long, int)
 NUMERIC_TYPES = (float, long, int, Decimal, complex, str)  # datetime.datetime, datetime.date
-NUMBERS_AND_DATETIMES = (float, long, int, Decimal, complex, parse_time, parse_date, str)
+NUMBERS_AND_DATETIMES = (float, long, int, Decimal, complex, str)
 SCALAR_TYPES = (float, long, int, Decimal, bool, complex, basestring, str, unicode)  # datetime.datetime, datetime.date
 # numpy types are derived from these so no need to include numpy.float64, numpy.int64 etc
 DICTABLE_TYPES = (Mapping, tuple, list)  # convertable to a dictionary (inherits Mapping or is a list of key/value pairs)
@@ -81,13 +90,13 @@ BASE_PATH = os.path.dirname(__file__)
 DATA_PATH = os.path.join(BASE_PATH, 'data')
 
 tld_iana = pd.read_csv(os.path.join(DATA_PATH, 'tlds-from-iana.csv'))
-tld_iana = collections.OrderedDict(sorted(zip((tld.strip().lstrip('.') for tld in tld_iana.domain),
-                                              [(sponsor.strip(), -1) for sponsor in tld_iana.sponsor]),
-                                          key=lambda x: len(x[0]),
-                                          reverse=True))
+tld_iana = OrderedDict(sorted(zip((tld.strip().lstrip('.') for tld in tld_iana.domain),
+                                  [(sponsor.strip(), -1) for sponsor in tld_iana.sponsor]),
+                              key=lambda x: len(x[0]),
+                              reverse=True))
 # top 20 in Google searches per day
 # sorted by longest first so .com matches before .om (Oman)
-tld_popular = collections.OrderedDict(sorted([
+tld_popular = OrderedDict(sorted([
     ('com', ('Commercial', 4860000000)),
     ('org', ('Noncommercial', 1950000000)),
     ('edu', ('US accredited postsecondary institutions', 1550000000)),
@@ -132,7 +141,7 @@ DATE_TYPES = (datetime.datetime, datetime.date)
 
 # matrices can be column or row vectors if they have a single col/row
 VECTOR_TYPES = (list, tuple, np.matrix, np.ndarray)
-MAPPING_TYPES = (collections.Mapping, pd.Series, pd.DataFrame)
+MAPPING_TYPES = (Mapping, pd.Series, pd.DataFrame)
 
 # These are the valid dates for all 3 datetime types in python (and the underelying integer nanoseconds)
 MAX_INT64 = 9223372036854775807

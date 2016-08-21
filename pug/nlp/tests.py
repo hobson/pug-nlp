@@ -6,7 +6,7 @@ Uses the python unittest module to test this app with `python -m unittest pug.nl
 # from django.test import TestCase
 from unittest import TestCase, main
 import doctest
-from pug.nlp import util, http, regex, penn_treebank_tokenizer, detector_morse
+from pug.nlp import util, http, penn_treebank_tokenizer, detector_morse
 
 
 class NLPDocTest(TestCase):
@@ -22,19 +22,19 @@ class NLPDocTest(TestCase):
             # return failure_count, test_count
 
     def test_util(self):
-        self.test_module(util)
+        self.test_module(util, optionflags=doctest.ELLIPSIS | doctest.NORMALIZE_WHITESPACE)
 
     def test_http(self):
-        self.test_module(http)
+        self.test_module(http, optionflags=doctest.ELLIPSIS | doctest.NORMALIZE_WHITESPACE)
 
     def test_regex_patterns(self):
-        self.test_module(regex)
+        self.test_module(regex, optionflags=doctest.ELLIPSIS | doctest.NORMALIZE_WHITESPACE)
 
     def test_penn_treebank_tokenizer(self):
-        self.test_module(penn_treebank_tokenizer)
+        self.test_module(penn_treebank_tokenizer, optionflags=doctest.ELLIPSIS | doctest.NORMALIZE_WHITESPACE)
 
     def test_detector_morse(self):
-        self.test_module(detector_morse)
+        self.test_module(detector_morse, optionflags=doctest.ELLIPSIS | doctest.NORMALIZE_WHITESPACE)
 
 
 if __name__ == '__main__':

@@ -2,9 +2,14 @@
 # -*- coding: utf-8 -*-
 r"""table utils"""
 from __future__ import division, print_function, absolute_import
-from builtins import str  # , unicode  # noqa
+from builtins import str, zip, int, list  # , unicode  # noqa
 from future.utils import viewitems  # noqa
 from past.builtins import basestring
+# from builtins import (
+#          bytes, dict, int, list, object, range, str,
+#          ascii, chr, hex, input, next, oct, open,
+#          pow, round, super,
+#          filter, map, zip)
 import re
 # try:  # python 3.5+
 #    from io import StringIO
