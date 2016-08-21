@@ -281,11 +281,11 @@ def reduce_vocab(tokens, similarity=.85, limit=20, sort_order=-1):
       ...           'two': ()}
       >>> reduce_vocab(tokens, sort_order=-1) == answer
       True
-      >>> reduce_vocab(tokens, similarity=0.3, limit=2, sort_order=-1) ==  {'ones': ('one',), 'three': ('honey',), 'two': ('on', 'hon')}
-      True
-      >>> reduce_vocab(tokens, similarity=0.3, limit=3, sort_order=-1) ==  {'ones': (), 'three': ('honey',), 'two': ('on', 'hon', 'one')}
-      True
-
+      >>> reduce_vocab(tokens, similarity=0.3, limit=2, sort_order=-1)
+      {'ones': ('one',), 'three': ('honey',), 'two': ('on', 'hon')}
+      >>> reduce_vocab(tokens, similarity=0.3, limit=3, sort_order=-1)
+      {'ones': (), 'three': ('honey',), 'two': ('on', 'hon', 'one')}
+      
     """
     if 0 <= similarity <= 1:
         similarity *= 100
