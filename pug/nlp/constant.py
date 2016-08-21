@@ -25,9 +25,10 @@ from decimal import Decimal
 # TZ constants
 try:
     from django.conf import settings
-    DEFAULT_TZ = timezone(settings.TIME_ZONE)
+    TIME_ZONE = timezone(settings.TIME_ZONE)
 except:
-    DEFAULT_TZ = timezone('UTC')
+    TIME_ZONE = timezone('UTC')
+DEFAULT_TZ = timezone('UTC')
 
 ROUNDABLE_NUMERIC_TYPES = (float, long, int, Decimal, bool)
 FLOATABLE_NUMERIC_TYPES = (float, long, int, Decimal, bool)
