@@ -2852,17 +2852,19 @@ class PrettyDict(OrderedDict):
                               `False` or `0`: line breaks between dict entries, but no indentation
                               `1`+: number of spaces at begginning of each line for each level dict nesting
       precision (int or None): precision of serialized floats
-    >>> PrettyDict([('scif', datetime.datetime(3015, 10, 21)), ('btfd', pd.tslib.Timestamp(datetime.datetime(2015, 10, 21)))])
+
+    DatetimeEncoder behaves differently on travis (Time Zone?)
+    >> PrettyDict([('scif', datetime.datetime(3015, 10, 21, tzinfo=tzinfo('utc'))), ('btfd', pd.tslib.Timestamp(datetime.datetime(2015, 10, 21)))])
     {
       "scif": 33002319600,
       "btfd": 1445410800
     }
-    >>> PrettyDict([('scif', datetime.datetime(3015, 10, 21)), ('same', datetime.datetime(4015, 10, 21))], clip=True, indent=0)
+    >> PrettyDict([('scif', datetime.datetime(3015, 10, 21, tzinfo=tzinfo('utc'))), ('same', datetime.datetime(4015, 10, 21))], clip=True, indent=0)
     {
     "scif": 9223400836,
     "same": 9223400836
     }
-    >>> PrettyDict([('scif', datetime.datetime(3015, 10, 23)), ('same', datetime.datetime(4015, 10, 23))], clip=True, indent=None)
+    >> PrettyDict([('scif', datetime.datetime(3015, 10, 23, tzinfo=tzinfo('utc'))), ('same', datetime.datetime(4015, 10, 23))], clip=True, indent=None)
     {"scif": 9223400836, "same": 9223400836}
     """
 
