@@ -19,22 +19,22 @@
 * days_since    -- subract two date or datetime objects and return difference in days (float)
 
 '''
-from __future__ import division, print_function, absolute_import, unicode_literals
-from future import standard_library
-standard_library.install_aliases()
+from __future__ import division, print_function, absolute_import  # , unicode_literals
+# from future import standard_library
+# standard_library.install_aliases()  # noqa
 from builtins import next
 from builtins import map
 from builtins import zip
 from builtins import chr
 from builtins import range
 from builtins import object
-from builtins import str, str  # noqa
+from builtins import str  # noqa
 from future.utils import viewitems
 from past.builtins import basestring
 try:  # python 3.5+
     from io import StringIO
     # from ConfigParser import ConfigParser
-    
+
 except:
     from io import StringIO
     # from configparser import ConfigParser
@@ -169,10 +169,10 @@ def sort_strings(strings, sort_order=None, reverse=False, case_sensitive=False, 
 
     Examples:
         >>> sort_strings(['morn32', 'morning', 'unknown', 'date', 'dow', 'doy', 'moy'],
-        ...              ('dat', 'dow', 'moy', 'dom', 'doy', 'mor'))  # doctest: +NORMALIZE_WHITESPACE
+        ...              ('dat', 'dow', 'moy', 'dom', 'doy', 'mor'))
         ['date', 'dow', 'moy', 'doy', 'morn32', 'morning', 'unknown']
         >>> sort_strings(['morn32', 'morning', 'unknown', 'less unknown', 'lucy', 'date', 'dow', 'doy', 'moy'],
-        ...              ('dat', 'dow', 'moy', 'dom', 'doy', 'mor'), reverse=True)  # doctest: +NORMALIZE_WHITESPACE
+        ...              ('dat', 'dow', 'moy', 'dom', 'doy', 'mor'), reverse=True)
         ['unknown', 'lucy', 'less unknown', 'morning', 'morn32', 'doy', 'moy', 'dow', 'date']
 
         Strings whose prefixes don't exist in `sort_order` sequence can be interleaved into the
@@ -192,7 +192,7 @@ def sort_strings(strings, sort_order=None, reverse=False, case_sensitive=False, 
             if a[:prefix_len] in sort_order:
                 if b[:prefix_len] in sort_order:
                     comparison = sort_order.index(a[:prefix_len]) - sort_order.index(b[:prefix_len])
-                    comparison = float(comparison) / abs(float(comparison) or 1.)
+                    comparison = int(comparison / abs(comparison or 1))
                     if comparison:
                         return comparison * (-2 * reverse + 1)
                 elif sort_order_first:
@@ -347,7 +347,7 @@ def quantify_field_dict(field_dict, precision=None, date_precision=None, cleaner
     FIXME: define a time zone for the datetime object
     >>> sorted(viewitems(quantify_field_dict({'_state': object(), 'x': 12345678911131517L, 'y': "\t  Wash Me! \n",
     ...     'z': datetime.datetime(1970, 10, 23, 23, 59, 59, 123456)})))  # doctest: +NORMALIZE_WHITESPACE, +ELLIPSIS
-    [('x', 12345678911131517L), ('y', u'Wash Me!'), ('z', 25...99.123456)]
+    [('x', 12345678911131517), ('y', u'Wash Me!'), ('z', 25603199.123456)]
     """
     if cleaner:
         d = clean_field_dict(field_dict, cleaner=cleaner)
@@ -692,7 +692,7 @@ def sod_transposed(seq_of_dicts, align=True, fill=True, filler=None):
     >>> sorted(sod_transposed([{'c': 1, 'cm': u'P'}, {'c': 1, 'ct': 2, 'cm': 6, 'cn': u'MUS'}, {'c': 1, 'cm': u'Q', 'cn': u'ROM'}], filler=0).items())
     [('c', [1, 1, 1]), ('cm', [u'P', 6, u'Q']), ('cn', [0, u'MUS', u'ROM']), ('ct', [0, 2, 0])]
     >>> sorted(sod_transposed(({'c': 1, 'cm': u'P'}, {'c': 1, 'ct': 2, 'cm': 6, 'cn': u'MUS'}, {'c': 1, 'cm': u'Q', 'cn': u'ROM'}),
-                              fill=0, align=0).items())
+    ...                       fill=0, align=0).items())
     [('c', [1, 1, 1]), ('cm', [u'P', 6, u'Q']), ('cn', [u'MUS', u'ROM']), ('ct', [2])]
     """
     result = {}
@@ -1216,10 +1216,11 @@ def make_filename(s, space=None, language='msdos', strict=False, max_len=None, r
 
 
 def update_file_ext(filename, ext='txt', sep='.'):
-    """Force the file or path str to end with the indicated extension
+    r"""Force the file or path str to end with the indicated extension
 
     Note: a dot (".") is assumed to delimit the extension
 
+    >>> from __future__ import unicode_literals
     >>> update_file_ext('/home/hobs/extremofile', 'bac')
     '/home/hobs/extremofile.bac'
     >>> update_file_ext('/home/hobs/piano.file/', 'music')
@@ -1303,7 +1304,7 @@ def strip_br(s):
 
     >>> strip_br(' Title <BR> ')
     ' Title'
-    >>> strip_br(range(1,4))
+    >>> strip_br(list(range(1, 4)))
     [1, 2, 3]
     >>> strip_br((' Column 1<br />', ' Last Column < br / >  '))
     (' Column 1<br />', ' Last Column')
@@ -1962,7 +1963,7 @@ def normalize_serial_number(sn,
     'NO SERIAL'
 
     >>> normalize_serial_number('1C 234567890             ', valid_chars='0123456789')
-    '0234567890'
+    u'0234567890'
     """
     # All 9 kwargs have persistent default values stored as attributes of the funcion instance
     if max_length is None:
@@ -2468,9 +2469,9 @@ def shorten(s, max_len=16):
     """Attempt to shorten a phrase by deleting words at the end of the phrase
 
     >>> shorten('Hello World!')
-    'Hello World'
+    u'Hello World'
     >>> shorten("Hello World! I'll talk your ear off!", 15)
-    'Hello World'
+    u'Hello World'
     """
     short = s
     words = [abbreviate(word) for word in get_words(s)]
@@ -2492,12 +2493,14 @@ abbreviate.words = {'account': 'acct', 'number': 'num', 'customer': 'cust', 'mem
 
 
 def truncate(s, max_len=20, ellipsis='...'):
-    """Return string at most `max_len` characters or sequence elments appended with the `ellipsis` characters
+    r"""Return string at most `max_len` characters or sequence elments appended with the `ellipsis` characters
 
-    >>> truncate(dict(zip(list('ABCDEFGH'), range(8)), 1)
-    "{'A': 0...'
-    >>> truncate(arange(5), 3)
-    '[0, 1, 2...'
+    >>> truncate(dict(zip(list('ABCDEFGH'), range(8))), 1)
+    u"{'A': 0..."
+    >>> truncate(list(range(5)), 3)
+    u'[0, 1, 2...'
+    >>> truncate(np.arange(5), 3)
+    u'[0, 1, 2...'
     >>> truncate('Too verbose for its own good.', 11)
     'Too verbose...'
     """

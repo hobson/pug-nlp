@@ -1,20 +1,17 @@
-"""Run doctests in pug.nlp.regex"""
+"""Run doctests in pug.nlp.regex."""
+from __future__ import print_function, absolute_import
 
-import unittest
 import doctest
 
 import pug.nlp.regex
 
+from unittest import TestCase
 
-class T(unittest.TestCase):
-    """Do-Nothing Test to ensure unittest doesnt ignore this file"""
 
-    def setUp(self):
-        pass
-
-    def test_doctests(self):
+class DoNothingTest(TestCase):
+    """A useless TestCase to encourage Django unittests to find this module and run `load_tests()`."""
+    def test_example(self):
         self.assertTrue(True)
-        # self.assertEqual(doctest.testmod(pug.nlp.regex, verbose=True).failed, 0)
 
 
 def load_tests(loader, tests, ignore):

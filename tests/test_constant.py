@@ -1,12 +1,13 @@
 """Run doctests in pug.nlp.constant"""
 
-import unittest
 import doctest
 
 import pug.nlp.constant
 
+from unittest import TestCase
 
-class T(unittest.TestCase):
+
+class T(TestCase):
     """Do-Nothing Test to ensure unittest doesnt ignore this file"""
 
     def setUp(self):

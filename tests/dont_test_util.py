@@ -6,7 +6,7 @@ import doctest
 import pug.nlp.util
 
 
-class T(unittest.TestCase):
+class UtilTest(unittest.TestCase):
     """Do-Nothing Test to ensure unittest doesnt ignore this file"""
 
     def setUp(self):
