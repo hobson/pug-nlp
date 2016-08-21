@@ -19,16 +19,24 @@
 * days_since    -- subract two date or datetime objects and return difference in days (float)
 
 '''
-from __future__ import division, print_function, absolute_import
-from builtins import str, unicode  # noqa
+from __future__ import division, print_function, absolute_import, unicode_literals
+from future import standard_library
+standard_library.install_aliases()
+from builtins import next
+from builtins import map
+from builtins import zip
+from builtins import chr
+from builtins import range
+from builtins import object
+from builtins import str, str  # noqa
 from future.utils import viewitems
 from past.builtins import basestring
 try:  # python 3.5+
     from io import StringIO
     # from ConfigParser import ConfigParser
-    from itertools import izip as zip
+    
 except:
-    from StringIO import StringIO
+    from io import StringIO
     # from configparser import ConfigParser
 
 import os
@@ -120,7 +128,7 @@ def force_hashable(obj, recursive=True):
             return tuple(force_hashable(item) for item in obj)
         return tuple(obj)
     # strings are hashable so this ends the recursion for any object without an __iter__ method (strings do not)
-    return unicode(obj)
+    return str(obj)
 
 
 def inverted_dict(d):
@@ -197,7 +205,7 @@ def sort_strings(strings, sort_order=None, reverse=False, case_sensitive=False, 
     return sorted(strings, cmp=compare)
 
 
-def clean_field_dict(field_dict, cleaner=unicode.strip, time_zone=None):
+def clean_field_dict(field_dict, cleaner=str.strip, time_zone=None):
     r"""Normalize field values by stripping whitespace from strings, localizing datetimes to a timezone, etc
 
     >>> sorted(clean_field_dict({'_state': object(), 'x': 1, 'y': u"\t  Wash Me! \n" }).items())
@@ -210,7 +218,7 @@ def clean_field_dict(field_dict, cleaner=unicode.strip, time_zone=None):
         if k == '_state':
             continue
         if isinstance(v, basestring):
-            d[k] = cleaner(unicode(v))
+            d[k] = cleaner(str(v))
         elif isinstance(v, (datetime.datetime, datetime.date)):
             d[k] = tz.localize(v)
         else:
@@ -327,7 +335,7 @@ def reduce_vocab_by_len(tokens, similarity=.87, limit=20, reverse=True):
     return reduce_vocab(tokens=tokens_sorted, similarity=similarity, limit=limit, sort_order=0)
 
 
-def quantify_field_dict(field_dict, precision=None, date_precision=None, cleaner=unicode.strip):
+def quantify_field_dict(field_dict, precision=None, date_precision=None, cleaner=str.strip):
     r"""Convert strings and datetime objects in the values of a dict into float/int/long, if possible
 
     Arguments:
@@ -355,7 +363,7 @@ def quantify_field_dict(field_dict, precision=None, date_precision=None, cleaner
                     continue
             except:
                 pass
-        if not isinstance(d[k], (int, float, long)):
+        if not isinstance(d[k], (int, float)):
             try:
                 d[k] = float(d[k])
             except:
@@ -381,9 +389,9 @@ def generate_batches(sequence, batch_len=1, allow_partial=True, ignore_errors=Tr
     # An exception will be thrown by `.next()` here and caught in the loop that called this iterator/generator
     while not last_value:
         batch = []
-        for n in xrange(batch_len):
+        for n in range(batch_len):
             try:
-                batch += (it.next(),)
+                batch += (next(it),)
             except StopIteration:
                 last_value = True
                 if batch:
@@ -600,7 +608,7 @@ def fuzzy_get(possible_keys, approximate_key, default=None, similarity=0.6, tupl
     if approximate_key in dict_obj:
         fuzzy_key, value = approximate_key, dict_obj[approximate_key]
     else:
-        strkey = unicode(approximate_key)
+        strkey = str(approximate_key)
         if approximate_key and strkey and strkey.strip():
             # print 'no exact match was found for {0} in {1} so preprocessing keys'.format(approximate_key, dict_obj.keys())
             if any(isinstance(k, (tuple, list)) for k in dict_obj):
@@ -665,7 +673,7 @@ def fuzzy_get_value(obj, approximate_key, default=None, **kwargs):
     """
     dict_obj = OrderedDict(obj)
     try:
-        return dict_obj[dict_obj.keys()[int(approximate_key)]]
+        return dict_obj[list(dict_obj.keys())[int(approximate_key)]]
     except (ValueError, IndexError):
         pass
     return fuzzy_get(dict_obj, approximate_key, key_and_value=False, **kwargs)
@@ -887,10 +895,10 @@ def hist_from_counts(counts, normalize=False, cumulative=False, to_str=False, se
             for c in intkeys:
                 counts[c] = float(counts[c]) / N
         if cumulative:
-            for i in xrange(min_bin, max_bin + 1):
+            for i in range(min_bin, max_bin + 1):
                 histograms[-1][i] = counts.get(i, 0) + histograms[-1].get(i - 1, 0)
         else:
-            for i in xrange(min_bin, max_bin + 1):
+            for i in range(min_bin, max_bin + 1):
                 histograms[-1][i] = counts.get(i, 0)
     if not histograms:
         histograms = [OrderedDict()]
@@ -963,10 +971,10 @@ def hist_from_values_list(values_list, fillers=(None,), normalize=False, cumulat
             for c in intkeys:
                 counts[c] = float(counts[c]) / N
         if cumulative:
-            for i in xrange(min_bin, max_bin + 1):
+            for i in range(min_bin, max_bin + 1):
                 histograms[-1][i] = counts.get(i, 0) + histograms[-1].get(i - 1, 0)
         else:
-            for i in xrange(min_bin, max_bin + 1):
+            for i in range(min_bin, max_bin + 1):
                 histograms[-1][i] = counts.get(i, 0)
     if not histograms:
         histograms = [OrderedDict()]
@@ -1088,10 +1096,10 @@ def mapped_transposed_lists(lists, default=None):
     """
     if not lists:
         return []
-    return map(lambda *row: [el if isinstance(el, (float, int)) else default for el in row], *lists)
+    return list(map(lambda *row: [el if isinstance(el, (float, int)) else default for el in row], *lists))
 
 
-def make_name(s, camel=None, lower=None, space='_', remove_prefix=None, language='python', string_type=unicode):
+def make_name(s, camel=None, lower=None, space='_', remove_prefix=None, language='python', string_type=str):
     """Process a string to produce a valid python variable/class/type name
 
     Arguments:
@@ -1128,7 +1136,7 @@ def make_name(s, camel=None, lower=None, space='_', remove_prefix=None, language
     language = language.lower().strip()[:6]
     string_type = string_type or str
     if language in unicode_languages:
-        string_type = unicode
+        string_type = str
     s = string_type(s)  # TODO: encode in ASCII, UTF-8, or the charset used for this file!
     if remove_prefix and s.startswith(remove_prefix):
         s = s[len(remove_prefix):]
@@ -1369,7 +1377,7 @@ def read_csv(csv_file, ext='.csv', format=None, delete_empty_keys=False,
     csvr = csv.reader(fpin, dialect=csv.excel)
     if not fieldnames:
         while not fieldnames or not any(fieldnames):
-            fieldnames = strip_br([str(s).strip() for s in csvr.next()])
+            fieldnames = strip_br([str(s).strip() for s in next(csvr)])
         if verbosity > 0:
             logger.info('Column Labels: ' + repr(fieldnames))
     if unique_names:
@@ -1381,7 +1389,7 @@ def read_csv(csv_file, ext='.csv', format=None, delete_empty_keys=False,
         # required for django-formatted json files
         model_name = make_name(path, **make_name.DJANGO_MODEL)
     if format in 'c':  # columnwise dict of lists
-        recs = OrderedDict((norm_name, []) for norm_name in norm_names.values())
+        recs = OrderedDict((norm_name, []) for norm_name in list(norm_names.values()))
     elif format in 'vh':
         recs = [fieldnames]
     else:
@@ -1412,7 +1420,7 @@ def read_csv(csv_file, ext='.csv', format=None, delete_empty_keys=False,
         # skip rows with all empty strings as values,
         while not row or not any(len(x) for x in row):
             try:
-                row = csvr.next()
+                row = next(csvr)
                 if verbosity > 1:
                     logger.info('  row content: ' + repr(row))
             except StopIteration:
@@ -1429,7 +1437,7 @@ def read_csv(csv_file, ext='.csv', format=None, delete_empty_keys=False,
             N = min(max(len(row), 0), len(norm_names))
             row_dict = OrderedDict(
                 ((field_name, field_value) for field_name, field_value in zip(
-                    list(norm_names.values() if unique_names else norm_names)[:N], row[:N])
+                    list(list(norm_names.values()) if unique_names else norm_names)[:N], row[:N])
                     if (str(field_name).strip() or delete_empty_keys is False))
             )
             if format in 'dj':  # django json format
@@ -1460,7 +1468,7 @@ def read_csv(csv_file, ext='.csv', format=None, delete_empty_keys=False,
 COLUMN_SEP = re.compile(r'[,/;]')
 
 
-class Object:
+class Object(object):
     """If your dict is "flat", this is a simple way to create an object from a dict
 
     >>> obj = Object()
@@ -1634,7 +1642,7 @@ def make_dataframe(table, clean=True, verbose=False, **kwargs):
     if hasattr(table, 'objects') and not callable(table.objects):
         table = table.objects
     if hasattr(table, 'filter') and callable(table.values):
-        table = pd.DataFrame.from_records(table.values().all())
+        table = pd.DataFrame.from_records(list(table.values()).all())
     elif isinstance(table, basestring) and os.path.isfile(table):
         table = pd.DataFrame.from_csv(table)
     # elif isinstance(table, ValuesQuerySet) or (isinstance(table, (list, tuple)) and
@@ -1903,7 +1911,7 @@ def string_stats(strs, valid_chars='012346789', left_pad='0', right_pad='', stri
             if i < len(s):
                 counts[i] = counts.get(i, 0) + int(s[i] in valid_chars)
                 counts[-i - 1] = counts.get(-i - 1, 0) + int(s[-i - 1] in valid_chars)
-        long_enough_strings = float(sum(c for l, c in lengths.items() if l >= i))
+        long_enough_strings = float(sum(c for l, c in list(lengths.items()) if l >= i))
         counts[i] = counts[i] / long_enough_strings
         counts[-i - 1] = counts[-i - 1] / long_enough_strings
 
@@ -2196,8 +2204,8 @@ def get_words(s, splitter_regex=rex.word_sep_except_external_appostrophe,
         pass
     if isinstance(splitter_regex, basestring):
         splitter_regex = re.compile(splitter_regex)
-    s = map(postprocessor, splitter_regex.split(s))
-    s = map(str_type, s)
+    s = list(map(postprocessor, splitter_regex.split(s)))
+    s = list(map(str_type, s))
     if not filter_fun:
         return s
     return [word for word in s if filter_fun(word, min_len=min_len, max_len=max_len, blacklist=blacklist, whitelist=whitelist, lower=lower)]
@@ -2466,7 +2474,7 @@ def shorten(s, max_len=16):
     """
     short = s
     words = [abbreviate(word) for word in get_words(s)]
-    for i in xrange(len(words), 0, -1):
+    for i in range(len(words), 0, -1):
         short = ' '.join(words[:i])
         if len(short) <= max_len:
             break
@@ -2714,7 +2722,7 @@ def slug_from_dict(d, max_len=128, delim='-'):
     >>> slug_from_dict({'a': 1, 'b': 'beta', ' ': 'alpha'})
     '1-alpha-beta'
     """
-    return slug_from_iter(d.values(), max_len=max_len, delim=delim)
+    return slug_from_iter(list(d.values()), max_len=max_len, delim=delim)
 
 
 def slug_from_iter(it, max_len=128, delim='-'):
@@ -2724,7 +2732,7 @@ def slug_from_iter(it, max_len=128, delim='-'):
     'a-b-alpha'
     """
 
-    nonnull_values = [str(v) for v in it if v or ((isinstance(v, (long, int, float, Decimal)) and str(v)))]
+    nonnull_values = [str(v) for v in it if v or ((isinstance(v, (int, float, Decimal)) and str(v)))]
     return slugify(delim.join(shorten(v, max_len=int(float(max_len) / len(nonnull_values))) for v in nonnull_values), word_boundary=True)
 
 
