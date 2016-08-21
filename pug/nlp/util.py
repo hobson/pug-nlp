@@ -305,7 +305,7 @@ def reduce_vocab(tokens, similarity=.85, limit=20, sort_order=-1):
         # FIXME: this is slow because the tokens list must be regenerated and reinstantiated with each iteration
         matches = fuzzy.extractBests(tok, list(tokens), score_cutoff=int(similarity), limit=limit)
         if matches:
-            thesaurus[tok] = zip(*matches)[0]
+            thesaurus[tok] = list(zip(*matches))[0]
         else:
             thesaurus[tok] = ()
         for syn in thesaurus[tok]:
@@ -331,7 +331,7 @@ def reduce_vocab_by_len(tokens, similarity=.87, limit=20, reverse=True):
       True
     """
     tokens = set(tokens)
-    tokens_sorted = zip(*sorted([(len(tok), tok) for tok in tokens], reverse=reverse))[1]
+    tokens_sorted = list(zip(*sorted([(len(tok), tok) for tok in tokens], reverse=reverse)))[1]
     return reduce_vocab(tokens=tokens_sorted, similarity=similarity, limit=limit, sort_order=0)
 
 
@@ -1929,17 +1929,17 @@ def normalize_serial_number(sn,
     # Default configuration strips internal and external whitespaces and retains only the last 10 characters
 
     >>> normalize_serial_number('1C 234567890             ')
-    '0234567890'
+    u'0234567890'
 
     >>> normalize_serial_number('1C 234567890             ', max_length=20)
-    '000000001C 234567890'
+    u'000000001C 234567890'
     >>> normalize_serial_number('Unknown', blank=None, left_fill='')
-    ''
+    u''
     >>> normalize_serial_number('N/A', blank='', left_fill='')
-    'A'
+    u'A'
 
     >>> normalize_serial_number('1C 234567890             ', max_length=20, left_fill='')
-    '1C 234567890'
+    u'1C 234567890'
 
     Notice how the max_length setting (20) carries over from the previous test!
     >>> len(normalize_serial_number('Unknown', blank=False))
@@ -1958,9 +1958,9 @@ def normalize_serial_number(sn,
     >>> len(normalize_serial_number('Unknown', blank=False, max_length=10))
     10
     >>> normalize_serial_number('NO SERIAL', blank='--=--', left_fill='')  # doctest: +NORMALIZE_WHITESPACE
-    'NO SERIAL'
+    u'NO SERIAL'
     >>> normalize_serial_number('NO SERIAL', blank='', left_fill='')  # doctest: +NORMALIZE_WHITESPACE
-    'NO SERIAL'
+    u'NO SERIAL'
 
     >>> normalize_serial_number('1C 234567890             ', valid_chars='0123456789')
     u'0234567890'
