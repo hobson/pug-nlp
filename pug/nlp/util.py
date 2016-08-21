@@ -74,6 +74,7 @@ from .constant import ROUNDABLE_NUMERIC_TYPES, COUNT_NAMES, SCALAR_TYPES, NUMBER
 from .constant import DATETIME_TYPES, DEFAULT_TZ
 
 from pug.nlp import regex as rex
+from .tutil import make_tz_aware
 
 
 np = pd.np
@@ -2836,9 +2837,9 @@ class DatetimeEncoder(json.JSONEncoder):
     def default(self, obj):
         if isinstance(obj, tuple(list(DATETIME_TYPES) + [pd.tslib.Timestamp])):
             if getattr(self, 'clip', False):
-                return int(mktime(clip_datetime(obj).timetuple()))
+                return int(mktime(clip_datetime(make_tz_aware(obj)).timetuple()))
             else:
-                return int(mktime(obj.timetuple()))
+                return int(mktime(make_tz_aware(obj).timetuple()))
         return json.JSONEncoder.default(self, obj)
 
 
@@ -2854,18 +2855,21 @@ class PrettyDict(OrderedDict):
       precision (int or None): precision of serialized floats
 
     DatetimeEncoder behaves differently on travis (Time Zone?)
-    >>> PrettyDict([('scif', datetime.datetime(3015, 10, 21, tzinfo=tzinfo('utc'))), ('btfd', pd.tslib.Timestamp(datetime.datetime(2015, 10, 21)))])
+    >>> from pug.nlp.tutil import make_tz_aware
+    >>> PrettyDict([('scif', make_tz_aware(datetime.datetime(3015, 10, 21))),
+    ...             ('btfd', pd.tslib.Timestamp(make_tz_aware(datetime.datetime(2015, 10, 21))))])
     {
-      "scif": 33002319600,
-      "btfd": 1445410800
+      "scif": 33002323200,
+      "btfd": 1445414400
     }
 
-    >> PrettyDict([('scif', datetime.datetime(3015, 10, 21, tzinfo=tzinfo('utc'))), ('same', datetime.datetime(4015, 10, 21))], clip=True, indent=0)
+
+    >> PrettyDict([('scif', datetime.datetime(3015, 10, 21, tzinfo=utc)), ('same', datetime.datetime(4015, 10, 21))], clip=True, indent=0)
     {
     "scif": 9223400836,
     "same": 9223400836
     }
-    >> PrettyDict([('scif', datetime.datetime(3015, 10, 23, tzinfo=tzinfo('utc'))), ('same', datetime.datetime(4015, 10, 23))], clip=True, indent=None)
+    >> PrettyDict([('scif', datetime.datetime(3015, 10, 23, tzinfo=utc)), ('same', datetime.datetime(4015, 10, 23))], clip=True, indent=None)
     {"scif": 9223400836, "same": 9223400836}
     """
 
@@ -2900,4 +2904,3 @@ class PrettyDict(OrderedDict):
                               for k, v in viewitems(self)]), indent=self.indent, cls=self.encoder)
         finally:
             del _repr_running[call_key]
-PrettyOD = PrettyOrderedDict = HiddenOrderedDict = HiddenOD = PrettyDict
