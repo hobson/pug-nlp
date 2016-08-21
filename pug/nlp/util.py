@@ -34,9 +34,6 @@ except:
 import os
 import itertools
 import datetime
-import time
-import pytz
-import dateutil
 import types
 import re
 import string
@@ -58,7 +55,6 @@ from traceback import format_exc
 import pandas as pd
 from dateutil.parser import parse as parse_date
 import progressbar
-from pytz import timezone
 from fuzzywuzzy import process as fuzzy
 from slugify import slugify
 
@@ -2225,132 +2221,6 @@ def imported_modules():
             yield val
 
 
-def make_tz_aware(dt, tz='UTC', is_dst=None):
-    """Add timezone information to a datetime object, only if it is naive.
-
-    >>> make_tz_aware(datetime.datetime(2001, 9, 8, 7, 6))
-    datetime.datetime(2001, 9, 8, 7, 6, tzinfo=<UTC>)
-    >>> make_tz_aware(['2010-01-01'], 'PST')
-    [datetime.datetime(2010, 1, 1, 0, 0, tzinfo=<DstTzInfo 'US/Pacific' PST-1 day, 16:00:00 STD>)]
-    >>> make_tz_aware(['1970-10-31', '1970-12-25', '1971-07-04'], 'CDT')  # doctest: +NORMALIZE_WHITESPACE
-    [datetime.datetime(1970, 10, 31, 0, 0, tzinfo=<DstTzInfo 'US/Central' CST-1 day, 18:00:00 STD>),
-     datetime.datetime(1970, 12, 25, 0, 0, tzinfo=<DstTzInfo 'US/Central' CST-1 day, 18:00:00 STD>),
-     datetime.datetime(1971,  7,  4, 0, 0, tzinfo=<DstTzInfo 'US/Central' CDT-1 day, 19:00:00 DST>)]
-    >>> make_tz_aware([None, float('nan'), float('inf'), 1980, 1979.25*365.25, '1970-10-31', '1970-12-25', '1971-07-04'],
-    ...               'CDT')  # doctest: +NORMALIZE_WHITESPACE
-    [None, nan, inf,
-     datetime.datetime(6, 6, 3, 0, 0, tzinfo=<DstTzInfo 'US/Central' LMT-1 day, 18:09:00 STD>),
-     datetime.datetime(1980, 4, 16, 1, 30, tzinfo=<DstTzInfo 'US/Central' CST-1 day, 18:00:00 STD>),
-     datetime.datetime(1970, 10, 31, 0, 0, tzinfo=<DstTzInfo 'US/Central' CST-1 day, 18:00:00 STD>),
-     datetime.datetime(1970, 12, 25, 0, 0, tzinfo=<DstTzInfo 'US/Central' CST-1 day, 18:00:00 STD>),
-     datetime.datetime(1971, 7, 4, 0, 0, tzinfo=<DstTzInfo 'US/Central' CDT-1 day, 19:00:00 DST>)]
-    >>> make_tz_aware(datetime.time(22, 23, 59, 123456))
-    datetime.time(22, 23, 59, 123456, tzinfo=<UTC>)
-    >>> make_tz_aware(datetime.time(22, 23, 59, 123456), 'PDT', is_dst=True)
-    datetime.time(22, 23, 59, 123456, tzinfo=<DstTzInfo 'US/Pacific' LMT-1 day, 16:07:00 STD>)
-
-    """
-    # make sure dt is a datetime, time, or list of datetime/times
-    dt = make_datetime(dt)
-    if not isinstance(dt, (list, datetime.datetime, datetime.date, datetime.time, pd.Timestamp)):
-        return dt
-    # TODO: deal with sequence of timezones
-    try:
-        tz = dt.tzinfo or tz
-    except AttributeError:
-        pass
-    try:
-        tzstr = str(tz).strip().upper()
-        if tzstr in TZ_ABBREV_NAME:
-            is_dst = is_dst or tzstr.endswith('DT')
-            tz = TZ_ABBREV_NAME.get(tzstr, tz)
-    except:
-        pass
-    try:
-        tz = pytz.timezone(tz)
-    except AttributeError:
-        # from traceback import print_exc
-        # print_exc()
-        pass
-    try:
-        return tz.localize(dt, is_dst=is_dst)
-    except:
-        # from traceback import print_exc
-        # print_exc()  # TypeError: unsupported operand type(s) for +: 'datetime.time' and 'datetime.timedelta'
-        pass
-    # could be datetime.time, which can't be localized. Insted `replace` the TZ
-    # don't try/except in case dt is not a datetime or time type -- should raise an exception
-    if not isinstance(dt, list):
-        return dt.replace(tzinfo=tz)
-
-    return [make_tz_aware(dt0, tz=tz, is_dst=is_dst) for dt0 in dt]
-
-
-def normalize_datetime(t, time=datetime.timedelta(hours=16)):
-    if isinstance(t, datetime.datetime):
-        if not t.hours + t.seconds:
-            if time:
-                t += time
-        return t
-    if isinstance(t, datetime.date):
-        return normalize_datetime(datetime.datetime(t), time=time)
-    if isinstance(t, basestring):
-        return normalize_datetime(parse_date(t))
-    return normalize_datetime(datetime.datetime(*[int(i) for i in t]))
-
-
-def normalize_date(d):
-    if isinstance(d, datetime.date):
-        return d
-    if isinstance(d, datetime.datetime):
-        return datetime.date(d.year, d.month, d.day)
-    if isinstance(d, basestring):
-        return normalize_date(parse_date(d))
-    return normalize_date(datetime.datetime(*[int(i) for i in d]))
-
-
-def clean_wiki_datetime(dt, squelch=True):
-    if isinstance(dt, datetime.datetime):
-        return dt
-    elif not isinstance(dt, basestring):
-        dt = ' '.join(dt)
-    try:
-        return make_tz_aware(dateutil.parser.parse(dt))
-    except:
-        if not squelch:
-            print("Failed to parse %r as a date" % dt)
-    dt = [s.strip() for s in dt.split(' ')]
-    # get rid of any " at " or empty strings
-    dt = [s for s in dt if s and s.lower() != 'at']
-
-    # deal with the absence of :'s in wikipedia datetime strings
-
-    if rex.month_name.match(dt[0]) or rex.month_name.match(dt[1]):
-        if len(dt) >= 5:
-            dt = dt[:-2] + [dt[-2].strip(':') + ':' + dt[-1].strip(':')]
-            return clean_wiki_datetime(' '.join(dt))
-        elif len(dt) == 4 and (len(dt[3]) == 4 or len(dt[0]) == 4):
-            dt[:-1] + ['00']
-            return clean_wiki_datetime(' '.join(dt))
-    elif rex.month_name.match(dt[-2]) or rex.month_name.match(dt[-3]):
-        if len(dt) >= 5:
-            dt = [dt[0].strip(':') + ':' + dt[1].strip(':')] + dt[2:]
-            return clean_wiki_datetime(' '.join(dt))
-        elif len(dt) == 4 and (len(dt[-1]) == 4 or len(dt[-3]) == 4):
-            dt = [dt[0], '00'] + dt[1:]
-            return clean_wiki_datetime(' '.join(dt))
-
-    try:
-        return make_tz_aware(dateutil.parser.parse(' '.join(dt)))
-    except Exception as e:
-        if squelch:
-            from traceback import format_exc
-            print(format_exc(e) + '\n^^^ Exception caught ^^^\nWARN: Failed to parse datetime string %r\n      from list of strings %r' %
-                  (' '.join(dt), dt))
-            return dt
-        raise(e)
-
-
 def minmax_len_and_blackwhite_list(s, min_len=1, max_len=256, blacklist=None, whitelist=None, lower=False):
     if min_len > len(s) or len(s) > max_len:
         return False
@@ -3051,84 +2921,6 @@ def slash_product(string_or_seq, slash='/', space=' '):
     alternatives = head[-1], tail[0]
     head, tail = space.join(head[:-1]), space.join(tail[1:])
     return slash_product([space.join([head, word, tail]).strip(space) for word in alternatives])
-
-
-def is_valid_american_date_string(s, require_year=True):
-    if not isinstance(s, basestring):
-        return False
-    if require_year and len(s.split('/')) != 3:
-        return False
-    return bool(1 <= int(s.split('/')[0]) <= 12 and 1 <= int(s.split('/')[1]) <= 31)
-
-
-def ordinal_float(dt):
-    """Like datetime.ordinal, but rather than integer allows fractional days (so float not ordinal at all)
-
-    Similar to the Microsoft Excel numerical representation of a datetime object
-
-    >>> ordinal_float(datetime.datetime(1970, 1, 1))
-    719163.0
-    >>> ordinal_float(datetime.datetime(1, 2, 3, 4, 5, 6, 7))  # doctest: +ELLIPSIS
-    34.1702083334143...
-    """
-    try:
-        return dt.toordinal() + ((((dt.microsecond / 1000000.) + dt.second) / 60. + dt.minute) / 60 + dt.hour) / 24.
-    except:
-        try:
-            return ordinal_float(make_datetime(dt))
-        except:
-            pass
-    dt = list(make_datetime(val) for val in dt)
-    assert(all(isinstance(val, datetime.datetime) for val in dt))
-    return [ordinal_float(val) for val in dt]
-
-
-def datetime_from_ordinal_float(days):
-    """Inverse of `ordinal_float()`, converts a float number of days back to a `datetime` object
-
-    >>> dt = datetime.datetime(1970, 1, 1)
-    >>> datetime_from_ordinal_float(ordinal_float(dt)) == dt
-    True
-    >>> dt = datetime.datetime(1, 2, 3, 4, 5, 6, 7)
-    >>> datetime_from_ordinal_float(ordinal_float(dt)) == dt
-    True
-    """
-    if isinstance(days, (float, int)):
-        if np.isnan(days) or days in set((float('nan'), float('inf'), float('-inf'))):
-            return days
-        dt = datetime.datetime.fromordinal(int(days))
-        seconds = (days - int(days)) * 3600. * 24.
-        microseconds = (seconds - int(seconds)) * 1000000
-        return dt + datetime.timedelta(days=0, seconds=int(seconds), microseconds=int(round(microseconds)))
-    return [datetime_from_ordinal_float(d) for d in days]
-
-
-def timetag_str(dt=None, sep='-', filler='0', resolution=6):
-    """Generate a date-time tag suitable for appending to a file name.
-
-    >>> timetag_str(resolution=3) == '-'.join('{0:02d}'.format(i) for i in tuple(datetime.datetime.now().timetuple()[:3]))
-    True
-    >>> timetag_str(datetime.datetime(2004,12,8,1,2,3,400000))
-    '2004-12-08-01-02-03'
-    >>> timetag_str(datetime.datetime(2004,12,8))
-    '2004-12-08-00-00-00'
-    >>> timetag_str(datetime.datetime(2003,6,19), filler='')
-    '2003-6-19-0-0-0'
-    """
-    resolution = int(resolution or 6)
-    if sep in (None, False):
-        sep = ''
-    sep = str(sep)
-    dt = datetime.datetime.now() if dt is None else dt
-    # FIXME: don't use timetuple which truncates microseconds
-    return sep.join(('{0:' + filler + ('2' if filler else '') + 'd}').format(i) for i in tuple(dt.timetuple()[:resolution]))
-timestamp_str = make_timestamp = make_timetag = timetag_str
-
-
-def days_since(dt, dt0=datetime.datetime(1970, 1, 1, 0, 0, 0)):
-    return ordinal_float(dt) - ordinal_float(dt0)
-
-
 def roundf(x, precision=0):
     """Like round but works with large exponents in floats and high precision
     Based on http://stackoverflow.com/a/6539677/623735

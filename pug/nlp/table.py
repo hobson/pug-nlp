@@ -15,6 +15,7 @@ from past.builtins import basestring
 
 from types import NoneType
 
+from traceback import print_exc
 import datetime
 import xlrd
 import pandas as pd

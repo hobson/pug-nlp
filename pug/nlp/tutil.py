@@ -20,6 +20,8 @@ import time
 import pandas as pd
 from dateutil.parser import parse as parse_date
 
+import pytz
+
 np = pd.np
 
 
@@ -256,3 +258,129 @@ timestamp_str = make_timestamp = make_timetag = timetag_str
 
 def days_since(dt, dt0=datetime.datetime(1970, 1, 1, 0, 0, 0)):
     return ordinal_float(dt) - ordinal_float(dt0)
+
+
+def make_tz_aware(dt, tz='UTC', is_dst=None):
+    """Add timezone information to a datetime object, only if it is naive.
+
+    >>> make_tz_aware(datetime.datetime(2001, 9, 8, 7, 6))
+    datetime.datetime(2001, 9, 8, 7, 6, tzinfo=<UTC>)
+    >>> make_tz_aware(['2010-01-01'], 'PST')
+    [datetime.datetime(2010, 1, 1, 0, 0, tzinfo=<DstTzInfo 'US/Pacific' PST-1 day, 16:00:00 STD>)]
+    >>> make_tz_aware(['1970-10-31', '1970-12-25', '1971-07-04'], 'CDT')  # doctest: +NORMALIZE_WHITESPACE
+    [datetime.datetime(1970, 10, 31, 0, 0, tzinfo=<DstTzInfo 'US/Central' CST-1 day, 18:00:00 STD>),
+     datetime.datetime(1970, 12, 25, 0, 0, tzinfo=<DstTzInfo 'US/Central' CST-1 day, 18:00:00 STD>),
+     datetime.datetime(1971,  7,  4, 0, 0, tzinfo=<DstTzInfo 'US/Central' CDT-1 day, 19:00:00 DST>)]
+    >>> make_tz_aware([None, float('nan'), float('inf'), 1980, 1979.25*365.25, '1970-10-31', '1970-12-25', '1971-07-04'],
+    ...               'CDT')  # doctest: +NORMALIZE_WHITESPACE
+    [None, nan, inf,
+     datetime.datetime(6, 6, 3, 0, 0, tzinfo=<DstTzInfo 'US/Central' LMT-1 day, 18:09:00 STD>),
+     datetime.datetime(1980, 4, 16, 1, 30, tzinfo=<DstTzInfo 'US/Central' CST-1 day, 18:00:00 STD>),
+     datetime.datetime(1970, 10, 31, 0, 0, tzinfo=<DstTzInfo 'US/Central' CST-1 day, 18:00:00 STD>),
+     datetime.datetime(1970, 12, 25, 0, 0, tzinfo=<DstTzInfo 'US/Central' CST-1 day, 18:00:00 STD>),
+     datetime.datetime(1971, 7, 4, 0, 0, tzinfo=<DstTzInfo 'US/Central' CDT-1 day, 19:00:00 DST>)]
+    >>> make_tz_aware(datetime.time(22, 23, 59, 123456))
+    datetime.time(22, 23, 59, 123456, tzinfo=<UTC>)
+    >>> make_tz_aware(datetime.time(22, 23, 59, 123456), 'PDT', is_dst=True)
+    datetime.time(22, 23, 59, 123456, tzinfo=<DstTzInfo 'US/Pacific' LMT-1 day, 16:07:00 STD>)
+
+    """
+    # make sure dt is a datetime, time, or list of datetime/times
+    dt = make_datetime(dt)
+    if not isinstance(dt, (list, datetime.datetime, datetime.date, datetime.time, pd.Timestamp)):
+        return dt
+    # TODO: deal with sequence of timezones
+    try:
+        tz = dt.tzinfo or tz
+    except AttributeError:
+        pass
+    try:
+        tzstr = str(tz).strip().upper()
+        if tzstr in TZ_ABBREV_NAME:
+            is_dst = is_dst or tzstr.endswith('DT')
+            tz = TZ_ABBREV_NAME.get(tzstr, tz)
+    except:
+        pass
+    try:
+        tz = pytz.timezone(tz)
+    except AttributeError:
+        # from traceback import print_exc
+        # print_exc()
+        pass
+    try:
+        return tz.localize(dt, is_dst=is_dst)
+    except:
+        # from traceback import print_exc
+        # print_exc()  # TypeError: unsupported operand type(s) for +: 'datetime.time' and 'datetime.timedelta'
+        pass
+    # could be datetime.time, which can't be localized. Insted `replace` the TZ
+    # don't try/except in case dt is not a datetime or time type -- should raise an exception
+    if not isinstance(dt, list):
+        return dt.replace(tzinfo=tz)
+
+    return [make_tz_aware(dt0, tz=tz, is_dst=is_dst) for dt0 in dt]
+
+
+def normalize_datetime(t, time=datetime.timedelta(hours=16)):
+    if isinstance(t, datetime.datetime):
+        if not t.hours + t.seconds:
+            if time:
+                t += time
+        return t
+    if isinstance(t, datetime.date):
+        return normalize_datetime(datetime.datetime(t), time=time)
+    if isinstance(t, basestring):
+        return normalize_datetime(parse_date(t))
+    return normalize_datetime(datetime.datetime(*[int(i) for i in t]))
+
+
+def normalize_date(d):
+    if isinstance(d, datetime.date):
+        return d
+    if isinstance(d, datetime.datetime):
+        return datetime.date(d.year, d.month, d.day)
+    if isinstance(d, basestring):
+        return normalize_date(parse_date(d))
+    return normalize_date(datetime.datetime(*[int(i) for i in d]))
+
+
+def clean_wiki_datetime(dt, squelch=True):
+    if isinstance(dt, datetime.datetime):
+        return dt
+    elif not isinstance(dt, basestring):
+        dt = ' '.join(dt)
+    try:
+        return make_tz_aware(dateutil.parser.parse(dt))
+    except:
+        if not squelch:
+            print("Failed to parse %r as a date" % dt)
+    dt = [s.strip() for s in dt.split(' ')]
+    # get rid of any " at " or empty strings
+    dt = [s for s in dt if s and s.lower() != 'at']
+
+    # deal with the absence of :'s in wikipedia datetime strings
+
+    if rex.month_name.match(dt[0]) or rex.month_name.match(dt[1]):
+        if len(dt) >= 5:
+            dt = dt[:-2] + [dt[-2].strip(':') + ':' + dt[-1].strip(':')]
+            return clean_wiki_datetime(' '.join(dt))
+        elif len(dt) == 4 and (len(dt[3]) == 4 or len(dt[0]) == 4):
+            dt[:-1] + ['00']
+            return clean_wiki_datetime(' '.join(dt))
+    elif rex.month_name.match(dt[-2]) or rex.month_name.match(dt[-3]):
+        if len(dt) >= 5:
+            dt = [dt[0].strip(':') + ':' + dt[1].strip(':')] + dt[2:]
+            return clean_wiki_datetime(' '.join(dt))
+        elif len(dt) == 4 and (len(dt[-1]) == 4 or len(dt[-3]) == 4):
+            dt = [dt[0], '00'] + dt[1:]
+            return clean_wiki_datetime(' '.join(dt))
+
+    try:
+        return make_tz_aware(parse_date(' '.join(dt)))
+    except Exception as e:
+        if squelch:
+            from traceback import format_exc
+            print(format_exc(e) + '\n^^^ Exception caught ^^^\nWARN: Failed to parse datetime string %r\n      from list of strings %r' %
+                  (' '.join(dt), dt))
+            return dt
+        raise(e)
