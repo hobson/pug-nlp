@@ -20,17 +20,18 @@
 
 '''
 from __future__ import division, print_function, absolute_import
-from past.builtins import basestring
-try:
-    from itertools import izip as zip
-except ImportError:  # will be 3.x series
-    pass
+from builtins import str, unicode  # noqa
 from future.utils import viewitems
+from past.builtins import basestring
+try:  # python 3.5+
+    from io import StringIO
+    # from ConfigParser import ConfigParser
+    from itertools import izip as zip
+except:
+    from StringIO import StringIO
+    # from configparser import ConfigParser
 
 import os
-import errno
-import stat
-import collections
 import itertools
 import datetime
 import time
@@ -40,15 +41,14 @@ import types
 import re
 import string
 import csv
-import warnings
 import logging
-from collections import OrderedDict, Mapping
-from itertools import islice
+import warnings
 from traceback import print_exc
+from collections import OrderedDict, Mapping, Counter
+from itertools import islice
 from decimal import Decimal, InvalidOperation, InvalidContext
 import math
 from types import NoneType
-from StringIO import StringIO
 import copy
 import codecs
 import json
@@ -62,12 +62,11 @@ import progressbar
 from pytz import timezone
 from fuzzywuzzy import process as fuzzy
 from slugify import slugify
-import xlrd
 
 from pug.nlp import charlist
 from pug.nlp.constant import DATETIME_TYPES, MAX_DATETIME, MIN_DATETIME, MAX_TIMESTAMP, MIN_TIMESTAMP
 from pug.nlp.constant import FLOAT_TYPES, NAT, MAX_CHR
-from pug.nlp import regex as RE
+from pug.nlp import regex as rex
 
 np = pd.np
 logger = logging.getLogger(__name__)
@@ -87,7 +86,7 @@ NUMERIC_TYPES = (float, long, int, Decimal, complex, str)  # datetime.datetime, 
 NUMBERS_AND_DATETIMES = (float, long, int, Decimal, complex, parse_time, parse_date, str)
 SCALAR_TYPES = (float, long, int, Decimal, bool, complex, basestring, str, unicode)  # datetime.datetime, datetime.date
 # numpy types are derived from these so no need to include numpy.float64, numpy.int64 etc
-DICTABLE_TYPES = (collections.Mapping, tuple, list)  # convertable to a dictionary (inherits collections.Mapping or is a list of key/value pairs)
+DICTABLE_TYPES = (Mapping, tuple, list)  # convertable to a dictionary (inherits Mapping or is a list of key/value pairs)
 VECTOR_TYPES = (list, tuple)
 PUNC = unicode(string.punctuation)
 
@@ -239,7 +238,6 @@ def force_hashable(obj, recursive=True):
     (1, 2.0, ('3', 'four'), 'five', (('s', 'ix'),))
     >>> force_hashable(i for i in range(4))
     (0, 1, 2, 3)
-    >>> from collections import Counter
     >>> force_hashable(Counter('abbccc')) ==  (('a', 1), ('c', 3), ('b', 2))
     True
     """
@@ -734,7 +732,7 @@ def fuzzy_get(possible_keys, approximate_key, default=None, similarity=0.6, tupl
       >>> fuzzy_get(df, 'get')
     """
     dict_obj = copy.copy(possible_keys)
-    if not isinstance(dict_obj, (collections.Mapping, pd.DataFrame, pd.Series)):
+    if not isinstance(dict_obj, (Mapping, pd.DataFrame, pd.Series)):
         dict_obj = dict((x, x) for x in dict_obj)
 
     fuzzy_key, value = None, default
@@ -829,7 +827,7 @@ def sod_transposed(seq_of_dicts, align=True, fill=True, filler=None):
     [('c', [1, 1, 1]), ('cm', [u'P', 6, u'Q']), ('cn', [u'MUS', u'ROM']), ('ct', [2])]
     """
     result = {}
-    if isinstance(seq_of_dicts, collections.Mapping):
+    if isinstance(seq_of_dicts, Mapping):
         seq_of_dicts = [seq_of_dicts]
     it = iter(seq_of_dicts)
     # if you don't need to align and/or fill, then just loop through and return
@@ -1066,7 +1064,7 @@ def hist_from_values_list(values_list, fillers=(None,), normalize=False, cumulat
 
     if all(isinstance(value, value_types) for value in values_list):
         # ignore all fillers and convert all floats to ints when doing counting
-        counters = [collections.Counter(int(value) for value in values_list if isinstance(value, (int, float)))]
+        counters = [Counter(int(value) for value in values_list if isinstance(value, (int, float)))]
     elif all(len(row) == 1 for row in values_list) and all(isinstance(row[0], value_types) for row in values_list):
         return hist_from_values_list([values[0] for values in values_list], fillers=fillers, normalize=normalize, cumulative=cumulative,
                                      to_str=to_str, sep=sep, min_bin=min_bin, max_bin=max_bin)
@@ -1125,35 +1123,6 @@ def hist_from_values_list(values_list, fillers=(None,), normalize=False, cumulat
     return aligned_histograms
 
 
-def flatten_csv(path='.', ext='csv', date_parser=parse_date, verbosity=0, output_ext=None):
-    """Load all CSV files in the given path, write .flat.csv files, return `DataFrame`s
-
-    Arguments:
-      path (str): file or folder to retrieve CSV files and `pandas.DataFrame`s from
-      ext (str): file name extension (to filter files by)
-      date_parser (function): if the MultiIndex can be interpretted as a datetime, this parser will be used
-
-    Returns:
-      dict of DataFrame: { file_path: flattened_data_frame }
-    """
-    date_parser = date_parser or (lambda x: x)
-    dotted_ext, dotted_output_ext = None, None
-    if ext is not None and output_ext is not None:
-        dotted_ext = ('' if ext.startswith('.') else '.') + ext
-        dotted_output_ext = ('' if output_ext.startswith('.') else '.') + output_ext
-    table = {}
-    for file_properties in find_files(path, ext=ext or '', verbosity=verbosity):
-        file_path = file_properties['path']
-        if output_ext and (dotted_output_ext + '.') in file_path:
-            continue
-        df = pd.DataFrame.from_csv(file_path, parse_dates=False)
-        df = flatten_dataframe(df)
-        if dotted_ext is not None and dotted_output_ext is not None:
-            df.to_csv(file_path[:-len(dotted_ext)] + dotted_output_ext + dotted_ext)
-        table[file_path] = df
-    return table
-
-
 def get_similar(obj, labels, default=None, min_similarity=0.5):
     """Similar to fuzzy_get, but allows non-string keys and a list of possible keys
 
@@ -1194,7 +1163,7 @@ def normalize_column_labels(obj, labels):
 
 def update_dict(d, u=None, depth=-1, take_new=True, default_mapping_type=dict, prefer_update_type=False, copy=False):
     """
-    Recursively merge (union or update) dict-like objects (collections.Mapping) to the specified depth.
+    Recursively merge (union or update) dict-like objects (Mapping) to the specified depth.
 
     >>> update_dict({'k1': {'k2': 2}}, {'k1': {'k2': {'k3': 3}}, 'k4': 4})
     {'k1': {'k2': {'k3': 3}}, 'k4': 4}
@@ -1221,17 +1190,17 @@ def update_dict(d, u=None, depth=-1, take_new=True, default_mapping_type=dict, p
     """
     u = u or {}
     orig_mapping_type = type(d)
-    if prefer_update_type and isinstance(u, collections.Mapping):
+    if prefer_update_type and isinstance(u, Mapping):
         dictish = type(u)
-    elif isinstance(d, collections.Mapping):
+    elif isinstance(d, Mapping):
         dictish = orig_mapping_type
     else:
         dictish = default_mapping_type
     if copy:
         d = dictish(d)
     for k, v in viewitems(u):
-        if isinstance(d, collections.Mapping):
-            if isinstance(v, collections.Mapping) and not depth == 0:
+        if isinstance(d, Mapping):
+            if isinstance(v, Mapping) and not depth == 0:
                 r = update_dict(d.get(k, dictish()), v, depth=max(depth - 1, -1), copy=copy)
                 d[k] = r
             elif take_new:
@@ -1510,7 +1479,8 @@ def read_csv(csv_file, ext='.csv', format=None, delete_empty_keys=False,
     Handles unquoted and quoted strings, quoted commas, quoted newlines (EOLs), complex numbers, times, dates, datetimes,
     >>> read_csv('"name\r\n",rank,"serial\nnumber",date <BR />\t\n"McCain, John","1","123456789",9/11/2001\n' +
     ...          'Bob,big cheese,1-23,1/1/2001 12:00 GMT', format='header+values list', numbers=True)  # doctest: +NORMALIZE_WHITESPACE
-    [['name', 'rank', 'serial\nnumber', 'date'], ['McCain, John', 1.0, 123456789.0, datetime.datetime(2001, 9, 11, 0, 0)], ['Bob', 'big cheese', datetime.datetime(2016, 1, 23, 0, 0), datetime.datetime(2001, 1, 1, 12, 0, tzinfo=tzutc())]]
+    [['name', 'rank', 'serial\nnumber', 'date'], ['McCain, John', 1.0, 123456789.0, datetime.datetime(2001, 9, 11, 0, 0)],
+     ['Bob', 'big cheese', datetime.datetime(2016, 1, 23, 0, 0), datetime.datetime(2001, 1, 1, 12, 0, tzinfo=tzutc())]]
     """
     if not csv_file:
         return
@@ -1656,7 +1626,7 @@ def dict2obj(d):
     >>> obj.d.hi.foo
     "bar"
     """
-    if isinstance(d, collections.Mapping):
+    if isinstance(d, Mapping):
         try:
             d = dict(d)
         except (ValueError, TypeError):
@@ -2010,10 +1980,10 @@ def normalize_scientific_notation(s, ignore_commas=True, verbosity=1):
     s = s.rstrip(charlist.not_digits)
     # print s
     # TODO: substitute ** for ^ and just eval the expression rather than insisting on a base-10 representation
-    num_strings = RE.scientific_notation_exponent.split(s, maxsplit=2)
+    num_strings = rex.scientific_notation_exponent.split(s, maxsplit=2)
     # print num_strings
     # get rid of commas
-    s = RE.re.sub(r"[^.0-9-+" + "," * int(not ignore_commas) + r"]+", '', num_strings[0])
+    s = rex.re.sub(r"[^.0-9-+" + "," * int(not ignore_commas) + r"]+", '', num_strings[0])
     # print s
     # if this value gets so large that it requires an exponential notation, this will break the conversion
     if not s:
@@ -2032,7 +2002,7 @@ def normalize_scientific_notation(s, ignore_commas=True, verbosity=1):
     if len(num_strings) > 1:
         if not s:
             s = '1'
-        s += 'e' + RE.re.sub(r'[^.0-9-+]+', '', num_strings[1])
+        s += 'e' + rex.re.sub(r'[^.0-9-+]+', '', num_strings[1])
     if s:
         return s
     return None
@@ -2049,9 +2019,9 @@ def normalize_names(names):
 def string_stats(strs, valid_chars='012346789', left_pad='0', right_pad='', strip=True):
     """Count the occurrence of a category of valid characters within an iterable of serial numbers, model numbers, or other strings"""
     if left_pad is None:
-        left_pad = ''.join(c for c in RE.ASCII_CHARACTERS if c not in valid_chars)
+        left_pad = ''.join(c for c in rex.ASCII_CHARACTERS if c not in valid_chars)
     if right_pad is None:
-        right_pad = ''.join(c for c in RE.ASCII_CHARACTERS if c not in valid_chars)
+        right_pad = ''.join(c for c in rex.ASCII_CHARACTERS if c not in valid_chars)
 
     def normalize(s):
         if strip:
@@ -2062,7 +2032,7 @@ def string_stats(strs, valid_chars='012346789', left_pad='0', right_pad='', stri
 
     # should probably check to make sure memory not exceeded
     strs = [normalize(s) for s in strs]
-    lengths = collections.Counter(len(s) for s in strs)
+    lengths = Counter(len(s) for s in strs)
     counts = {}
     max_length = max(lengths.keys())
 
@@ -2083,7 +2053,7 @@ def normalize_serial_number(sn,
                             max_length=None, left_fill='0', right_fill='', blank='',
                             valid_chars=' -0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ',
                             invalid_chars=None,
-                            strip_whitespace=True, join=False, na=RE.nones):
+                            strip_whitespace=True, join=False, na=rex.nones):
     r"""Make a string compatible with typical serial number requirements
 
     # Default configuration strips internal and external whitespaces and retains only the last 10 characters
@@ -2197,7 +2167,7 @@ normalize_serial_number.valid_chars = ' -0123456789abcdefghijklmnopqrstuvwxyzABC
 normalize_serial_number.invalid_chars = None
 normalize_serial_number.strip_whitespace = True
 normalize_serial_number.join = False
-normalize_serial_number.na = RE.nones
+normalize_serial_number.na = rex.nones
 normalize_account_number = normalize_serial_number
 
 
@@ -2356,14 +2326,14 @@ def clean_wiki_datetime(dt, squelch=True):
 
     # deal with the absence of :'s in wikipedia datetime strings
 
-    if RE.month_name.match(dt[0]) or RE.month_name.match(dt[1]):
+    if rex.month_name.match(dt[0]) or rex.month_name.match(dt[1]):
         if len(dt) >= 5:
             dt = dt[:-2] + [dt[-2].strip(':') + ':' + dt[-1].strip(':')]
             return clean_wiki_datetime(' '.join(dt))
         elif len(dt) == 4 and (len(dt[3]) == 4 or len(dt[0]) == 4):
             dt[:-1] + ['00']
             return clean_wiki_datetime(' '.join(dt))
-    elif RE.month_name.match(dt[-2]) or RE.month_name.match(dt[-3]):
+    elif rex.month_name.match(dt[-2]) or rex.month_name.match(dt[-3]):
         if len(dt) >= 5:
             dt = [dt[0].strip(':') + ':' + dt[1].strip(':')] + dt[2:]
             return clean_wiki_datetime(' '.join(dt))
@@ -2423,14 +2393,14 @@ strip_edge_punc.lower = False
 strip_edge_punc.punc = PUNC
 
 
-def get_sentences(s, regex=RE.sentence_sep):
+def get_sentences(s, regex=rex.sentence_sep):
     if isinstance(regex, basestring):
         regex = re.compile(regex)
     return [sent for sent in regex.split(s) if sent]
 
 
 # this regex assumes "s' " is the end of a possessive word and not the end of an inner quotation, e.g. He said, "She called me 'Hoss'!"
-def get_words(s, splitter_regex=RE.word_sep_except_external_appostrophe,
+def get_words(s, splitter_regex=rex.word_sep_except_external_appostrophe,
               preprocessor=strip_HTML, postprocessor=strip_edge_punc, min_len=None, max_len=None, blacklist=None, whitelist=None, lower=False,
               filter_fun=None, str_type=str):
     r"""Segment words (tokens), returning a list of all tokens
@@ -2709,7 +2679,7 @@ def strip_keys(d, nones=False, depth=0):
     if int(depth) > strip_keys.MAX_DEPTH:
         warnings.warn(RuntimeWarning("Maximum recursion depth allowance (%r) exceeded." % strip_keys.MAX_DEPTH))
     for k, v in viewitems(ans):
-        if isinstance(v, collections.Mapping):
+        if isinstance(v, Mapping):
             ans[k] = strip_keys(v, nones=nones, depth=int(depth) - 1)
     return ans
 strip_keys.MAX_DEPTH = 1e6
@@ -2813,7 +2783,7 @@ def remove_internal_vowels(s, space=''):
 
 
 def normalize_year(y):
-    y = RE.not_digit_list.sub('', str(y))
+    y = rex.not_digit_list.sub('', str(y))
     try:
         y = int(y)
     except:
@@ -2900,13 +2870,13 @@ def kmer_counter(seq, k=4):
 
     Default k = 4 because that's the length of a gene base-pair?
 
-    >>> kmer_counter('AGATAGATAGACACAGAAATGGGACCACAC') == collections.Counter({'ACAC': 2, 'ATAG': 2, 'CACA': 2,
+    >>> kmer_counter('AGATAGATAGACACAGAAATGGGACCACAC') == Counter({'ACAC': 2, 'ATAG': 2, 'CACA': 2,
     ...     'TAGA': 2, 'AGAT': 2, 'GATA': 2, 'AGAC': 1, 'ACAG': 1, 'AGAA': 1, 'AAAT': 1, 'TGGG': 1, 'ATGG': 1,
     ...     'ACCA': 1, 'GGAC': 1, 'CCAC': 1, 'CAGA': 1, 'GAAA': 1, 'GGGA': 1, 'GACA': 1, 'GACC': 1, 'AATG': 1})
     True
     """
     if isinstance(seq, basestring):
-        return collections.Counter(generate_kmers(seq, k))
+        return Counter(generate_kmers(seq, k))
 
 
 def kmer_set(seq, k=4):
@@ -2937,8 +2907,8 @@ def kmer_set(seq, k=4):
 #     if km and isinstance(km, basestring):
 #         return sum(km in counter for counter in kmer_counter(seq_of_seq, len(km)))
 #     km = int(km)
-#     counter = collections.Counter()
-#     counter += collections.Counter(tuple(sorted(set(kmer_counter(seq, km)))) for seq in seq_of_seq)
+#     counter = Counter()
+#     counter += Counter(tuple(sorted(set(kmer_counter(seq, km)))) for seq in seq_of_seq)
 #     return counter
 
 
@@ -2979,7 +2949,7 @@ def kmer_set(seq, k=4):
 
 def count_duplicates(items):
     """Return a dict of objects and thier counts (like a Counter), but only count > 1"""
-    c = collections.Counter(items)
+    c = Counter(items)
     return dict((k, v) for (k, v) in viewitems(c) if v > 1)
 
 
@@ -2992,9 +2962,9 @@ def count_duplicates(items):
 #     sentence_detector = nltk.data.load('tokenizers/punkt/english.pickle')
 #     sentences = sentence_detector.tokenize(doc)
 #     tokens = nltk.tokenize.punkt.PunktWordTokenizer().tokenize(doc)
-#     vocabulary = collections.Counter(tokens)
+#     vocabulary = Counter(tokens)
 
-#     return collections.OrderedDict([
+#     return OrderedDict([
 #         ('lines', sum([bool(l.strip().strip('-').strip()) for l in doc.split('\n')])),
 #         ('pages', sum([bool(l.strip().startswith('---')) for l in doc.split('\n')]) + 1),
 #         ('tokens', len(tokens)),
@@ -3405,312 +3375,6 @@ def flatten_dataframe(df, date_parser=parse_date, verbosity=0):
     else:
         df.index = list(pd.Timestamp(d) for d in index)
     return df
-
-
-def dataframe_from_excel(path, sheetname=0, header=0, skiprows=None):  # , parse_dates=False):
-    """Thin wrapper for pandas.io.excel.read_excel() that accepts a file path and sheet index/name
-
-    Arguments:
-      path (str): file or folder to retrieve CSV files and `pandas.DataFrame`s from
-      ext (str): file name extension (to filter files by)
-      date_parser (function): if the MultiIndex can be interpretted as a datetime, this parser will be used
-
-    Returns:
-      dict of DataFrame: { file_path: flattened_data_frame }
-    """
-    sheetname = sheetname or 0
-    if isinstance(sheetname, (basestring, float)):
-        try:
-            sheetname = int(sheetname)
-        except (TypeError, ValueError, OverflowError):
-            sheetname = str(sheetname)
-    wb = xlrd.open_workbook(path)
-    # if isinstance(sheetname, int):
-    #     sheet = wb.sheet_by_index(sheetname)
-    # else:
-    #     sheet = wb.sheet_by_name(sheetname)
-    # assert(not parse_dates, "`parse_dates` argument and function not yet implemented!")
-    # table = [sheet.row_values(i) for i in range(sheet.nrows)]
-    return pd.io.excel.read_excel(wb, sheetname=sheetname, header=header, skiprows=skiprows, engine='xlrd')
-
-
-def flatten_excel(path='.', ext='xlsx', sheetname=0, skiprows=None, header=0, date_parser=parse_date, verbosity=0, output_ext=None):
-    """Load all Excel files in the given path, write .flat.csv files, return `DataFrame` dict
-
-    Arguments:
-      path (str): file or folder to retrieve CSV files and `pandas.DataFrame`s from
-      ext (str): file name extension (to filter files by)
-      date_parser (function): if the MultiIndex can be interpretted as a datetime, this parser will be used
-
-    Returns:
-      dict of DataFrame: { file_path: flattened_data_frame }
-    """
-
-    date_parser = date_parser or (lambda x: x)
-    dotted_ext, dotted_output_ext = None, None
-    if ext is not None and output_ext is not None:
-        dotted_ext = ('' if ext.startswith('.') else '.') + ext
-        dotted_output_ext = ('' if output_ext.startswith('.') else '.') + output_ext
-    table = {}
-    for file_properties in find_files(path, ext=ext or '', verbosity=verbosity):
-        file_path = file_properties['path']
-        if output_ext and (dotted_output_ext + '.') in file_path:
-            continue
-        df = dataframe_from_excel(file_path, sheetname=sheetname, header=header, skiprows=skiprows)
-        df = flatten_dataframe(df, verbosity=verbosity)
-        if dotted_ext is not None and dotted_output_ext is not None:
-            df.to_csv(file_path[:-len(dotted_ext)] + dotted_output_ext + dotted_ext)
-    return table
-
-
-def walk_level(path, level=1):
-    """Like os.walk, but takes `level` kwarg that indicates how deep the recursion will go.
-
-    Notes:
-      TODO: refactor `level`->`depth`
-
-    References:
-      http://stackoverflow.com/a/234329/623735
-
-    Args:
-     path (str):  Root path to begin file tree traversal (walk)
-      level (int, optional): Depth of file tree to halt recursion at.
-        None = full recursion to as deep as it goes
-        0 = nonrecursive, just provide a list of files at the root level of the tree
-        1 = one level of depth deeper in the tree
-
-    Examples:
-      >>> root = os.path.dirname(__file__)
-      >>> all((os.path.join(base,d).count('/')==(root.count('/')+1)) for (base, dirs, files) in walk_level(root, level=0) for d in dirs)
-      True
-    """
-    if isinstance(level, NoneType):
-        level = float('inf')
-    path = path.rstrip(os.path.sep)
-    if os.path.isdir(path):
-        root_level = path.count(os.path.sep)
-        for root, dirs, files in os.walk(path):
-            yield root, dirs, files
-            if root.count(os.path.sep) >= root_level + level:
-                del dirs[:]
-    elif os.path.isfile(path):
-        yield os.path.dirname(path), [], [os.path.basename(path)]
-    else:
-        raise RuntimeError("Can't find a valid folder or file for path {0}".format(repr(path)))
-
-
-def path_status(path, filename='', status=None, verbosity=0):
-    """ Retrieve the access, modify, and create timetags for a path along with its size
-
-    Arguments:
-        path (str): full path to the file or directory to be statused
-        status (dict): optional existing status to be updated/overwritten with new status values
-
-    Returns:
-        dict: {'size': bytes (int), 'accessed': (datetime), 'modified': (datetime), 'created': (datetime)}
-    """
-    status = status or {}
-    if not filename:
-        dir_path, filename = os.path.split()  # this will split off a dir and as `filename` if path doesn't end in a /
-    else:
-        dir_path = path
-    full_path = os.path.join(dir_path, filename)
-    if verbosity > 1:
-        print(full_path)
-    status['name'] = filename
-    status['path'] = full_path
-    status['dir'] = dir_path
-    status['type'] = []
-    try:
-        status['size'] = os.path.getsize(full_path)
-        status['accessed'] = datetime.datetime.fromtimestamp(os.path.getatime(full_path))
-        status['modified'] = datetime.datetime.fromtimestamp(os.path.getmtime(full_path))
-        status['created'] = datetime.datetime.fromtimestamp(os.path.getctime(full_path))
-        status['mode'] = os.stat(full_path).st_mode   # first 3 digits are User, Group, Other permissions: 1=execute,2=write,4=read
-        if os.path.ismount(full_path):
-            status['type'] += ['mount-point']
-        elif os.path.islink(full_path):
-            status['type'] += ['symlink']
-        if os.path.isfile(full_path):
-            status['type'] += ['file']
-        elif os.path.isdir(full_path):
-            status['type'] += ['dir']
-        if not status['type']:
-            if stat.S_ISSOCK(status['mode']):
-                status['type'] += ['socket']
-            elif stat.S_ISCHR(status['mode']):
-                status['type'] += ['special']
-            elif stat.S_ISBLK(status['mode']):
-                status['type'] += ['block-device']
-            elif stat.S_ISFIFO(status['mode']):
-                status['type'] += ['pipe']
-        if not status['type']:
-            status['type'] += ['unknown']
-        elif status['type'] and status['type'][-1] == 'symlink':
-            status['type'] += ['broken']
-    except OSError:
-        status['type'] = ['nonexistent'] + status['type']
-        if verbosity > -1:
-            warnings.warn("Unable to stat path '{}'".format(full_path))
-    status['type'] = '->'.join(status['type'])
-
-    return status
-
-
-def find_files(path='', ext='', level=None, typ=list, dirs=False, files=True, verbosity=0):
-    """ Recursively find all files in the indicated directory
-
-    Filter by the indicated file name extension (ext)
-
-    Args:
-      path (str):  Root/base path to search.
-      ext (str):   File name extension. Only file paths that ".endswith()" this string will be returned
-      level (int, optional): Depth of file tree to halt recursion at.
-        None = full recursion to as deep as it goes
-        0 = nonrecursive, just provide a list of files at the root level of the tree
-        1 = one level of depth deeper in the tree
-      typ (type):  output type (default: list). if a mapping type is provided the keys will be the full paths (unique)
-      dirs (bool):  Whether to yield dir paths along with file paths (default: False)
-      files (bool): Whether to yield file paths (default: True)
-        `dirs=True`, `files=False` is equivalent to `ls -d`
-
-    Returns:
-      list of dicts: dict keys are { 'path', 'name', 'bytes', 'created', 'modified', 'accessed', 'permissions' }
-        path (str): Full, absolute paths to file beneath the indicated directory and ending with `ext`
-        name (str): File name only (everythin after the last slash in the path)
-        size (int): File size in bytes
-        created (datetime): File creation timestamp from file system
-        modified (datetime): File modification timestamp from file system
-        accessed (datetime): File access timestamp from file system
-        permissions (int): File permissions bytes as a chown-style integer with a maximum of 4 digits
-        type (str): One of 'file', 'dir', 'symlink->file', 'symlink->dir', 'symlink->broken'
-          e.g.: 777 or 1755
-
-    Examples:
-      >>> 'util.py' in [d['name'] for d in find_files(os.path.dirname(__file__), ext='.py', level=0)]
-      True
-      >>> (d for d in find_files(os.path.dirname(__file__), ext='.py') if d['name'] == 'util.py').next()['size'] > 1000
-      True
-
-      There should be an __init__ file in the same directory as this script.
-      And it should be at the top of the list.
-      >>> sorted(d['name'] for d in find_files(os.path.dirname(__file__), ext='.py', level=0))[0]
-      '__init__.py'
-      >>> all(d['type'] in ('file','dir','symlink->file','symlink->dir','mount-point->file','mount-point->dir','block-device',
-                            'symlink->broken','pipe','special','socket','unknown') for d in find_files(level=1, files=True, dirs=True))
-      True
-      >>> os.path.join(os.path.dirname(__file__), '__init__.py') in find_files(
-      ... os.path.dirname(__file__), ext='.py', level=0, typ=dict)
-      True
-    """
-    gen = generate_files(path, ext=ext, level=level, dirs=dirs, files=files, verbosity=verbosity)
-    if isinstance(typ(), collections.Mapping):
-        return typ((ff['path'], ff) for ff in gen)
-    elif typ is not None:
-        return typ(gen)
-    else:
-        return gen
-
-
-def generate_files(path='', ext='', level=None, dirs=False, files=True, verbosity=0):
-    """ Recursively generate files (and thier stats) in the indicated directory
-
-    Filter by the indicated file name extension (ext)
-
-    Args:
-      path (str):  Root/base path to search.
-      ext (str):   File name extension. Only file paths that ".endswith()" this string will be returned
-      level (int, optional): Depth of file tree to halt recursion at.
-        None = full recursion to as deep as it goes
-        0 = nonrecursive, just provide a list of files at the root level of the tree
-        1 = one level of depth deeper in the tree
-      typ (type):  output type (default: list). if a mapping type is provided the keys will be the full paths (unique)
-      dirs (bool):  Whether to yield dir paths along with file paths (default: False)
-      files (bool): Whether to yield file paths (default: True)
-        `dirs=True`, `files=False` is equivalent to `ls -d`
-
-    Returns:
-      list of dicts: dict keys are { 'path', 'name', 'bytes', 'created', 'modified', 'accessed', 'permissions' }
-        path (str): Full, absolute paths to file beneath the indicated directory and ending with `ext`
-        name (str): File name only (everythin after the last slash in the path)
-        size (int): File size in bytes
-        created (datetime): File creation timestamp from file system
-        modified (datetime): File modification timestamp from file system
-        accessed (datetime): File access timestamp from file system
-        permissions (int): File permissions bytes as a chown-style integer with a maximum of 4 digits
-        type (str): One of 'file', 'dir', 'symlink->file', 'symlink->dir', 'symlink->broken'
-          e.g.: 777 or 1755
-
-    Examples:
-      >>> 'util.py' in [d['name'] for d in generate_files(os.path.dirname(__file__), ext='.py', level=0)]
-      True
-      >>> (d for d in generate_files(os.path.dirname(__file__), ext='.py') if d['name'] == 'util.py').next()['size'] > 1000
-      True
-      >>> sorted(generate_files().next().keys())
-      ['accessed', 'created', 'dir', 'mode', 'modified', 'name', 'path', 'size', 'type']
-
-      There should be an __init__ file in the same directory as this script.
-      And it should be at the top of the list.
-      >>> sorted(d['name'] for d in generate_files(os.path.dirname(__file__), ext='.py', level=0))[0]
-      '__init__.py'
-      >>> sorted(list(generate_files())[0].keys())
-      ['accessed', 'created', 'dir', 'mode', 'modified', 'name', 'path', 'size', 'type']
-      >>> all(d['type'] in ('file','dir','symlink->file','symlink->dir','mount-point->file','mount-point->dir','block-device','symlink->broken',
-      ...                   'pipe','special','socket','unknown')
-      ... for d in generate_files(level=1, files=True, dirs=True))
-      True
-    """
-    path = path or './'
-    ext = str(ext).lower()
-
-    for dir_path, dir_names, filenames in walk_level(path, level=level):
-        if verbosity > 0:
-            print('Checking path "{}"'.format(dir_path))
-        if files:
-            for fn in filenames:  # itertools.chain(filenames, dir_names)
-                if ext and not fn.lower().endswith(ext):
-                    continue
-                yield path_status(dir_path, fn, verbosity=verbosity)
-        if dirs:
-            # TODO: warn user if ext and dirs both set
-            for fn in dir_names:
-                if ext and not fn.lower().endswith(ext):
-                    continue
-                yield path_status(dir_path, fn, verbosity=verbosity)
-
-    # if verbosity > 1:
-    #     print files_found
-    # return files_found
-
-
-def find_dirs(*args, **kwargs):
-    kwargs['files'] = kwargs.get('files', False)
-    kwargs.update({'dirs': True})
-    return find_files(*args, **kwargs)
-
-
-def mkdir_p(path):
-    """`mkdir -p` functionality (don't raise exception if path exists)
-
-    Make containing directory and parent directories in `path`, if they don't exist.
-
-    Arguments:
-      path (str): Full or relative path to a directory to be created with mkdir -p
-
-    Returns:
-      str: 'pre-existing' or 'new'
-
-    References:
-      http://stackoverflow.com/a/600612/623735
-    """
-    try:
-        os.makedirs(path)
-    except OSError as exception:
-        if exception.errno == errno.EEXIST and os.path.isdir(path):
-            return 'pre-existing'
-        else:
-            raise
-    return 'new'
 
 
 def roundf(x, precision=0):
