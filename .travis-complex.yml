@@ -1,3 +1,5 @@
+# Config file for automatic testing at travis-ci.org
+
 sudo: false
 language: python
 
@@ -13,10 +15,8 @@ addons:
     - libpng12-dev
     - libfreetype6-dev
 
-
 python:
   - "2.7"
-#  - "3.5" 
 
 cache:
   apt: true
@@ -27,23 +27,13 @@ cache:
     - $HOME/nltk_data
     - $HOME/.db-cache
 
+branches:
+  except:
+    - /notest/
 
 before_install:
   - pip install --upgrade pip
   - pip install requests matplotlib
-
-# before_install:
-#   - wget 'http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh' -O miniconda.sh
-#   - chmod +x miniconda.sh
-#   - ./miniconda.sh -b
-#   - export PATH=/home/travis/miniconda2/bin:$PATH
-#   - conda update --yes conda
-#   - pip install --upgrade pip
-#
-# install:
-#   - conda create --yes -n pug-nlp-test python=$TRAVIS_PYTHON_VERSION pip atlas pyzmq numpy scipy matplotlib scikit-learn
-#   - source activate pug-nlp-test
-#   - python setup.py install  # pip install -r requirements-test.txt
 
 install:
   - travis_wait 60 pip install -q -r requirements.txt
@@ -52,16 +42,15 @@ install:
   - python -m nltk.downloader -d $HOME/nltk_data stopwords
 
 script:
-  - coverage run setup.py test
+  - coverage run setup.py test -v 3
   - coverage report
-
-# script:
-#   - python setup.py test
-
+#  - flake8 --config .flake8.cfg .
+#  - python $HOME/copenhagen/travis/future_verification.py django
+#  - python $HOME/copenhagen/travis/check_py3k.py .
 
 notifications:
   email: false
-  slack: totalgood:Fsy4rZmIWs8NnzhCM7HeTvWh#random
+  slack: totalgood:Fsy4rZmIWs8NnzhCM7HeTvWh
   on_success: change
-  on_failure: change
   on_start: never
+  on_failure: always

@@ -10,13 +10,14 @@ RE_YEAR
 ['1970', '2000', '2015', '27', '78', '1980']
 >>> doc = r"In '1970-2000\1', 2015/16, and 27, many not-so-wealthy people's banks had $1980 more than Gates' or Jobs'."
 >>> [((s, LIST_RE_TOKEN_NAMED[i].lower()[3:]) for i, s in enumerate(groups) if s).next() for groups in re.compile(RE_TOKEN_NAMED).findall(doc)]
-   [('In', 'unhyphenated_contracted_alpha'), ("'", 'nonword'), ('1970', 'year'), ('-', 'nonword'), ('2000', 'year'), ('\\', 'nonword'),
-   ('1', 'float'), ("',", 'nonword'), ('2015', 'year'), ('/', 'nonword'), ('16', 'year'), (',', 'nonword'), ('and', 'unhyphenated_contracted_alpha'),
-   ('27', 'year'), (',', 'nonword'), ('many', 'unhyphenated_contracted_alpha'), ('not-so', 'hyphenated_alpha'), ('-', 'nonword'),
-   ('wealthy', 'unhyphenated_contracted_alpha'), ("people's", 'unhyphenated_contracted_alpha'), ('banks', 'unhyphenated_contracted_alpha'),
-   ('had', 'unhyphenated_contracted_alpha'), ('$1980', 'usd'), ('more', 'unhyphenated_contracted_alpha'), ('than', 'unhyphenated_contracted_alpha'),
-   ('Gates', 'unhyphenated_contracted_alpha'), ("'", 'nonword'), ('or', 'unhyphenated_contracted_alpha'), ('Jobs', 'unhyphenated_contracted_alpha'),
-   ("'.", 'nonword')]
+[('In', 'unhyphenated_contracted_alpha'), ("'", 'nonword'), ('1970', 'year'), ('-', 'nonword'), ('2000', 'year'), ('\\', 'nonword'),
+('1', 'float'), ("',", 'nonword'), ('2015', 'year'), ('/', 'nonword'), ('16', 'year'), (',', 'nonword'), ('and', 'unhyphenated_contracted_alpha'),
+('27', 'year'), (',', 'nonword'), ('many', 'unhyphenated_contracted_alpha'), ('not-so', 'hyphenated_alpha'), ('-', 'nonword'),
+('wealthy', 'unhyphenated_contracted_alpha'), ("people's", 'unhyphenated_contracted_alpha'), ('banks', 'unhyphenated_contracted_alpha'),
+('had', 'unhyphenated_contracted_alpha'), ('$1980', 'usd'), ('more', 'unhyphenated_contracted_alpha'), ('than', 'unhyphenated_contracted_alpha'),
+('Gates', 'unhyphenated_contracted_alpha'), ("'", 'nonword'), ('or', 'unhyphenated_contracted_alpha'), ('Jobs', 'unhyphenated_contracted_alpha'),
+("'.", 'nonword')]
+
 
 RE_WORD_BASIC
   Disallows underscores,  hyphens, leading numerals, and leading punctuation (except dot e.g. ".Net").
@@ -95,6 +96,9 @@ RE_CAMEL_BASIC_B, RE_CAMEL_NORMAL_B, RE_CAMEL_LIBERAL_B
 (None, '0', '0', '.18', '18', None, None)
 >>> tweet = "Play the [postiive sum game](http://totalgood.com/a/b?c=42) of life instead of svn://us.gov."
 >>> cre_url.findall(tweet)
+[('http://totalgood.com/a/b?c=42', 'http://', 'http', 'totalgood.com', 'om', '/a/b?c=42'),
+ ('svn://us.gov', 'svn://', 'svn', 'us.gov', 'gov', '')]
+
 [('http://totalgood.com/a/b?c=42', 'http://', 'http', 'totalgood.com', 'om', '/a/b?c=42'),
  ('svn://us.gov', 'svn://', 'svn', 'us.gov', 'gov', '')]
 >>> list(match.groups()[0] for match in cre_url.finditer(tweet))
