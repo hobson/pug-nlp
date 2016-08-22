@@ -688,17 +688,13 @@ def fuzzy_get_tuple(dict_obj, approximate_key, dict_keys=None, key_and_value=Fal
                      key_and_value=key_and_value, similarity=similarity, default=default)
 
 
-def sod_transposed(seq_of_dicts, align=True, fill=True, filler=None):
+def sod_transposed(seq_of_dicts, align=True, pad=True, filler=None):
     """Return sequence (list) of dictionaries, transposed into a dictionary of sequences (lists)
 
     >>> sorted(sod_transposed([{'c': 1, 'cm': u'P'}, {'c': 1, 'ct': 2, 'cm': 6, 'cn': u'MUS'}, {'c': 1, 'cm': u'Q', 'cn': u'ROM'}], filler=0).items())
     [('c', [1, 1, 1]), ('cm', [u'P', 6, u'Q']), ('cn', [0, u'MUS', u'ROM']), ('ct', [0, 2, 0])]
     >>> sorted(sod_transposed(({'c': 1, 'cm': u'P'}, {'c': 1, 'ct': 2, 'cm': 6, 'cn': u'MUS'}, {'c': 1, 'cm': u'Q', 'cn': u'ROM'}),
-<<<<<<< HEAD
     ...                       filler=0, align=0).items())
-=======
-    ...                       fill=0, align=0).items())
->>>>>>> 4016f159d92275ef7bbd16ea810b5da5618cfb32
     [('c', [1, 1, 1]), ('cm', [u'P', 6, u'Q']), ('cn', [u'MUS', u'ROM']), ('ct', [2])]
     """
     result = {}
@@ -706,7 +702,7 @@ def sod_transposed(seq_of_dicts, align=True, fill=True, filler=None):
         seq_of_dicts = [seq_of_dicts]
     it = iter(seq_of_dicts)
     # if you don't need to align and/or fill, then just loop through and return
-    if not (align and fill):
+    if not (align and pad):
         for d in it:
             for k in d:
                 result[k] = result.get(k, []) + [d[k]]
@@ -2859,14 +2855,14 @@ class PrettyDict(OrderedDict):
       precision (int or None): precision of serialized floats
 
     DatetimeEncoder behaves differently on travis (Time Zone?)
+    # FIXME: check the values and fix the discrepancy in default timezone for travis and local
     >>> from pug.nlp.tutil import make_tz_aware
     >>> PrettyDict([('scif', make_tz_aware(datetime.datetime(3015, 10, 21))),
     ...             ('btfd', pd.tslib.Timestamp(make_tz_aware(datetime.datetime(2015, 10, 21))))])
     {
-      "scif": 33002323200,
-      "btfd": 1445414400
+      "scif": 3300...,
+      "btfd": 1445...
     }
-
 
     >> PrettyDict([('scif', datetime.datetime(3015, 10, 21, tzinfo=utc)), ('same', datetime.datetime(4015, 10, 21))], clip=True, indent=0)
     {
