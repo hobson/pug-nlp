@@ -713,8 +713,8 @@ def fuzzy_get(possible_keys, approximate_key, default=None, similarity=0.6, tupl
       (None, None)
       >>> fuzzy_get({'word': tuple('word'), 'noun': tuple('noun')}, 'woh!', similarity=.9, default='darn :-()', key_and_value=True)
       (None, 'darn :-()')
-      >>> possible_keys = 'alerts astronomy conditions currenthurricane forecast forecast10day geolookup history ' +
-      ...                 'hourly hourly10day planner rawtide satellite tide webcams yesterday'.split(' ')
+      >>> possible_keys = ('alerts astronomy conditions currenthurricane forecast forecast10day geolookup history ' +
+      ...                  'hourly hourly10day planner rawtide satellite tide webcams yesterday').split(' ')
       >>> fuzzy_get(possible_keys, "cond")
       'conditions'
       >>> fuzzy_get(possible_keys, "Tron")
@@ -821,7 +821,7 @@ def sod_transposed(seq_of_dicts, align=True, fill=True, filler=None):
     >>> sorted(sod_transposed([{'c': 1, 'cm': u'P'}, {'c': 1, 'ct': 2, 'cm': 6, 'cn': u'MUS'}, {'c': 1, 'cm': u'Q', 'cn': u'ROM'}], filler=0).items())
     [('c', [1, 1, 1]), ('cm', [u'P', 6, u'Q']), ('cn', [0, u'MUS', u'ROM']), ('ct', [0, 2, 0])]
     >>> sorted(sod_transposed(({'c': 1, 'cm': u'P'}, {'c': 1, 'ct': 2, 'cm': 6, 'cn': u'MUS'}, {'c': 1, 'cm': u'Q', 'cn': u'ROM'}),
-                              fill=0, align=0).items())
+    ...                       filler=0, align=0).items())
     [('c', [1, 1, 1]), ('cm', [u'P', 6, u'Q']), ('cn', [u'MUS', u'ROM']), ('ct', [2])]
     """
     result = {}
@@ -3289,16 +3289,16 @@ def datetime_from_ordinal_float(days):
     return [datetime_from_ordinal_float(d) for d in days]
 
 
-def timetag_str(dt=None, sep='-', filler='0', resolution=6):
+def timestamp_str(dt=None, sep='-', filler='0', resolution=6):
     """Generate a date-time tag suitable for appending to a file name.
 
-    >>> timetag_str(resolution=3) == '-'.join('{0:02d}'.format(i) for i in tuple(datetime.datetime.now().timetuple()[:3]))
+    >>> timestamp_str(resolution=3) == '-'.join('{0:02d}'.format(i) for i in tuple(datetime.datetime.now().timetuple()[:3]))
     True
-    >>> timetag_str(datetime.datetime(2004,12,8,1,2,3,400000))
+    >>> timestamp_str(datetime.datetime(2004, 12, 8, 1, 2, 3, 400000))
     '2004-12-08-01-02-03'
-    >>> timetag_str(datetime.datetime(2004,12,8))
+    >>> timestamp_str(datetime.datetime(2004, 12, 8))
     '2004-12-08-00-00-00'
-    >>> timetag_str(datetime.datetime(2003,6,19), filler='')
+    >>> timestamp_str(datetime.datetime(2003, 6, 19), filler='')
     '2003-6-19-0-0-0'
     """
     resolution = int(resolution or 6)
@@ -3306,9 +3306,9 @@ def timetag_str(dt=None, sep='-', filler='0', resolution=6):
         sep = ''
     sep = str(sep)
     dt = datetime.datetime.now() if dt is None else dt
-    # FIXME: don't use timetuple which truncates microseconds
-    return sep.join(('{0:' + filler + ('2' if filler else '') + 'd}').format(i) for i in tuple(dt.timetuple()[:resolution]))
-timestamp_str = make_timestamp = make_timetag = timetag_str
+    # FIXME: don't use timetuple because timetuple truncates microseconds
+    return sep.join(('{:' + filler + ('2' if filler else '') + 'd}').format(i) for i in tuple(dt.timetuple()[:resolution]))
+timetag_str = make_timestamp = make_timetag = timestamp_str
 
 
 def days_since(dt, dt0=datetime.datetime(1970, 1, 1, 0, 0, 0)):
