@@ -1,0 +1,24 @@
+#!/bin/sh
+# Redirect output to stderr.
+exec 1>&2
+# Don't allow "ghost" modules to hang around
+find . -name "*.pyc" -type f -delete
+
+# Run flake8 and report any failures
+flake8_result=$(flake8 --config=$HOME/.git-templates/flake8.cfg .)
+if [ -z "$flake8_result" ]; then
+    echo "flake8 passed"
+    future_verification_result=$(python ../copenhagen/travis/future_verification.py django)
+    if [ -z "$future_verification_result" ]; then
+        echo "future_verification passed"
+        exit 0
+    else
+        echo "future_verification.py FAILED with return value: $future_verification_result"
+        exit 0  # always succeed so commit can proceed
+    fi
+else
+     echo "flake8 FAILED with return value: $flake8_result"
+     exit 0  # always succeed so commit can proceed
+fi
+
+

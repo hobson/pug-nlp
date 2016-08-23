@@ -44,7 +44,7 @@ def random_split(df, first_portion=.1):
 
 def safe_div(a, b, inf=INF):
     """Safely divide by zero and inf and nan and produce floating point result
-    Numerical results are equivalent to `from future import division`
+    Numerical results are equivalent to `from __future__ import division`
     Args:
       a (float or int): numerator
       b (float or int): denominator
