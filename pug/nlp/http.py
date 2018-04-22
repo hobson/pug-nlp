@@ -3,8 +3,8 @@
 * simplify_get: eliminate empty and/or redundant HTTP GET parameters from a request dict
 
 """
-
 import datetime
+
 
 def simplify_get(get_dict, keys_to_del=None, datetime_to_date=True):
     """Delete any GET request key/value pairs if the value is an empty string or list.
@@ -18,7 +18,7 @@ def simplify_get(get_dict, keys_to_del=None, datetime_to_date=True):
     keys_to_del = set(keys_to_del or ())
     get_dict = dict(get_dict.items())
     for k, v in get_dict.iteritems():
-        if not v and v != 0 and v != False:
+        if not v and v != 0 and v is not False:
             keys_to_del.add(k)
         if datetime_to_date and isinstance(v, datetime.datetime) and not (v.hour or v.minute or v.second):
             get_dict[k] = datetime.date(v.year, v.month, v.day)

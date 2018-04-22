@@ -9,6 +9,8 @@ Makes data processing easier:
     * visualization with d3, nvd3, and django-nvd3
     * data structure manipulations (listify, intify)
 """
+from __future__ import division, print_function, absolute_import
+from past.builtins import basestring
 
 import datetime
 import calendar
@@ -16,15 +18,17 @@ from math import log
 import json
 import chardet
 import re
+from traceback import format_exc
 
 import pytz
 from dateutil import parser as dateutil_parser
 import logging
 
-logger = logging.getLogger('bigdata.info')
-
 from pug.nlp import util  # import transposed_lists, sod_transposed, listify, intify
-from pug.nlp import regex_patterns
+from pug.nlp import regex
+
+logger = logging.getLogger(__name__)
+
 
 # Don't be tempted to import django.db.models.base.ModelBase because it'll raise ImproperlyConfigured when run outside of django
 
@@ -79,20 +83,25 @@ def representation(model, field_names=None):
 
     TODO:
     - check for _meta.unique_together and use them to order the all_names list
-    - do fuzzywuzzy matching on field names to identify important fields automatically (name, id, serial, model, account, last, first, email, phone, city)
+    - do fuzzywuzzy matching on field names to identify important fields automatically
+       (name, id, serial, model, account, last, first, email, phone, city)
     """
     if field_names is None:
         all_names = model._meta.get_all_field_names()
         field_names = None
-        for field_names_name in ('IMPORTANT_FIELDS', '_IMPORTANT_FIELDS', '_important_fields', 'REPR_FIELDS', '_REPR_FIELDS', '_repr_fields'):  #, 'SECURE_FIELDS', '_secure_fields'):
-            field_names = getattr(model, field_names_name, None)  # or getattr(getattr(model, '_meta', None), field_names_name, None) # ticket 5793 wont fix, custom Meta.* not allowed 
+        for field_names_name in ('IMPORTANT_FIELDS', '_IMPORTANT_FIELDS', '_important_fields', 'REPR_FIELDS',
+                                 '_REPR_FIELDS', '_repr_fields'):  # , 'SECURE_FIELDS', '_secure_fields'):
+            # or getattr(getattr(model, '_meta', None), field_names_name, None)
+            field_names = getattr(model, field_names_name, None)
             if field_names:
                 break
     field_names = field_names or (['pk'] + all_names[:min(representation.default_fields, len(all_names))])
-    return (model.__class__.__name__
-        + '('
-        + ', '.join("%s" % (repr(getattr(model, s, '') or '')) for s in field_names[:min(len(field_names), representation.max_fields)])
-        + ')')
+    return (
+        model.__class__.__name__ +
+        '(' +
+        ', '.join("%s" % (repr(getattr(model, s, '') or '')) for s in field_names[:min(len(field_names), representation.max_fields)]) +
+        ')'
+        )
 representation.max_fields = 10
 representation.default_fields = 3
 
@@ -155,7 +164,7 @@ def round_to_sigfigs(x, sigfigs=1):
     place = int(log(x, 10))
     if sigfigs <= 0:
         additional_place = x > 10. ** place
-        return 10. ** (     -sigfigs + place + additional_place)
+        return 10. ** (-sigfigs + place + additional_place)
     return round_to_place(x, sigfigs - 1 - place)
 
 
@@ -181,7 +190,6 @@ def consolidated_counts(dict_of_lists, field_name, count_name='count'):
 
     dict_of_lists[field_name] = []
     dict_of_lists[count_name] = []
-    
     for k in accumulated_counts:
         dict_of_lists[field_name] += [k]
         dict_of_lists[count_name] += [accumulated_counts[k]]
@@ -205,13 +213,14 @@ def epoch_in_milliseconds(epoch):
 # Unix is Jan 1, 1970: datetime.datetime(1970, 1, 1, 0, 0)
 DEFAULT_DATETIME_EPOCH = datetime.datetime.fromtimestamp(0, pytz.utc)
 
+
 def epoch_in_seconds(epoch):
     """
     >>> epoch_in_seconds(datetime_from_seconds(-12345678999.0001))
     -12345679000
     """
     if epoch == 0:
-        # if you specifiy zero year, assume you meant AD 0001 (Anno Domini, Christ's birth date?) 
+        # if you specifiy zero year, assume you meant AD 0001 (Anno Domini, Christ's birth date?)
         epoch = datetime.datetime(1, 1, 1)
     try:
         epoch = int(epoch)
@@ -222,19 +231,18 @@ def epoch_in_seconds(epoch):
             pass
     # None will use the default epoch (1970 on Unix)
     epoch = epoch or DEFAULT_DATETIME_EPOCH
-    if epoch:
+    try:
+        return calendar.timegm(epoch.timetuple())
+    except:
         try:
-            return calendar.timegm(epoch.timetuple())
-        except:
+            return calendar.timegm(datetime.date(epoch, 1, 1).timetuple())
+        except:  # TypeError on non-int epoch
             try:
-                return calendar.timegm(datetime.date(epoch,1,1).timetuple())
-            except:  # TypeError on non-int epoch
-                try:
-                    epoch = float(epoch)
-                    assert(abs(int(float(epoch))) <= 5000)
-                    return calendar.timegm(datetime.date(int(epoch),1,1).timetuple())
-                except:
-                    pass
+                epoch = float(epoch)
+                assert(abs(int(float(epoch))) <= 5000)
+                return calendar.timegm(datetime.date(int(epoch), 1, 1).timetuple())
+            except:
+                pass
     return epoch
 
 
@@ -250,7 +258,7 @@ def epoch_as_datetime(epoch=None, tz=pytz.UTC):
     if isinstance(epoch, (datetime.datetime, datetime.date, datetime.timedelta)):
         return epoch
     if isinstance(epoch, (int, long)) and abs(int(float(epoch))) <= 5000:
-        return datetime.date(int(epoch),1,1)
+        return datetime.date(int(epoch), 1, 1)
     try:
         return datetime.datetime.fromtimestamp(calendar.timegm(epoch), tz)
     except:
@@ -375,7 +383,7 @@ def to_date(ordinal):
             except:
                 return dateutil_parser.parse(ordinal)
         # need to make sure it's a 3-tuple iterable before converting it, because it might be a tuple of orindals
-        # TODO: store a list of bounds on acceptable dates to check before attempting conversion (e.g. 1-3000, 1-12, 1-31) 
+        # TODO: store a list of bounds on acceptable dates to check before attempting conversion (e.g. 1-3000, 1-12, 1-31)
         elif hasattr(ordinal, '__iter__') and len(tuple(ordinal)) == 3 and all((isinstance(o, int) and 10000 > o > 0) for o in ordinal):
             # don't try/except so that exception is raised if assumption that this was a date tuple (instead of ordinal tuple) were incorrect
             return datetime.date(*tuple(ordinal))
@@ -416,29 +424,31 @@ def resample_time_series(x, y, period=1):
             period = period.days * 3600 * 24 + period.seconds + period.microseconds / 1.e6
         except:
             try:
-                period = period.year * 365.25 * 3600 * 24 + period.month * 365.25 / 12. * 3600 * 24 + period.day * 3600 * 24 + period.hour * 3600 + period.minute * 60 + period.second + period.microseconds / 1.e6
+                period = (period.year * 365.25 * 3600 * 24 + period.month * 365.25 / 12. * 3600 * 24 + period.day * 3600 * 24 +
+                          period.hour * 3600 + period.minute * 60 + period.second + period.microseconds / 1.e6)
             except:
                 pass
     N = int((xN - x0) / period)
-    #print x0, xN, period, N
+    # print x0, xN, period, N
     if N > 1000000:
         period *= 84600.
         N = int((xN - x0) / period)
-    #print x0, xN, period, N
+    # print x0, xN, period, N
     if N > 10000:
         period *= 24.
         N = int((xN - x0) / period)
-    #print x0, xN, period, N
+    # print x0, xN, period, N
     k, k1 = 0, 1
     x_new, y_new = [x0 + i * period for i in range(N)], [0.] * N
     for i in range(N):
-        #print i
+        # print i
         while x_new[i] > x[k1] and k1 < len(x):
             k1 += 1
             k = k1 - 1
-            #print i, k, k1
-        dx  = x_new[k1] - x[k]
-        slope = float(y[k1] - y[k]) / dx if dx else 0  # TODO: compute slope that, in the next line, will average these two samples that have the same time stamp
+            # print i, k, k1
+        dx = x_new[k1] - x[k]
+        # TODO: compute slope that, in the next line, will average these two samples that have the same time stamp
+        slope = float(y[k1] - y[k]) / dx if dx else 0
         y_new[i] = y[k] + slope * (x_new[i] - x[k])
     return x_new, y_new
 
@@ -469,12 +479,12 @@ def align_time_series(x1, y1, x2, y2, scale_factor=None, x1_epoch=None, x2_epoch
     z2 = [0] * N
     for i, date in enumerate(x1):
         # FIXME: deal with x1 monthly data too!
-        day =  date.day * (not x2_monthly) + x2_monthly
+        day = date.day * (not x2_monthly) + x2_monthly
         if datetime.date(date.year + x1_epoch - x2_epoch, date.month, day) in x2:
             j = x2.index(datetime.date(date.year + x1_epoch - x2_epoch, date.month, day))
             # FIXME: scale_factor shouldn't be here
             z2[i] = y2[j] * 1.0 / scale_factor
-    
+
     for i, date in enumerate(x1):
         z1[i] = y1[i]
 
@@ -491,7 +501,6 @@ def interp_time_series(x1, y1, x2, y2, scale_factor=None, x1_epoch=None, x2_epoc
     """
     scale_factor = scale_factor or 1
 
-
     x1_monthly = x1_monthly or 0
     x2_monthly = x2_monthly or 0
     # For multiple series in a line plot, nvd3 requires us to bin values in a common date (x-axis value)
@@ -506,18 +515,16 @@ def interp_time_series(x1, y1, x2, y2, scale_factor=None, x1_epoch=None, x2_epoc
     z2 = [0] * N
     for i, date in enumerate(x1):
         # FIXME: deal with x1 monthly data too!
-        day =  date.day * (not x2_monthly) + x2_monthly
+        day = date.day * (not x2_monthly) + x2_monthly
         if datetime.date(date.year + x1_epoch - x2_epoch, date.month, day) in x2:
             j = x2.index(datetime.date(date.year + x1_epoch - x2_epoch, date.month, day))
             # FIXME: scale_factor shouldn't be here
             z2[i] = y2[j] * 1.0 / scale_factor
-    
+
     for i, date in enumerate(x1):
         z1[i] = y1[i]
 
-
     return x1, z1, z2
-
 
 
 def passthrough_shaper(x, t=None):
@@ -527,8 +534,9 @@ def passthrough_shaper(x, t=None):
 def windowed_series(series, xmin=None, xmax=None, shaper=None):
     """Clip a set of time series (regularly sampled sequences registered to a time value)
 
+    FIXME: use pandas.DataFrame.clip() and .rolling_apply()
     TODO: Incorporate into the nlp.db.Columns class
-    
+
     >>> windowed_series([[-1, 0, 1, 2, 3], [2, 7, 1, 8, 2], [8, 1, 8, 2, 8]], xmin=0, xmax=2)
     [[0, 1, 2], [7, 1, 8], [1, 8, 2]]
 
@@ -542,11 +550,11 @@ def windowed_series(series, xmin=None, xmax=None, shaper=None):
         xmin = min(series[0])
     else:
         ans = series
-    
+
     if None not in (xmin, xmax):
         ans = []
         for i in range(len(series)):
-            ans += [[]] 
+            ans += [[]]
         if xmin is not None and xmax >= xmin:
             for i, t_i in enumerate(series[0]):
                 if xmax >= t_i >= xmin:
@@ -567,7 +575,7 @@ def lagged_gen(seq, lag=1, pad=None, truncate=True):
     TODO: Add ability to handle fractional sample lags using interpolation
     TODO: Incorporate as a method in the nlp.db.Columns class
     TODO: Avoid conversion to a list before iterating through (just iterate through twice and yield)
-    
+
     >>> list(lagged_gen([2, 7, 1, 8, 2, 8, 1, 8, 2, 8]))
     [8, 2, 7, 1, 8, 2, 8, 1, 8, 2]
     >>> list(lagged_gen([2, 7, 1, 8, 2, 8, 1, 8, 2, 8], lag=-2, pad=0))
@@ -606,7 +614,7 @@ def lagged_series(series, lags=1, pads=None):
     TODO: Allow fractional sample lags (interpolation)
     TODO: Allow time value lags instead of sample counts
     TODO: Incorporate into the nlp.db.Columns class
-    
+
     >>> lagged_series([[-1, 0, 1, 2, 3], [2, 7, 1, 8, 2], [8, 1, 8, 2, 8]], lags=3)
     [[-1, 0, 1, 2, 3], [1, 8, 2, 2, 7], [8, 2, 8, 8, 1]]
     >>> lagged_series([[-1, 0, 1, 2, 3], [2, 7, 1, 8, 2], [8, 1, 8, 2, 8]], lags=[2, 1], pads=0)
@@ -623,7 +631,7 @@ def lagged_series(series, lags=1, pads=None):
     ans = [series[0]]
 
     for i in range(1, min(len(lags) + 1, len(pads) + 1, N + 1)):
-        #print pads[i]
+        # print pads[i]
         ans += [lagged_seq(series[i], lags[i], pads[i])]
 
     return ans
@@ -632,7 +640,7 @@ def lagged_series(series, lags=1, pads=None):
 def replace_nonascii(s, filler='', one_for_one=False):
     r'''Remove nonASCII characters from provided string
 
-    Based on: http://stackoverflow.com/a/2743163/623735 
+    Based on: http://stackoverflow.com/a/2743163/623735
               by [Khelben](http://stackoverflow.com/users/205083/khelben)
           and
               http://stackoverflow.com/a/20078869/623735
@@ -644,15 +652,17 @@ def replace_nonascii(s, filler='', one_for_one=False):
     # ''
     # '''
     if one_for_one:
-        return regex_patterns.nonascii.sub(filler, s)
-    return regex_patterns.nonascii_sequence.sub(filler, s)
+        return regex.nonascii.sub(filler, s)
+    return regex.nonascii_sequence.sub(filler, s)
 
 
 def strip_nonascii(s):
     return replace_nonascii(s, filler='')
 
 
-def clean_utf8(byte_seq, carefully=False, encodings_to_try=('utf_8', 'iso8859_1', 'cp1252', 'shift_jis', 'shift_jis', 'shiftjis2004', 'iso8859_1', 'utf16'), verbosity=0):
+def clean_utf8(byte_seq, carefully=False,
+               encodings_to_try=('utf_8', 'iso8859_1', 'cp1252', 'shift_jis', 'shift_jis', 'shiftjis2004', 'iso8859_1', 'utf16'),
+               verbosity=0):
     r'''Delete any invalid symbols in a UTF-8 encoded string
 
     Returns:
@@ -677,14 +687,13 @@ def clean_utf8(byte_seq, carefully=False, encodings_to_try=('utf_8', 'iso8859_1'
     #   '`ABC\x7fD\tE\r\nF~G`'
     #   >>> clean_utf8('U\xc2\xa0\xc2\xa0\xc2\xa0\xc2\xa0\xc2').decode('UTF8')
     # '''
-    #print 'cleaning: ' + repr(byte_seq)
+    # print 'cleaning: ' + repr(byte_seq)
     if not isinstance(byte_seq, basestring):
         return byte_seq
     for i, enc in enumerate(encodings_to_try):
         try:
             return unicode(byte_seq.decode(enc)).encode('utf8')
         except UnicodeDecodeError:
-            print i
             if verbosity > 1:
                 print("Unable to short-circuit clean_utf8 function with `try: string.decode({0})` for the string:\n{1}".format(enc, byte_seq))
     if carefully:
@@ -695,13 +704,13 @@ def clean_utf8(byte_seq, carefully=False, encodings_to_try=('utf_8', 'iso8859_1'
                 break
             except UnicodeDecodeError as e:
                     if verbosity > 0:
-                        print 'UnicodeDecodeError: %s' % str(e)
+                        print('UnicodeDecodeError: {}'.format(format_exc()))
                     m = re.match(r".*can't[ ]decode[ ]byte[ ]0x[0-9a-fA-F]{2}[ ]in[ ]position[ ](\d+)[ :.].*", str(e))
                     if m and m.group(1):
                         i = int(m.group(1))
-                        byte_seq = byte_seq[:i] + byte_seq[i+1:]
+                        byte_seq = byte_seq[:i] + byte_seq[i + 1:]
                     else:
-                        raise e
+                        raise
             except UnicodeEncodeError:
                 if verbosity > 0:
                     'cleaned carefully and got UnicodeEncodeError, left with: %r' % unicode(byte_seq)
@@ -718,7 +727,7 @@ def clean_utf8(byte_seq, carefully=False, encodings_to_try=('utf_8', 'iso8859_1'
                 from traceback import print_exc
                 print_exc()
         if verbosity > 0:
-            print diagnosis
+            print(diagnosis)
         if diagnosis['confidence'] > 0.25:
             try:
                 # FIXME: should this be unicode instead of str?
@@ -731,5 +740,3 @@ def clean_utf8(byte_seq, carefully=False, encodings_to_try=('utf_8', 'iso8859_1'
             except:
                 pass
         return clean_utf8(byte_seq, carefully=True)
-
-

@@ -1,7 +1,7 @@
 # pug-nlp
 
-[![Build Status](https://travis-ci.org/hobson/pug-nlp.svg?branch=master "Travis Build & Test Status")](https://travis-ci.org/hobson/pug-nlp)
-[![Coverage Status](https://coveralls.io/repos/hobson/pug-nlp/badge.png)](https://coveralls.io/r/hobson/pug-nlp)
+[![Build Status](https://travis-ci.org/totalgood/pug-nlp.svg?branch=master "Travis Build & Test Status")](https://travis-ci.org/totalgood/pug-nlp)
+[![Coverage Status](https://coveralls.io/repos/totalgood/pug-nlp/badge.png)](https://coveralls.io/r/totalgood/pug-nlp)
 [![Latest Release Version](https://badge.fury.io/py/pug-nlp.svg)](https://pypi.python.org/pypi/pug-nlp/)
 <!-- [![Downloads](https://pypip.in/d/pug-nlp/badge.png)](https://pypi.python.org/pypi/pug-nlp/) -->
 
@@ -17,7 +17,7 @@ This sub-package of the pug namespace package, provides natural language process
 
 You really want to contribute, right?
 
-    git clone https://github.com/hobson/pug-nlp.git
+    git clone https://github.com/totalgood/pug-nlp.git
 
 If you're a user and not a developer, and have an up-to-date posix OS with the postgres, xml2, and xlst development packages installed, then just use `pip`.
 
@@ -46,6 +46,6 @@ This software is in alpha testing.  Install at your own risk.
 
 I love merging PRs and adding contributors to the `__authors__` list:
 
-    git clone https://github.com/hobson/pug-nlp.git
+    git clone https://github.com/totalgood/pug-nlp.git
 
 

@@ -1,37 +1,48 @@
-pip==6.0.7  # this is the version used by travis
+coverage==4.2
+editdistance==0.3.1
+nltk==3.2.1
+pandas==0.18.1
+future==0.15.2
 
-#$ sudo yum install pandoc
-# pypandoc>=0.8.2  # this one doesn't error if pandoc lib/dev isn't present
-wsgiref>=0.1.2
-six>=1.9.0
+# ipython[all]
+ipython==4.2.0
+ipython-genutils==0.1.0
+jupyter-client==4.2.2
+jupyter-core==4.1.0
+ipykernel==4.3.1
+ipyparallel==5.0.1
+nbconvert==4.2.0
+nbformat==4.0.1
 
-# ipython needs ZeroMQ
-pyzmq==14.5.0
+#$ sudo apt-get install libpng12-dev libfreetype6-dev
+#$ sudo apt-get install tcl-dev tk-dev python-tk python3-tk
+# find and edit the matplotlibrc file to select backend that works for your env (tkagg?)
+matplotlib==1.5.1
 
-Unidecode==0.4.16
-cffi>=0.8.6
-chardet==2.3.0
+# setuptools>=21.0.0
 
-pyOpenSSL==0.14
-pytz>=2014.10
-python-dateutil>=2.4.1
+chardet>=2.3.0
 
-pandas>=0.15.2
-xlrd>=0.9.3
+seaborn==0.7.0
+# comes with seaborn
+# scipy==0.16.0 or 0.17.1
 
 #$ sudo yum install libjpeg-devel openjpeg-devel
-Pillow>=2.7
-seaborn>=0.5.1
-matplotlib>=1.4.3
-fuzzywuzzy>=0.5.0
+Pillow==3.0.0
+
+xlrd==0.9.4
+fuzzywuzzy==0.10.0
+
 python-Levenshtein==0.12.0
-progressbar2>=2.7.3
+progressbar2==3.6.2
+python-slugify==1.2.0
 
-python-slugify==0.1.0
+# a perceptron for Kyle Gorman's sentence segmenter DetectorMorse?
+nlup==0.5
 
-# ######################
-# # dev requirements
-# #$ sudo yum install pandoc
-# pypandoc>=0.9.6
-# # alternative backend for matplotlib (like tkagg)
-# python-qt5>=0.1.8 
+# Optional
+# text complexity/readability scores
+textstat==0.2
+# large corpora/vocab
+gensim==0.12.4
+# smart_open>=1.3.0
